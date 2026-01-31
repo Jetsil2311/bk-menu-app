@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import Logo from '../assets/bklogo.svg'
 import { NavLink } from 'react-router'
-import Boba from '../assets/boba.svg'
-import Croissant from '../assets/croissant.svg'
+import Boba from '../assets/Boba.svg'
+import Croissant from '../assets/Croissant.svg'
 
 export const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
