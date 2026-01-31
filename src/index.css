@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+/* Create new colors for the theme, main with shades, secondary with shades and dark I will type the 500 and you will create every other shade*/
+@theme {
+  --color-main-50: #f9f4f3;
+  --color-main-100: #f2e4e1;
+  --color-main-200: #e6c5be;
+  --color-main-300: #d49a8d;
+  --color-main-400: #a34d3b;
+  --color-main-500: #743121;
+  --color-main-600: #61291b;
+  --color-main-700: #4d2016;
+  --color-main-800: #3a1810;
+  --color-main-900: #26100b;
+  --color-main-950: #1a0a07;
+
+  --color-light-50: #fffdf5;
+  --color-light-100: #fffbed;
+  --color-light-200: #fef8e1;
+  --color-light-300: #fdf1c4;
+  --color-light-400: #fbe594;
+
+  --color-dark-500: #120904;
+  --color-dark-600: #0e0706;
+  --color-dark-700: #0a0504;
+  --color-dark-800: #070302;
+  --color-dark-900: #040201;  
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: var(--color-light-200);
+  color: var(--color-dark-500);
+  margin: 0;
+  padding: 0;
+}
