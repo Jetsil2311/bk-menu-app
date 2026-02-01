@@ -152,6 +152,7 @@ export const products = [
     desc: 'Con Café',
     long_desc: 'Americano caliente.',
     price: 40,
+    flavors: ['Caramelo', 'Moka', 'Vainilla', 'Clásico'],
     image: '.jpeg'
   },
   {

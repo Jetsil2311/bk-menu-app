@@ -1,11 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
+import ReactDOM from "react-dom";
 const BASE_URL = import.meta.env.BASE_URL;
 
 export const MenuCard = ({ name, long_desc, desc, price, flavors, image, id, onAddToCart }) => {
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isFlavorsOpen, setIsFlavorsOpen] = useState(false);
+  const [dropUp, setDropUp] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0, width: 0 });
   const wrapperRef = useRef(null);
+  const imgRef = useRef(null);
+  const dropdownBtnRef = useRef(null);
   const cardInstanceId = useRef(`card-${id}-${Math.random().toString(36).slice(2)}`);
 
   // Close menus when clicking anywhere except inside the menus
@@ -39,15 +44,46 @@ export const MenuCard = ({ name, long_desc, desc, price, flavors, image, id, onA
     };
   }, [isInfoOpen, isFlavorsOpen]);
 
+  useLayoutEffect(() => {
+    if (!isFlavorsOpen || !dropdownBtnRef.current) return;
+
+    const measure = () => {
+      const rect = dropdownBtnRef.current.getBoundingClientRect();
+      const menuHeight = 260; // approx height for direction decision
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const shouldDropUp = spaceBelow < menuHeight;
+      setDropUp(shouldDropUp);
+
+      const top = shouldDropUp
+        ? Math.max(8, rect.top - menuHeight)
+        : rect.bottom;
+
+      setDropPos({
+        top: top + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    };
+
+    measure();
+    window.addEventListener("scroll", measure, true);
+    window.addEventListener("resize", measure);
+    return () => {
+      window.removeEventListener("scroll", measure, true);
+      window.removeEventListener("resize", measure);
+    };
+  }, [isFlavorsOpen]);
+
   const hasFlavors = Array.isArray(flavors) && flavors.length > 0;
 
   return (
     <li
       ref={wrapperRef}
-      className={`relative ${isInfoOpen || isFlavorsOpen ? "z-20" : "z-0"} w-full flex items-center gap-3 rounded-xl bg-light-200 px-4  py-4 text-main-800 shadow-[inset_1px_1px_5px_rgba(69,26,3,0.10)]`}
+      className={`relative overflow-visible ${isInfoOpen || isFlavorsOpen ? "z-[999]" : "z-0"} w-full flex items-center gap-3 rounded-xl bg-light-200 px-4  py-4 text-main-800 shadow-[inset_1px_1px_5px_rgba(69,26,3,0.10)]`}
     >
       <img
-        className="h-25 mr-5 ml-2 w-20 shrink-0 rounded-xl object-cover shadow-xl"
+        className="h-28 mr-5 ml-2 w-28 shrink-0 rounded-xl object-cover shadow-xl"
+        ref={imgRef}
         src={`${BASE_URL}products/${id}${image ?? ''}`}
         alt={name}
         loading="lazy"
@@ -79,9 +115,9 @@ export const MenuCard = ({ name, long_desc, desc, price, flavors, image, id, onA
             </button>
 
             {isInfoOpen && (
-              <div data-menu="popover" className="absolute left-0 top-10 z-30 w-72 rounded-xl border border-light-400/60 bg-light-200 p-3 text-sm text-main-800 shadow-xl">
+              <div data-menu="popover" className="absolute left-0 top-10 z-[1000] w-72 rounded-xl border border-light-400/60 bg-light-200 p-3 text-sm text-main-800 shadow-xl">
                 <p className="whitespace-pre-line">{long_desc ?? ''}</p>
-                <div className="mt-2 text-xs text-main-500">Click outside to close</div>
+                <div className="mt-2 text-xs text-main-500">Haz click afuera para cerrar</div>
               </div>
             )}
           </div>
@@ -92,7 +128,12 @@ export const MenuCard = ({ name, long_desc, desc, price, flavors, image, id, onA
               <button
                 type="button"
                 data-menu-btn
+                ref={dropdownBtnRef}
                 onClick={() => {
+                  // Announce this card is opening a menu so other cards close theirs
+                  document.dispatchEvent(
+                    new CustomEvent("bk-menu:open", { detail: { sourceId: cardInstanceId.current } })
+                  );
                   setIsFlavorsOpen((v) => !v);
                   setIsInfoOpen(false);
                 }}
@@ -103,31 +144,62 @@ export const MenuCard = ({ name, long_desc, desc, price, flavors, image, id, onA
                 <span className={`text-xs transition ${isFlavorsOpen ? "rotate-180" : ""}`}>▾</span>
               </button>
 
-              {isFlavorsOpen && (
-                <ul data-menu="dropdown" className="absolute left-0 top-10 z-30 w-56 overflow-hidden rounded-xl border border-light-400/60 bg-light-200 shadow-xl">
-                  {flavors.map((flavor, index) => (
-                    <li key={index}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onAddToCart?.({ id, name, price, option: flavor })
-                          setIsFlavorsOpen(false)
+              {isFlavorsOpen &&
+                ReactDOM.createPortal(
+                  <ul
+                    data-menu="dropdown"
+                    style={{
+                      position: "absolute",
+                      top: dropPos.top,
+                      left: dropPos.left,
+                      minWidth: 224,
+                      zIndex: 2147483647,
+                    }}
+                    className={`overflow-hidden rounded-xl border border-light-400/60 bg-light-200 shadow-xl`}
+                  >
+                    {flavors.map((flavor, index) => (
+                      <li key={index}>
+                        <button
+                          type="button"
+                        onClick={(e) => {
+                          const rect =
+                            imgRef.current?.getBoundingClientRect?.() ??
+                            e.currentTarget.getBoundingClientRect();
+                          const src =
+                            imgRef.current?.currentSrc || imgRef.current?.src || null;
+                          onAddToCart?.({
+                            id,
+                            name,
+                            price,
+                            option: flavor,
+                            fromRect: rect,
+                            flyImageSrc: src,
+                          });
+                          setIsFlavorsOpen(false);
                         }}
-                        className="w-full text-left px-3 py-2 text-sm text-main-800 hover:bg-light-400/40"
-                      >
-                        {flavor}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+                          className="w-full text-left px-3 py-2 text-sm text-main-800 hover:bg-light-400/40"
+                        >
+                          {flavor}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>,
+                  document.body
+                )}
             </div>
           )}
 
           {!hasFlavors && (
             <button
               type="button"
-              onClick={() => onAddToCart?.({ id, name, price })}
+              onClick={(e) => {
+                const rect =
+                  imgRef.current?.getBoundingClientRect?.() ??
+                  e.currentTarget.getBoundingClientRect();
+                const src =
+                  imgRef.current?.currentSrc || imgRef.current?.src || null;
+                onAddToCart?.({ id, name, price, fromRect: rect, flyImageSrc: src });
+              }}
               className="inline-flex h-8 items-center justify-center rounded-md text-main-600 transition hover:bg-light-400/40 focus:outline-none shadow-lg hover:shadow-md px-3"
             >
               Agregar a la cesta

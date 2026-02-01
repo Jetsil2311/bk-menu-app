@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Logo from '../assets/bklogo.svg'
 import { useLocation } from 'react-router'
 import { Navbar } from '../components/Navbar'
@@ -13,6 +13,65 @@ export const Home = () => {
   const [cart, setCart] = useState([])
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false)
+  const cartBtnRef = useRef(null)
+
+  const flyToCart = ({ fromRect, imgSrc }) => {
+    const target = cartBtnRef.current
+    if (!target || !fromRect) return
+
+    const toRect = target.getBoundingClientRect()
+
+    const el = imgSrc ? document.createElement('img') : document.createElement('div')
+
+    if (imgSrc) {
+      el.src = imgSrc
+      el.alt = ''
+      el.style.width = '46px'
+      el.style.height = '46px'
+      el.style.objectFit = 'cover'
+      el.style.borderRadius = '14px'
+      el.style.border = '1px solid rgba(255,255,255,0.35)'
+      el.style.background = 'rgba(255,255,255,0.08)'
+    } else {
+      el.style.width = '18px'
+      el.style.height = '18px'
+      el.style.borderRadius = '9999px'
+      el.style.background = 'rgba(255,255,255,0.95)'
+    }
+
+    el.style.position = 'fixed'
+    el.style.left = `${fromRect.left + fromRect.width / 2}px`
+    el.style.top = `${fromRect.top + fromRect.height / 2}px`
+    el.style.boxShadow = '0 14px 34px rgba(0,0,0,0.30)'
+    el.style.zIndex = '2147483647'
+    el.style.transform = 'translate(-50%, -50%) scale(1)'
+    el.style.transition = 'transform 900ms cubic-bezier(.2,.9,.2,1)'
+    el.style.pointerEvents = 'none'
+
+    document.body.appendChild(el)
+
+    const dx =
+      toRect.left + toRect.width / 2 - (fromRect.left + fromRect.width / 2)
+    const dy =
+      toRect.top + toRect.height / 2 - (fromRect.top + fromRect.height / 2)
+
+    requestAnimationFrame(() => {
+      el.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.28)`
+    })
+
+    const cleanup = () => {
+      el.removeEventListener('transitionend', cleanup)
+      el.remove()
+
+      target.classList.add('animate-[cartbump_450ms_ease-out]')
+      setTimeout(
+        () => target.classList.remove('animate-[cartbump_450ms_ease-out]'),
+        500
+      )
+    }
+
+    el.addEventListener('transitionend', cleanup)
+  }
 
   const cartCount = cart.reduce((sum, item) => sum + (item.qty || 0), 0)
   const cartTotal = cart.reduce(
@@ -33,7 +92,15 @@ export const Home = () => {
     setIsClearConfirmOpen(false)
   }
 
-  const addToCart = ({ id, name, price, option = null }) => {
+  const addToCart = ({
+    id,
+    name,
+    price,
+    option = null,
+    fromRect = null,
+    flyImageSrc = null,
+  }) => {
+    if (fromRect) flyToCart({ fromRect, imgSrc: flyImageSrc })
     setCart((prev) => {
       const key = getCartKey(id, option)
       const idx = prev.findIndex((it) => getCartKey(it.id, it.option) === key)
@@ -152,6 +219,13 @@ export const Home = () => {
   return (
     <>
       <Navbar />
+      <style>{`
+        @keyframes cartbump {
+          0% { transform: scale(1); }
+          35% { transform: scale(1.15); }
+          100% { transform: scale(1); }
+        }
+      `}</style>
 
       <div className="relative w-full h-80 sm:h-112 lg:h-[600px] overflow-hidden shadow-2xl shadow-black/30">
         {/* blurred layer */}
@@ -191,6 +265,7 @@ export const Home = () => {
       {/* Floating cart button (all screen sizes) */}
       <button
         type="button"
+        ref={cartBtnRef}
         onClick={() => setIsCartOpen((v) => !v)}
         className="fixed bottom-4 right-4 z-[70] inline-flex h-14 w-14 items-center justify-center rounded-full bg-main-600 text-light-200 shadow-2xl transition hover:bg-main-700 hover:text-light-400 focus:outline-none focus:ring-2 focus:ring-light-400/60"
         aria-label={isCartOpen ? 'Cerrar carrito' : 'Abrir carrito'}
