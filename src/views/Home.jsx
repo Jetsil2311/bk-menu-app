@@ -8,11 +8,12 @@ import { sections } from '../assets/sections.js'
 
 export const Home = () => {
   const location = useLocation()
-  const WHATSAPP_NUMBER = '7207487599'
+  const WHATSAPP_NUMBER = '5574182443'
 
   const [cart, setCart] = useState([])
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false)
+  const [orderNotes, setOrderNotes] = useState('')
   const cartBtnRef = useRef(null)
 
   const flyToCart = ({ fromRect, imgSrc }) => {
@@ -89,6 +90,7 @@ export const Home = () => {
   const getCartKey = (id, option) => `${id}::${option ?? ''}`
   const clearCart = () => {
     setCart([])
+    setOrderNotes('')
     setIsClearConfirmOpen(false)
   }
 
@@ -144,6 +146,7 @@ export const Home = () => {
   }
 
   const buildOrderMessage = () => {
+    const notes = orderNotes.trim()
     const lines = [
       'Pedido BK Menu',
       '',
@@ -160,6 +163,10 @@ export const Home = () => {
       '',
       `Total: ${formatMoney(cartTotal)}`,
     ]
+
+    if (notes) {
+      lines.push('', `Notas: ${notes}`)
+    }
 
     return lines.join('\n')
   }
@@ -372,6 +379,21 @@ export const Home = () => {
                     </li>
                   ))}
                 </ul>
+
+                <label className="mt-4 block text-sm text-light-200/80">
+                  Notas para tu pedido
+                  <textarea
+                    value={orderNotes}
+                    onChange={(e) => setOrderNotes(e.target.value)}
+                    rows={3}
+                    maxLength={240}
+                    placeholder="Ej. sin cebolla, salsa aparte..."
+                    className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-light-100 placeholder:text-light-200/40 focus:outline-none focus:ring-2 focus:ring-light-400/40"
+                  />
+                  <span className="mt-1 block text-xs text-light-200/50">
+                    {orderNotes.length}/240
+                  </span>
+                </label>
 
                 <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4 text-sm">
                   <span className="text-light-200/80">Total a pagar</span>

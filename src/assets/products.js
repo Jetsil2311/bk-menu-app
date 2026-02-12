@@ -157,12 +157,19 @@ export const products = [
   },
   {
     id: 10,
-    name: 'Heart-Cakes',
+    name: 'Heart-Cakes 15pz',
     section: 'Panadería',
     desc: 'Mini hotcakes',
     long_desc: 'Heart-Cakes (mini hotcakes) en forma de corazón',
-    flavors: ['15pz', '25pz'],
     price: 40,
+    image: '.jpeg'
+  },
+  {
+    id: 15,
+    name: 'Heart-Cakes 25pz',
+    section: 'Panadería',
+    desc: 'Mini hotcakes',
+    price: 60,
     image: '.jpeg'
   },
   {
