@@ -3,7 +3,18 @@ import PropTypes from "prop-types";
 import ReactDOM from "react-dom";
 const BASE_URL = import.meta.env.BASE_URL;
 
-export const MenuCard = ({ name, long_desc, desc, price, flavors, image, id, onAddToCart }) => {
+export const MenuCard = ({
+  name,
+  long_desc,
+  desc,
+  price,
+  flavors,
+  image,
+  imageUrl,
+  id,
+  isActive = true,
+  onAddToCart,
+}) => {
   const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [isFlavorsOpen, setIsFlavorsOpen] = useState(false);
   const [dropUp, setDropUp] = useState(false);
@@ -75,16 +86,17 @@ export const MenuCard = ({ name, long_desc, desc, price, flavors, image, id, onA
   }, [isFlavorsOpen]);
 
   const hasFlavors = Array.isArray(flavors) && flavors.length > 0;
+  const isDisabled = isActive === false;
 
   return (
     <li
       ref={wrapperRef}
-      className={`relative overflow-visible ${isInfoOpen || isFlavorsOpen ? "z-[999]" : "z-0"} w-full flex items-center gap-3 rounded-xl bg-light-200 px-4  py-4 text-main-800 shadow-[inset_1px_1px_5px_rgba(69,26,3,0.10)]`}
+      className={`relative overflow-visible ${isInfoOpen || isFlavorsOpen ? "z-[999]" : "z-0"} w-full flex items-center gap-3 rounded-xl bg-light-200 px-4  py-4 text-main-800 shadow-[inset_1px_1px_5px_rgba(69,26,3,0.10)] ${isDisabled ? "opacity-75" : ""}`}
     >
       <img
         className="h-28 mr-5 ml-2 w-28 shrink-0 rounded-xl object-cover shadow-xl"
         ref={imgRef}
-        src={`${BASE_URL}products/${id}${image ?? ''}`}
+        src={imageUrl || `${BASE_URL}products/${id}${image ?? ''}`}
         alt={name}
         loading="lazy"
       />
@@ -134,13 +146,16 @@ export const MenuCard = ({ name, long_desc, desc, price, flavors, image, id, onA
                   document.dispatchEvent(
                     new CustomEvent("bk-menu:open", { detail: { sourceId: cardInstanceId.current } })
                   );
-                  setIsFlavorsOpen((v) => !v);
-                  setIsInfoOpen(false);
+                  if (!isDisabled) {
+                    setIsFlavorsOpen((v) => !v);
+                    setIsInfoOpen(false);
+                  }
                 }}
-                className="inline-flex h-8 items-center justify-center gap-2 rounded-md text-main-600 transition hover:bg-light-400/40 focus:outline-none shadow-lg hover:shadow-md px-3"
+                disabled={isDisabled}
+                className={`inline-flex h-8 items-center justify-center gap-2 rounded-md text-main-600 transition hover:bg-light-400/40 focus:outline-none shadow-lg hover:shadow-md px-3 ${isDisabled ? "cursor-not-allowed opacity-60" : ""}`}
                 aria-expanded={isFlavorsOpen}
               >
-                Agregar a la cesta
+                {isDisabled ? "Agotado" : "Agregar a la cesta"}
                 <span className={`text-xs transition ${isFlavorsOpen ? "rotate-180" : ""}`}>▾</span>
               </button>
 
@@ -193,6 +208,7 @@ export const MenuCard = ({ name, long_desc, desc, price, flavors, image, id, onA
             <button
               type="button"
               onClick={(e) => {
+                if (isDisabled) return;
                 const rect =
                   imgRef.current?.getBoundingClientRect?.() ??
                   e.currentTarget.getBoundingClientRect();
@@ -200,9 +216,10 @@ export const MenuCard = ({ name, long_desc, desc, price, flavors, image, id, onA
                   imgRef.current?.currentSrc || imgRef.current?.src || null;
                 onAddToCart?.({ id, name, price, fromRect: rect, flyImageSrc: src });
               }}
-              className="inline-flex h-8 items-center justify-center rounded-md text-main-600 transition hover:bg-light-400/40 focus:outline-none shadow-lg hover:shadow-md px-3"
+              disabled={isDisabled}
+              className={`inline-flex h-8 items-center justify-center rounded-md text-main-600 transition hover:bg-light-400/40 focus:outline-none shadow-lg hover:shadow-md px-3 ${isDisabled ? "cursor-not-allowed opacity-60" : ""}`}
             >
-              Agregar a la cesta
+              {isDisabled ? "Agotado" : "Agregar a la cesta"}
             </button>
           )}
         </div>
@@ -218,6 +235,8 @@ MenuCard.propTypes = {
   price: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
   flavors: PropTypes.arrayOf(PropTypes.string),
   image: PropTypes.string,
+  imageUrl: PropTypes.string,
+  isActive: PropTypes.bool,
   id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
   onAddToCart: PropTypes.func,
 };

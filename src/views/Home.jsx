@@ -3,97 +3,46 @@ import Logo from '../assets/bklogo.svg'
 import { useLocation } from 'react-router'
 import { Navbar } from '../components/Navbar'
 import Banner from '../assets/Banner.jpeg'
-import { MenuSection } from '../components/MenuSection'
-import { sections } from '../assets/sections.js'
+import { CartButton } from '../components/CartButton'
+import { CartOverlay } from '../components/CartOverlay'
+import { PromoBanner } from '../components/PromoBanner'
+import { SectionsList } from '../components/SectionsList'
+import { addDoc, collection, getDocs, orderBy, query, serverTimestamp, writeBatch } from 'firebase/firestore'
+import { usePromotion } from '../hooks/usePromotion'
+import { useSections } from '../hooks/useSections'
+import { flyToCart, formatMoney, getCartKey } from '../utils/cart'
+import { db } from '../firebase'
 
 export const Home = () => {
   const location = useLocation()
+  // Phone number used to generate WhatsApp order links.
   const WHATSAPP_NUMBER = '5574182443'
 
+  // Cart + overlay state.
   const [cart, setCart] = useState([])
   const [isCartOpen, setIsCartOpen] = useState(false)
-  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false)
   const [orderNotes, setOrderNotes] = useState('')
+  // Sections are fetched from Firestore via a dedicated hook.
+  const { sections, isLoading: sectionsLoading, error: sectionsError } = useSections()
+  const { promotion } = usePromotion()
+  // Ref used by the "fly to cart" animation.
   const cartBtnRef = useRef(null)
+  const [isPromoVisible, setIsPromoVisible] = useState(true)
 
-  const flyToCart = ({ fromRect, imgSrc }) => {
-    const target = cartBtnRef.current
-    if (!target || !fromRect) return
-
-    const toRect = target.getBoundingClientRect()
-
-    const el = imgSrc ? document.createElement('img') : document.createElement('div')
-
-    if (imgSrc) {
-      el.src = imgSrc
-      el.alt = ''
-      el.style.width = '46px'
-      el.style.height = '46px'
-      el.style.objectFit = 'cover'
-      el.style.borderRadius = '14px'
-      el.style.border = '1px solid rgba(255,255,255,0.35)'
-      el.style.background = 'rgba(255,255,255,0.08)'
-    } else {
-      el.style.width = '18px'
-      el.style.height = '18px'
-      el.style.borderRadius = '9999px'
-      el.style.background = 'rgba(255,255,255,0.95)'
-    }
-
-    el.style.position = 'fixed'
-    el.style.left = `${fromRect.left + fromRect.width / 2}px`
-    el.style.top = `${fromRect.top + fromRect.height / 2}px`
-    el.style.boxShadow = '0 14px 34px rgba(0,0,0,0.30)'
-    el.style.zIndex = '2147483647'
-    el.style.transform = 'translate(-50%, -50%) scale(1)'
-    el.style.transition = 'transform 900ms cubic-bezier(.2,.9,.2,1)'
-    el.style.pointerEvents = 'none'
-
-    document.body.appendChild(el)
-
-    const dx =
-      toRect.left + toRect.width / 2 - (fromRect.left + fromRect.width / 2)
-    const dy =
-      toRect.top + toRect.height / 2 - (fromRect.top + fromRect.height / 2)
-
-    requestAnimationFrame(() => {
-      el.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.28)`
-    })
-
-    const cleanup = () => {
-      el.removeEventListener('transitionend', cleanup)
-      el.remove()
-
-      target.classList.add('animate-[cartbump_450ms_ease-out]')
-      setTimeout(
-        () => target.classList.remove('animate-[cartbump_450ms_ease-out]'),
-        500
-      )
-    }
-
-    el.addEventListener('transitionend', cleanup)
-  }
-
+  // Derived cart metrics used in multiple UI spots.
   const cartCount = cart.reduce((sum, item) => sum + (item.qty || 0), 0)
   const cartTotal = cart.reduce(
     (sum, item) => sum + Number(item.price || 0) * (item.qty || 0),
     0
   )
 
-  const formatMoney = (value) =>
-    new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN',
-      maximumFractionDigits: 2,
-    }).format(value)
-
-  const getCartKey = (id, option) => `${id}::${option ?? ''}`
+  // Resets the cart + notes.
   const clearCart = () => {
     setCart([])
     setOrderNotes('')
-    setIsClearConfirmOpen(false)
   }
 
+  // Adds a new item or increments an existing one.
   const addToCart = ({
     id,
     name,
@@ -102,7 +51,9 @@ export const Home = () => {
     fromRect = null,
     flyImageSrc = null,
   }) => {
-    if (fromRect) flyToCart({ fromRect, imgSrc: flyImageSrc })
+    if (fromRect) {
+      flyToCart({ fromRect, imgSrc: flyImageSrc, target: cartBtnRef.current })
+    }
     setCart((prev) => {
       const key = getCartKey(id, option)
       const idx = prev.findIndex((it) => getCartKey(it.id, it.option) === key)
@@ -127,6 +78,7 @@ export const Home = () => {
     })
   }
 
+  // Adjust quantity by delta; removes the item when it hits 0.
   const changeQty = (id, option, delta) => {
     setCart((prev) => {
       const key = getCartKey(id, option)
@@ -145,6 +97,7 @@ export const Home = () => {
     })
   }
 
+  // Builds the WhatsApp order summary.
   const buildOrderMessage = () => {
     const notes = orderNotes.trim()
     const lines = [
@@ -171,16 +124,49 @@ export const Home = () => {
     return lines.join('\n')
   }
 
+  // Sends the order via WhatsApp.
   const handleWhatsAppOrder = () => {
     if (cart.length === 0) return
     const message = buildOrderMessage()
+    saveOrderSnapshot(message, cartTotal)
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
       message
     )}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
-  // Scroll reveal
+  // Stores the order text in Firestore and keeps only the latest 50.
+  const saveOrderSnapshot = async (message, total) => {
+    try {
+      const orderId = `BK-${Date.now().toString(36).toUpperCase()}-${Math.random()
+        .toString(36)
+        .slice(2, 6)
+        .toUpperCase()}`
+      await addDoc(collection(db, 'orders'), {
+        orderId,
+        content: message,
+        total: Number(total || 0),
+        createdAt: serverTimestamp(),
+      })
+
+      const snapshot = await getDocs(
+        query(collection(db, 'orders'), orderBy('createdAt', 'asc'))
+      )
+
+      if (snapshot.size > 50) {
+        const batch = writeBatch(db)
+        const excess = snapshot.size - 50
+        snapshot.docs.slice(0, excess).forEach((docSnap) => {
+          batch.delete(docSnap.ref)
+        })
+        await batch.commit()
+      }
+    } catch (error) {
+      console.error('Failed to save order snapshot:', error)
+    }
+  }
+
+  // Scroll reveal for sections.
   useEffect(() => {
     const els = Array.from(document.querySelectorAll('[data-reveal]'))
     if (!els.length) return
@@ -202,30 +188,25 @@ export const Home = () => {
     els.forEach((el) => observer.observe(el))
 
     return () => observer.disconnect()
-  }, [location.pathname])
+  }, [location.pathname, sections.length])
 
-  // Cart overlay: lock scroll + Esc to close
+  // Reset promo visibility when a new promotion arrives.
   useEffect(() => {
-    if (!isCartOpen) return
-
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') setIsCartOpen(false)
+    if (promotion) {
+      setIsPromoVisible(true)
     }
-
-    window.addEventListener('keydown', onKeyDown)
-
-    return () => {
-      document.body.style.overflow = prevOverflow
-      window.removeEventListener('keydown', onKeyDown)
-    }
-  }, [isCartOpen])
+  }, [promotion?.id])
 
   return (
     <>
       <Navbar />
+      {promotion && isPromoVisible && (
+        <PromoBanner
+          title={promotion.title || 'Nueva promoción'}
+          message={promotion.message || ''}
+          onClose={() => setIsPromoVisible(false)}
+        />
+      )}
       <style>{`
         @keyframes cartbump {
           0% { transform: scale(1); }
@@ -251,226 +232,38 @@ export const Home = () => {
         </div>
       </div>
 
-      {/* Sections */}
+      {/* Sections list */}
       <div className="mb-50">
-        {sections.map((section, idx) =>
-          (`/${section.category.toLowerCase()}` === location.pathname || location.pathname === '/') ? (
-            <div
-              key={section.id}
-              data-reveal
-              style={{ transitionDelay: `${Math.min(idx * 60, 240)}ms` }}
-              className="opacity-0 translate-y-6 transition-all duration-700 ease-out will-change-transform"
-            >
-              <MenuSection desc={section.desc} onAddToCart={addToCart}>
-                {section.name}
-              </MenuSection>
-            </div>
-          ) : null
-        )}
+        <SectionsList
+          isLoading={sectionsLoading}
+          error={sectionsError}
+          sections={sections}
+          pathname={location.pathname}
+          onAddToCart={addToCart}
+        />
       </div>
 
       {/* Floating cart button (all screen sizes) */}
-      <button
-        type="button"
+      <CartButton
         ref={cartBtnRef}
+        isOpen={isCartOpen}
+        count={cartCount}
         onClick={() => setIsCartOpen((v) => !v)}
-        className="fixed bottom-4 right-4 z-[70] inline-flex h-14 w-14 items-center justify-center rounded-full bg-main-600 text-light-200 shadow-2xl transition hover:bg-main-700 hover:text-light-400 focus:outline-none focus:ring-2 focus:ring-light-400/60"
-        aria-label={isCartOpen ? 'Cerrar carrito' : 'Abrir carrito'}
-        aria-expanded={isCartOpen}
-      >
-        <i className={isCartOpen ? 'fas fa-xmark fa-xl' : 'fas fa-cart-shopping fa-xl'} />
+      />
 
-        {/* Badge */}
-        {cartCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center shadow-lg">
-            {cartCount}
-          </span>
-        )}
-      </button>
-
-      {/* Cart bubble overlay (independent from navbar/burger) */}
-      <div
-        className={
-          'fixed inset-0 z-[60] ' +
-          (isCartOpen ? 'pointer-events-auto' : 'pointer-events-none')
-        }
-        aria-hidden={!isCartOpen}
-        onClick={() => setIsCartOpen(false)}
-      >
-        {/* Expanding circle background */}
-        <div
-          className={
-            'fixed bottom-4 right-4 h-14 w-14 rounded-full bg-main-700 transition-transform duration-500 ease-in-out ' +
-            (isCartOpen ? 'scale-[50]' : 'scale-0')
-          }
-        />
-
-        {/* Content (stop propagation so clicking inside doesn't close) */}
-        <div
-          className={
-            'fixed inset-0 flex flex-col items-center justify-center gap-4 px-8 transition-opacity duration-300 ' +
-            (isCartOpen ? 'opacity-100' : 'opacity-0')
-          }
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="text-center">
-            <div className="text-3xl font-bold text-light-200">Tu carrito</div>
-            <div className="mt-2 text-sm text-light-200/70">
-              {cartCount > 0
-                ? `Tienes ${cartCount} artículo${cartCount === 1 ? '' : 's'}.`
-                : 'Aún no agregas productos.'}
-            </div>
-          </div>
-
-          <div className="mt-4 w-full max-w-md rounded-2xl bg-white/10 p-5 text-light-200">
-            {cartCount === 0 ? (
-              <div className="text-sm text-light-200/80">🧺 Carrito vacío</div>
-            ) : (
-              <>
-                <ul className="max-h-64 overflow-auto pr-1 space-y-3">
-                  {cart.map((item) => (
-                    <li
-                      key={item.cartItemId}
-                      className="flex items-start justify-between gap-3 rounded-xl bg-white/10 p-3"
-                    >
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-light-100">
-                          {item.name}
-                        </div>
-                        {item.option && (
-                          <div className="mt-1 text-xs text-light-200/70">
-                            {item.option}
-                          </div>
-                        )}
-                        <div className="mt-2 text-xs text-light-200/70">
-                          {formatMoney(Number(item.price || 0))} c/u
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="text-sm font-semibold text-light-100">
-                          {formatMoney(
-                            Number(item.price || 0) * (item.qty || 0)
-                          )}
-                        </div>
-
-                        <div className="inline-flex items-center gap-2 rounded-full bg-black/20 px-2 py-1">
-                          <button
-                            type="button"
-                            onClick={() => changeQty(item.id, item.option, -1)}
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-light-200 hover:bg-white/20"
-                            aria-label={`Quitar ${item.name}`}
-                          >
-                            -
-                          </button>
-                          <span className="text-sm font-semibold text-light-100 min-w-[18px] text-center">
-                            {item.qty || 0}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => changeQty(item.id, item.option, 1)}
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-light-200 hover:bg-white/20"
-                            aria-label={`Agregar ${item.name}`}
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-
-                <label className="mt-4 block text-sm text-light-200/80">
-                  Notas para tu pedido
-                  <textarea
-                    value={orderNotes}
-                    onChange={(e) => setOrderNotes(e.target.value)}
-                    rows={3}
-                    maxLength={240}
-                    placeholder="Ej. sin cebolla, salsa aparte..."
-                    className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-light-100 placeholder:text-light-200/40 focus:outline-none focus:ring-2 focus:ring-light-400/40"
-                  />
-                  <span className="mt-1 block text-xs text-light-200/50">
-                    {orderNotes.length}/240
-                  </span>
-                </label>
-
-                <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4 text-sm">
-                  <span className="text-light-200/80">Total a pagar</span>
-                  <span className="text-base font-semibold text-light-100">
-                    {formatMoney(cartTotal)}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleWhatsAppOrder}
-                  disabled={cartCount === 0}
-                  className="mt-4 w-full rounded-xl bg-main-700 px-4 py-2 text-sm font-semibold text-light-100 transition hover:bg-main-800"
-                >
-                  Realizar pedido
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsClearConfirmOpen(true)}
-                  className="mt-2 w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-light-100 transition hover:bg-white/20"
-                >
-                  Limpiar carrito
-                </button>
-              </>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setIsCartOpen(false)}
-            className="mt-2 text-sm text-light-200/70 underline underline-offset-4 hover:text-light-200"
-          >
-            Cerrar
-          </button>
-        </div>
-      </div>
-
-      {/* Clear cart confirmation */}
-      {isClearConfirmOpen && (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center px-6"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Confirmar limpiar carrito"
-          onClick={() => setIsClearConfirmOpen(false)}
-        >
-          <div className="absolute inset-0 bg-black/60" />
-
-          <div
-            className="relative w-full max-w-sm rounded-2xl bg-light-200 p-6 text-main-800 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="text-lg font-semibold">¿Limpiar carrito?</div>
-            <p className="mt-2 text-sm text-main-600">
-              Se eliminarán todos los productos agregados.
-            </p>
-
-            <div className="mt-5 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setIsClearConfirmOpen(false)}
-                className="rounded-lg border border-main-300 px-3 py-2 text-sm text-main-700 hover:bg-main-100"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={clearCart}
-                className="rounded-lg bg-main-700 px-3 py-2 text-sm font-semibold text-light-100 hover:bg-main-800"
-              >
-                Sí, limpiar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Cart overlay (separate component to keep Home lean). */}
+      <CartOverlay
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        cart={cart}
+        cartCount={cartCount}
+        cartTotal={cartTotal}
+        orderNotes={orderNotes}
+        setOrderNotes={setOrderNotes}
+        onChangeQty={changeQty}
+        onOrder={handleWhatsAppOrder}
+        onClearCart={clearCart}
+      />
     </>
   )
 }
