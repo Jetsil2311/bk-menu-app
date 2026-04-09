@@ -54,6 +54,7 @@ export const SectionsList = ({
         `/${section.category?.toLowerCase?.()}` === pathname || pathname === '/' ? (
           <div
             key={section.docId ?? section.id}
+            id={`section-${section.name}`}
             data-reveal
             style={{ transitionDelay: `${Math.min(idx * 60, 240)}ms` }}
             className="opacity-0 translate-y-6 transition-all duration-700 ease-out will-change-transform"

@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react'
-import Logo from '../assets/bklogo.svg'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import { Navbar } from '../components/Navbar'
-import Banner from '../assets/Banner.jpeg'
+import { PromoCarousel } from '../components/PromoCarousel'
 import { CartButton } from '../components/CartButton'
 import { CartOverlay } from '../components/CartOverlay'
 import { PromoBanner } from '../components/PromoBanner'
@@ -215,22 +214,7 @@ export const Home = () => {
         }
       `}</style>
 
-      <div className="relative w-full h-80 sm:h-112 lg:h-[600px] overflow-hidden shadow-2xl shadow-black/30">
-        {/* blurred layer */}
-        <img
-          src={Banner}
-          alt="Banner"
-          className="absolute inset-0 w-full h-full object-cover brightness-45 blur-sm scale-110"
-        />
-
-        {/* inner bottom shadow for text */}
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-        {/* Small screens: centered. sm+: bottom-left */}
-        <div className="relative z-10 flex h-full w-full items-center justify-center sm:items-end sm:justify-start pl-0 sm:pl-20 pb-0 sm:pb-20">
-          <img src={Logo} alt="BK Logo" className="h-20 sm:h-30" />
-        </div>
-      </div>
+      <PromoCarousel onAddToCart={addToCart} />
 
       {/* Sections list */}
       <div className="mb-50">

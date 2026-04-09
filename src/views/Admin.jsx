@@ -13,14 +13,15 @@ import {
   doc,
   deleteDoc,
   getDocs,
+  orderBy,
   query,
   serverTimestamp,
   updateDoc,
   where,
   writeBatch,
 } from 'firebase/firestore'
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
-import { auth, db, storage } from '../firebase'
+import { auth, db } from '../firebase'
+import { uploadToCloudinary } from '../utils/cloudinary'
 
 export const Admin = () => {
   // Simple allowlist for admin access.
@@ -84,6 +85,29 @@ export const Admin = () => {
   const [activePromos, setActivePromos] = useState([])
   const [promoListLoading, setPromoListLoading] = useState(false)
   const [promoListError, setPromoListError] = useState('')
+  // Carousel state.
+  const [isCarouselOpen, setIsCarouselOpen] = useState(false)
+  const [carouselSlides, setCarouselSlides] = useState([])
+  const [carouselLoading, setCarouselLoading] = useState(false)
+  const [carouselError, setCarouselError] = useState('')
+  const [carouselSuccess, setCarouselSuccess] = useState('')
+  // New-slide form fields
+  const [carouselAltText, setCarouselAltText] = useState('')
+  const [carouselLinkType, setCarouselLinkType] = useState('product')
+  const [carouselLinkedId, setCarouselLinkedId] = useState('')
+  const [carouselOrder, setCarouselOrder] = useState('')
+  const [carouselActive, setCarouselActive] = useState(true)
+  const [carouselImageFile, setCarouselImageFile] = useState(null)
+  // Linked-item lists for dropdown
+  const [carouselProducts, setCarouselProducts] = useState([])
+  const [carouselCombos, setCarouselCombos] = useState([])
+  const [carouselItemsLoading, setCarouselItemsLoading] = useState(false)
+  // Drag-and-drop
+  const dragSlideIdxRef = React.useRef(null)
+  // Edit / delete
+  const [editingSlide, setEditingSlide] = useState(null)
+  const [editingSlideImageFile, setEditingSlideImageFile] = useState(null)
+  const [deleteSlideTarget, setDeleteSlideTarget] = useState(null)
 
   const googleProvider = useMemo(() => new GoogleAuthProvider(), [])
 
@@ -479,14 +503,10 @@ export const Admin = () => {
       })
 
       if (editingImageFile) {
-        const storageRef = ref(storage, `products/${item.docId}`)
-        await uploadBytes(storageRef, editingImageFile)
-        const downloadUrl = await getDownloadURL(storageRef)
-        await updateDoc(doc(db, 'products', item.docId), {
-          imageUrl: downloadUrl,
-        })
+        const { url: imageUrl } = await uploadToCloudinary(editingImageFile, 'products')
+        await updateDoc(doc(db, 'products', item.docId), { imageUrl })
         setEditingImageFile(null)
-        item.imageUrl = downloadUrl
+        item.imageUrl = imageUrl
       }
       setMenuItems((prev) =>
         prev.map((entry) => (entry.docId === item.docId ? { ...entry, ...item } : entry))
@@ -540,6 +560,160 @@ export const Admin = () => {
     }
   }
 
+  // Carousel handlers.
+  const loadCarouselSlides = async () => {
+    setCarouselLoading(true)
+    setCarouselError('')
+    try {
+      const snapshot = await getDocs(
+        query(collection(db, 'carousel'), orderBy('order', 'asc'))
+      )
+      setCarouselSlides(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })))
+    } catch {
+      setCarouselError('No se pudo cargar el carrusel.')
+    } finally {
+      setCarouselLoading(false)
+    }
+  }
+
+  const loadCarouselLinkedItems = async () => {
+    setCarouselItemsLoading(true)
+    try {
+      const [prodSnap, comboSnap] = await Promise.all([
+        getDocs(collection(db, 'products')),
+        getDocs(collection(db, 'combos')).catch(() => ({ docs: [] })),
+      ])
+      setCarouselProducts(
+        prodSnap.docs.map((d) => ({ docId: d.id, name: d.data().name ?? d.id }))
+      )
+      setCarouselCombos(
+        comboSnap.docs.map((d) => ({ docId: d.id, name: d.data().name ?? d.id }))
+      )
+    } catch {
+      // non-fatal
+    } finally {
+      setCarouselItemsLoading(false)
+    }
+  }
+
+  const handleAddCarouselSlide = async (event) => {
+    event.preventDefault()
+    setCarouselError('')
+    setCarouselSuccess('')
+    if (!carouselImageFile) {
+      setCarouselError('Selecciona una imagen.')
+      return
+    }
+    if (!carouselLinkedId) {
+      setCarouselError('Selecciona un producto o combo vinculado.')
+      return
+    }
+    setIsSubmitting(true)
+    try {
+      const { url, publicId } = await uploadToCloudinary(carouselImageFile, 'carousel')
+      await addDoc(collection(db, 'carousel'), {
+        imageUrl:  url,
+        publicId:  publicId,
+        altText:   carouselAltText.trim(),
+        linkType:  carouselLinkType,
+        linkedId:  carouselLinkedId,
+        order:     carouselOrder === '' ? 0 : Number(carouselOrder),
+        active:    carouselActive,
+        createdAt: serverTimestamp(),
+      })
+      setCarouselAltText('')
+      setCarouselLinkType('product')
+      setCarouselLinkedId('')
+      setCarouselOrder('')
+      setCarouselActive(true)
+      setCarouselImageFile(null)
+      setCarouselSuccess('Diapositiva guardada.')
+      loadCarouselSlides()
+    } catch {
+      setCarouselError('No se pudo guardar la diapositiva.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSaveCarouselSlide = async (slide) => {
+    if (!slide?.id) return
+    setCarouselLoading(true)
+    setCarouselError('')
+    try {
+      const updates = {
+        altText:  slide.altText?.trim()  ?? '',
+        linkType: slide.linkType         ?? 'product',
+        linkedId: slide.linkedId         ?? '',
+        order:    slide.order === '' ? 0 : Number(slide.order),
+        active:   slide.active           ?? true,
+      }
+      if (editingSlideImageFile) {
+        const { url, publicId } = await uploadToCloudinary(editingSlideImageFile, 'carousel')
+        updates.imageUrl = url
+        updates.publicId = publicId
+        setEditingSlideImageFile(null)
+      }
+      await updateDoc(doc(db, 'carousel', slide.id), updates)
+      setCarouselSlides((prev) =>
+        prev.map((s) => (s.id === slide.id ? { ...s, ...updates } : s))
+      )
+      setEditingSlide(null)
+    } catch {
+      setCarouselError('No se pudo actualizar la diapositiva.')
+    } finally {
+      setCarouselLoading(false)
+    }
+  }
+
+  const handleToggleSlideActive = async (slide) => {
+    const next = !slide.active
+    try {
+      await updateDoc(doc(db, 'carousel', slide.id), { active: next })
+      setCarouselSlides((prev) =>
+        prev.map((s) => (s.id === slide.id ? { ...s, active: next } : s))
+      )
+    } catch {
+      setCarouselError('No se pudo actualizar la diapositiva.')
+    }
+  }
+
+  const handleDeleteCarouselSlide = async (slide) => {
+    if (!slide?.id) return
+    setCarouselLoading(true)
+    setCarouselError('')
+    try {
+      await deleteDoc(doc(db, 'carousel', slide.id))
+      // Note: Cloudinary deletion requires server-side signed API; publicId is
+      // stored in Firestore for future server-side cleanup if needed.
+      setCarouselSlides((prev) => prev.filter((s) => s.id !== slide.id))
+      setDeleteSlideTarget(null)
+    } catch {
+      setCarouselError('No se pudo eliminar la diapositiva.')
+    } finally {
+      setCarouselLoading(false)
+    }
+  }
+
+  const handleSlideReorder = async (fromIdx, toIdx) => {
+    if (fromIdx === toIdx) return
+    const reordered = [...carouselSlides]
+    const [moved] = reordered.splice(fromIdx, 1)
+    reordered.splice(toIdx, 0, moved)
+    const withOrder = reordered.map((s, i) => ({ ...s, order: i }))
+    setCarouselSlides(withOrder)
+    try {
+      const batch = writeBatch(db)
+      withOrder.forEach((s) => {
+        batch.update(doc(db, 'carousel', s.id), { order: s.order })
+      })
+      await batch.commit()
+    } catch {
+      setCarouselError('No se pudo reordenar las diapositivas.')
+      loadCarouselSlides()
+    }
+  }
+
   // Keep the menu editor data fresh when opening it.
   useEffect(() => {
     if (isMenuEditOpen) {
@@ -553,6 +727,13 @@ export const Admin = () => {
       loadActivePromotions()
     }
   }, [isPromoFormOpen])
+
+  useEffect(() => {
+    if (isCarouselOpen) {
+      loadCarouselSlides()
+      loadCarouselLinkedItems()
+    }
+  }, [isCarouselOpen])
 
   useEffect(() => {
     if (isProductFormOpen && menuSections.length === 0) {
@@ -605,20 +786,8 @@ export const Admin = () => {
 
       if (productImageFile) {
         try {
-          const storageRef = ref(storage, `products/${productRef.id}`)
-          await withTimeout(uploadBytes(storageRef, productImageFile), 20000, 'upload')
-          const downloadUrl = await withTimeout(
-            getDownloadURL(storageRef),
-            10000,
-            'getDownloadURL'
-          )
-          await withTimeout(
-            updateDoc(doc(db, 'products', productRef.id), {
-              imageUrl: downloadUrl,
-            }),
-            10000,
-            'updateDoc'
-          )
+          const { url: imageUrl } = await uploadToCloudinary(productImageFile, 'products')
+          await updateDoc(doc(db, 'products', productRef.id), { imageUrl })
         } catch (uploadError) {
           console.error('Failed to upload product image:', uploadError)
           setError('Producto creado, pero la imagen no se pudo subir.')
@@ -872,18 +1041,21 @@ export const Admin = () => {
                       setIsSectionFormOpen(false)
                       setIsMenuEditOpen(false)
                       setIsPromoFormOpen(false)
+                      setIsCarouselOpen(false)
                     }
                     if (action === 'Actualizar menú') {
                       setIsMenuEditOpen((prev) => !prev)
                       setIsProductFormOpen(false)
                       setIsSectionFormOpen(false)
                       setIsPromoFormOpen(false)
+                      setIsCarouselOpen(false)
                     }
                     if (action === 'Programar promociones') {
                       setIsPromoFormOpen((prev) => !prev)
                       setIsProductFormOpen(false)
                       setIsSectionFormOpen(false)
                       setIsMenuEditOpen(false)
+                      setIsCarouselOpen(false)
                     }
                   }}
                   className="rounded-2xl border border-white/15 bg-main-900/60 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
@@ -892,17 +1064,31 @@ export const Admin = () => {
                 </button>
               ))}
             </div>
-            <div className="mt-4">
+            <div className="mt-4 grid gap-3">
               <button
                 type="button"
                 onClick={() => {
                   setIsSectionFormOpen((prev) => !prev)
                   setIsProductFormOpen(false)
                   setIsMenuEditOpen(false)
+                  setIsCarouselOpen(false)
                 }}
                 className="w-full rounded-2xl border border-white/15 bg-main-900/60 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
               >
                 {isSectionFormOpen ? 'Ocultar sección' : 'Agregar sección'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCarouselOpen((prev) => !prev)
+                  setIsProductFormOpen(false)
+                  setIsSectionFormOpen(false)
+                  setIsMenuEditOpen(false)
+                  setIsPromoFormOpen(false)
+                }}
+                className="w-full rounded-2xl border border-white/15 bg-main-900/60 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
+              >
+                {isCarouselOpen ? 'Ocultar carrusel' : 'Gestionar carrusel'}
               </button>
             </div>
           </div>
@@ -974,27 +1160,21 @@ export const Admin = () => {
                   required
                 />
               </label>
-            <label className="grid gap-2 text-sm">
-              Imagen (sufijo o ruta)
-              <input
-                type="text"
-                value={productImage}
-                onChange={(event) => setProductImage(event.target.value)}
-                className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
-                placeholder=".jpeg"
-              />
-            </label>
             <label className="grid gap-2 text-sm lg:col-span-2">
-              Imagen (archivo)
+              Imagen
               <input
                 type="file"
                 accept="image/*"
                 onChange={(event) => setProductImageFile(event.target.files?.[0] ?? null)}
                 className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
               />
-              <span className="text-xs text-light-200/60">
-                Si subes un archivo, se usará sobre el sufijo local.
-              </span>
+              {productImageFile && (
+                <img
+                  src={URL.createObjectURL(productImageFile)}
+                  alt="Vista previa"
+                  className="mt-1 h-32 w-32 rounded-2xl object-cover shadow-lg"
+                />
+              )}
             </label>
               <label className="grid gap-2 text-sm lg:col-span-2">
                 Sabores (separados por comas)
@@ -1201,6 +1381,348 @@ export const Admin = () => {
               )}
             </div>
           </section>
+        )}
+
+        {isCarouselOpen && (
+          <section className="mt-8 rounded-3xl border border-white/10 bg-main-800/60 p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold">Carrusel de promociones</h2>
+                <p className="mt-1 text-sm text-light-200/70">
+                  Las diapositivas activas aparecen en la pantalla de inicio. Arrastra para reordenar.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={loadCarouselSlides}
+                className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400"
+              >
+                Recargar
+              </button>
+            </div>
+
+            {/* ── Add slide form ─────────────────────────────────────── */}
+            <form
+              className="mt-6 rounded-2xl border border-white/10 bg-main-900/50 p-5 grid gap-4 lg:grid-cols-2"
+              onSubmit={handleAddCarouselSlide}
+            >
+              <h3 className="text-sm font-semibold text-light-200/80 lg:col-span-2">Nueva diapositiva</h3>
+
+              {/* Image upload */}
+              <label className="grid gap-2 text-sm lg:col-span-2">
+                Imagen (portrait, se adaptará a 9:16)
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setCarouselImageFile(e.target.files?.[0] ?? null)}
+                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  required
+                />
+              </label>
+
+              {/* Alt text */}
+              <label className="grid gap-2 text-sm">
+                Texto alternativo (accesibilidad)
+                <input
+                  type="text"
+                  value={carouselAltText}
+                  onChange={(e) => setCarouselAltText(e.target.value)}
+                  placeholder="Ej: Combo brunch de verano"
+                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                />
+              </label>
+
+              {/* Link type */}
+              <label className="grid gap-2 text-sm">
+                Tipo de vínculo
+                <select
+                  value={carouselLinkType}
+                  onChange={(e) => { setCarouselLinkType(e.target.value); setCarouselLinkedId('') }}
+                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                >
+                  <option value="product">Producto</option>
+                  <option value="combo">Combo</option>
+                </select>
+              </label>
+
+              {/* Linked item searchable select */}
+              <label className="grid gap-2 text-sm lg:col-span-2">
+                {carouselLinkType === 'product' ? 'Producto vinculado' : 'Combo vinculado'}
+                {carouselItemsLoading ? (
+                  <div className="h-12 rounded-2xl bg-main-900/50 animate-pulse" />
+                ) : (
+                  <select
+                    value={carouselLinkedId}
+                    onChange={(e) => setCarouselLinkedId(e.target.value)}
+                    required
+                    className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  >
+                    <option value="">— Selecciona —</option>
+                    {(carouselLinkType === 'product' ? carouselProducts : carouselCombos).map((item) => (
+                      <option key={item.docId} value={item.docId}>{item.name}</option>
+                    ))}
+                  </select>
+                )}
+              </label>
+
+              {/* Order + Active */}
+              <label className="grid gap-2 text-sm">
+                Orden de visualización
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={carouselOrder}
+                  onChange={(e) => setCarouselOrder(e.target.value)}
+                  placeholder="0"
+                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                />
+              </label>
+
+              <label className="flex items-center gap-3 text-sm cursor-pointer self-end pb-3">
+                <span className="text-light-200/80">Activa al crear</span>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={carouselActive}
+                  onClick={() => setCarouselActive((v) => !v)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${carouselActive ? 'bg-main-500' : 'bg-white/20'}`}
+                >
+                  <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${carouselActive ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </label>
+
+              {carouselError && (
+                <p className="rounded-2xl border border-red-300/20 bg-red-500/10 px-4 py-3 text-sm text-red-100 lg:col-span-2">
+                  {carouselError}
+                </p>
+              )}
+              {carouselSuccess && (
+                <p className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100 lg:col-span-2">
+                  {carouselSuccess}
+                </p>
+              )}
+
+              <div className="lg:col-span-2">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="rounded-2xl border border-white/20 bg-main-900/70 px-6 py-3 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSubmitting ? 'Subiendo…' : 'Agregar diapositiva'}
+                </button>
+              </div>
+            </form>
+
+            {/* ── Slides list (drag-to-reorder) ─────────────────────── */}
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold text-light-200/80">
+                Diapositivas ({carouselSlides.length})
+                {carouselSlides.length > 1 && (
+                  <span className="ml-2 font-normal text-light-200/50 text-xs">arrastra para reordenar</span>
+                )}
+              </h3>
+              {carouselLoading ? (
+                <div className="mt-3 grid gap-3">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <div key={i} className="h-20 rounded-2xl bg-main-900/50 animate-pulse" />
+                  ))}
+                </div>
+              ) : carouselSlides.length ? (
+                <div className="mt-3 grid gap-3">
+                  {carouselSlides.map((slide, idx) => (
+                    <div
+                      key={slide.id}
+                      draggable
+                      onDragStart={() => { dragSlideIdxRef.current = idx }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => handleSlideReorder(dragSlideIdxRef.current, idx)}
+                      className="cursor-grab active:cursor-grabbing"
+                    >
+                      {editingSlide?.id === slide.id ? (
+                        /* ── Edit form ── */
+                        <div className="rounded-2xl border border-white/15 bg-main-900/60 p-4 grid gap-3 lg:grid-cols-2">
+                          <label className="grid gap-1 text-xs lg:col-span-2">
+                            Nueva imagen (opcional)
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => setEditingSlideImageFile(e.target.files?.[0] ?? null)}
+                              className="rounded-xl border border-white/10 bg-main-900/70 px-3 py-2 text-light-200 outline-none"
+                            />
+                          </label>
+                          <label className="grid gap-1 text-xs">
+                            Texto alternativo
+                            <input
+                              type="text"
+                              value={editingSlide.altText ?? ''}
+                              onChange={(e) => setEditingSlide((p) => ({ ...p, altText: e.target.value }))}
+                              className="rounded-xl border border-white/10 bg-main-900/70 px-3 py-2 text-light-200 outline-none"
+                            />
+                          </label>
+                          <label className="grid gap-1 text-xs">
+                            Tipo de vínculo
+                            <select
+                              value={editingSlide.linkType ?? 'product'}
+                              onChange={(e) => setEditingSlide((p) => ({ ...p, linkType: e.target.value, linkedId: '' }))}
+                              className="rounded-xl border border-white/10 bg-main-900/70 px-3 py-2 text-light-200 outline-none"
+                            >
+                              <option value="product">Producto</option>
+                              <option value="combo">Combo</option>
+                            </select>
+                          </label>
+                          <label className="grid gap-1 text-xs lg:col-span-2">
+                            {editingSlide.linkType === 'combo' ? 'Combo vinculado' : 'Producto vinculado'}
+                            <select
+                              value={editingSlide.linkedId ?? ''}
+                              onChange={(e) => setEditingSlide((p) => ({ ...p, linkedId: e.target.value }))}
+                              className="rounded-xl border border-white/10 bg-main-900/70 px-3 py-2 text-light-200 outline-none"
+                            >
+                              <option value="">— Selecciona —</option>
+                              {(editingSlide.linkType === 'combo' ? carouselCombos : carouselProducts).map((item) => (
+                                <option key={item.docId} value={item.docId}>{item.name}</option>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="grid gap-1 text-xs">
+                            Orden
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={editingSlide.order ?? 0}
+                              onChange={(e) => setEditingSlide((p) => ({ ...p, order: e.target.value }))}
+                              className="rounded-xl border border-white/10 bg-main-900/70 px-3 py-2 text-light-200 outline-none"
+                            />
+                          </label>
+                          <label className="flex items-center gap-3 text-xs cursor-pointer self-end pb-1">
+                            <span className="text-light-200/70">Activa</span>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={editingSlide.active ?? true}
+                              onClick={() => setEditingSlide((p) => ({ ...p, active: !(p.active ?? true) }))}
+                              className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${(editingSlide.active ?? true) ? 'bg-main-500' : 'bg-white/20'}`}
+                            >
+                              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${(editingSlide.active ?? true) ? 'translate-x-[18px]' : 'translate-x-1'}`} />
+                            </button>
+                          </label>
+                          <div className="lg:col-span-2 flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSaveCarouselSlide(editingSlide)}
+                              disabled={carouselLoading}
+                              className="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:opacity-60"
+                            >
+                              Guardar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setEditingSlide(null); setEditingSlideImageFile(null) }}
+                              className="rounded-full border border-white/15 px-4 py-2 text-xs font-semibold text-light-200/70 transition hover:text-light-200"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* ── Row view ── */
+                        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3">
+                          {/* Drag handle */}
+                          <span className="text-light-200/30 text-lg select-none flex-shrink-0">⠿</span>
+
+                          {slide.imageUrl && (
+                            <img
+                              src={slide.imageUrl}
+                              alt={slide.altText || 'Slide'}
+                              className="h-14 w-9 rounded-lg object-contain bg-black flex-shrink-0 shadow"
+                            />
+                          )}
+
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-light-200 truncate">
+                              {slide.altText || <span className="text-light-200/50 italic">Sin descripción</span>}
+                            </p>
+                            <p className="text-xs text-light-200/60">
+                              {slide.linkType === 'combo' ? 'Combo' : 'Producto'} · ID: {slide.linkedId || '—'} · orden {slide.order ?? 0}
+                            </p>
+                          </div>
+
+                          {/* Active toggle */}
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={slide.active ?? true}
+                            title={slide.active ? 'Activa — clic para desactivar' : 'Inactiva — clic para activar'}
+                            onClick={() => handleToggleSlideActive(slide)}
+                            className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition ${(slide.active ?? true) ? 'bg-main-500' : 'bg-white/20'}`}
+                          >
+                            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${(slide.active ?? true) ? 'translate-x-[18px]' : 'translate-x-1'}`} />
+                          </button>
+
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => { setEditingSlide({ ...slide }); loadCarouselLinkedItems() }}
+                              className="rounded-full border border-white/20 px-3 py-2 text-xs font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteSlideTarget(slide)}
+                              className="rounded-full border border-red-300/30 px-3 py-2 text-xs font-semibold text-red-100 transition hover:border-red-300/60 hover:text-red-200"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-3 rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3 text-sm text-light-200/70">
+                  No hay diapositivas. Agrega una arriba.
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Delete slide confirmation modal */}
+        {deleteSlideTarget && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={() => setDeleteSlideTarget(null)}
+          >
+            <div className="absolute inset-0 bg-black/60" />
+            <div
+              className="relative w-full max-w-sm rounded-2xl bg-light-200 p-6 text-main-800 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-lg font-semibold">¿Eliminar diapositiva?</div>
+              <p className="mt-2 text-sm text-main-600">
+                Se eliminará del carrusel permanentemente. La imagen en Cloudinary deberá eliminarse manualmente si ya no se necesita.
+              </p>
+              <div className="mt-5 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteSlideTarget(null)}
+                  className="rounded-lg border border-main-300 px-3 py-2 text-sm text-main-700 hover:bg-main-100"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteCarouselSlide(deleteSlideTarget)}
+                  className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                >
+                  Sí, eliminar
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {isMenuEditOpen && (
@@ -1483,20 +2005,16 @@ export const Admin = () => {
                     className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   />
                 </label>
-                <label className="grid gap-2 text-sm">
-                  Imagen
-                  <input
-                    type="text"
-                    value={editingItem.image ?? ''}
-                    onChange={(event) =>
-                      setEditingItem((prev) => ({ ...prev, image: event.target.value }))
-                    }
-                    className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
-                    placeholder=".jpeg"
-                  />
-                </label>
                 <label className="grid gap-2 text-sm md:col-span-2">
-                  Imagen (archivo)
+                  Imagen
+                  {/* preview: new file takes priority, else current stored image */}
+                  {(editingImageFile || editingItem.imageUrl) && (
+                    <img
+                      src={editingImageFile ? URL.createObjectURL(editingImageFile) : editingItem.imageUrl}
+                      alt="Vista previa"
+                      className="h-32 w-32 rounded-2xl object-cover shadow-lg"
+                    />
+                  )}
                   <input
                     type="file"
                     accept="image/*"
@@ -1506,7 +2024,7 @@ export const Admin = () => {
                     className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   />
                   <span className="text-xs text-light-200/60">
-                    Si subes un archivo, se actualizará la imagen del producto.
+                    Selecciona un archivo para reemplazar la imagen actual.
                   </span>
                 </label>
                 <label className="grid gap-2 text-sm md:col-span-2">

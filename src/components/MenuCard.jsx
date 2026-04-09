@@ -94,11 +94,15 @@ export const MenuCard = ({
       className={`relative overflow-visible ${isInfoOpen || isFlavorsOpen ? "z-[999]" : "z-0"} w-full flex items-center gap-3 rounded-xl bg-light-200 px-4  py-4 text-main-800 shadow-[inset_1px_1px_5px_rgba(69,26,3,0.10)] ${isDisabled ? "opacity-75" : ""}`}
     >
       <img
-        className="h-28 mr-5 ml-2 w-28 shrink-0 rounded-xl object-cover shadow-xl"
+        className="h-28 mr-5 ml-2 w-28 shrink-0 rounded-xl object-cover shadow-xl bg-main-200/40"
         ref={imgRef}
         src={imageUrl || `${BASE_URL}products/${id}${image ?? ''}`}
         alt={name}
         loading="lazy"
+        onError={(e) => {
+          e.currentTarget.onerror = null
+          e.currentTarget.src = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='112' height='112' viewBox='0 0 112 112'><rect width='112' height='112' fill='%23e6c5be'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='32' fill='%23743121'>☕</text></svg>`
+        }}
       />
 
       <div className="min-w-0 flex-1">
