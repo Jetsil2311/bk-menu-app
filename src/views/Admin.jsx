@@ -560,6 +560,23 @@ export const Admin = () => {
     }
   }
 
+  const handleToggleSectionVisible = async (section) => {
+    if (!section?.docId) return
+    setMenuSavingId(section.docId)
+    setMenuError('')
+    try {
+      const next = section.visible === false ? true : false
+      await updateDoc(doc(db, 'sections', section.docId), { visible: next })
+      setMenuSections((prev) =>
+        prev.map((s) => (s.docId === section.docId ? { ...s, visible: next } : s))
+      )
+    } catch {
+      setMenuError('No se pudo actualizar la visibilidad de la sección.')
+    } finally {
+      setMenuSavingId(null)
+    }
+  }
+
   // Carousel handlers.
   const loadCarouselSlides = async () => {
     setCarouselLoading(true)
@@ -579,15 +596,15 @@ export const Admin = () => {
   const loadCarouselLinkedItems = async () => {
     setCarouselItemsLoading(true)
     try {
-      const [prodSnap, comboSnap] = await Promise.all([
-        getDocs(collection(db, 'products')),
-        getDocs(collection(db, 'combos')).catch(() => ({ docs: [] })),
-      ])
-      setCarouselProducts(
-        prodSnap.docs.map((d) => ({ docId: d.id, name: d.data().name ?? d.id }))
-      )
+      const prodSnap = await getDocs(collection(db, 'products'))
+      const allProducts = prodSnap.docs.map((d) => ({
+        docId: d.id,
+        name: d.data().name ?? d.id,
+        section: d.data().section ?? '',
+      }))
+      setCarouselProducts(allProducts)
       setCarouselCombos(
-        comboSnap.docs.map((d) => ({ docId: d.id, name: d.data().name ?? d.id }))
+        allProducts.filter((p) => p.section.toLowerCase() === 'combos' || p.section.toLowerCase() === 'combo')
       )
     } catch {
       // non-fatal
@@ -736,10 +753,10 @@ export const Admin = () => {
   }, [isCarouselOpen])
 
   useEffect(() => {
-    if (isProductFormOpen && menuSections.length === 0) {
+    if (isProductFormOpen) {
       loadMenuSections()
     }
-  }, [isProductFormOpen, menuSections.length])
+  }, [isProductFormOpen])
 
   // Creates a product document in Firestore.
   const withTimeout = (promise, ms, label) =>
@@ -1114,21 +1131,25 @@ export const Admin = () => {
               </label>
               <label className="grid gap-2 text-sm">
                 Sección
-                <select
-                  value={productSection}
-                  onChange={(event) => setProductSection(event.target.value)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
-                  required
-                >
-                  <option value="" disabled>
-                    Selecciona una sección
-                  </option>
-                  {menuSections.map((section) => (
-                    <option key={section.docId ?? section.name} value={section.name}>
-                      {section.name}
+                {menuSectionsLoading ? (
+                  <div className="h-12 rounded-2xl bg-main-900/50 animate-pulse" />
+                ) : (
+                  <select
+                    value={productSection}
+                    onChange={(event) => setProductSection(event.target.value)}
+                    className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    required
+                  >
+                    <option value="" disabled>
+                      {menuSections.length === 0 ? 'Sin secciones disponibles' : 'Selecciona una sección'}
                     </option>
-                  ))}
-                </select>
+                    {menuSections.map((section) => (
+                      <option key={section.docId ?? section.name} value={section.name}>
+                        {section.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </label>
               <label className="grid gap-2 text-sm">
                 Descripción corta
@@ -1784,7 +1805,22 @@ export const Admin = () => {
                             {section.category} · {sectionProducts.length} productos
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
+                          {/* Visibility toggle */}
+                          <label className="flex items-center gap-2 cursor-pointer text-xs text-light-200/60 select-none">
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={section.visible !== false}
+                              title={section.visible === false ? 'Sección oculta — clic para mostrar' : 'Sección visible — clic para ocultar'}
+                              disabled={menuSavingId === section.docId}
+                              onClick={() => handleToggleSectionVisible(section)}
+                              className={`relative inline-flex h-5 w-9 items-center rounded-full transition disabled:opacity-50 ${section.visible === false ? 'bg-white/20' : 'bg-main-500'}`}
+                            >
+                              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${section.visible === false ? 'translate-x-1' : 'translate-x-[18px]'}`} />
+                            </button>
+                            {section.visible === false ? 'Oculta' : 'Visible'}
+                          </label>
                           <button
                             type="button"
                             onClick={() => {
@@ -1797,7 +1833,7 @@ export const Admin = () => {
                             }}
                             className="rounded-full border border-white/20 px-3 py-2 text-xs font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400"
                           >
-                            Editar sección
+                            Editar
                           </button>
                           <button
                             type="button"
@@ -1805,7 +1841,7 @@ export const Admin = () => {
                             disabled={menuSavingId === section.docId}
                             className="rounded-full border border-red-300/30 px-3 py-2 text-xs font-semibold text-red-100 transition hover:border-red-300/60 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            Eliminar sección
+                            Eliminar
                           </button>
                         </div>
                       </div>
@@ -1825,11 +1861,14 @@ export const Admin = () => {
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
+                                role="switch"
+                                aria-checked={item.isActive !== false}
+                                title={item.isActive === false ? 'Producto oculto — clic para mostrar' : 'Producto visible — clic para ocultar'}
                                 onClick={() => handleToggleProductActive(item)}
                                 disabled={menuSavingId === item.docId}
-                                className="rounded-full border border-white/20 px-3 py-2 text-xs font-semibold text-light-200/80 transition hover:border-white/40 hover:text-light-200 disabled:cursor-not-allowed disabled:opacity-60"
+                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition disabled:opacity-50 ${item.isActive === false ? 'bg-white/20' : 'bg-main-500'}`}
                               >
-                                {item.isActive === false ? 'Activar' : 'Desactivar'}
+                                <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${item.isActive === false ? 'translate-x-1' : 'translate-x-[18px]'}`} />
                               </button>
                               <button
                                 type="button"
@@ -1887,11 +1926,14 @@ export const Admin = () => {
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
+                          role="switch"
+                          aria-checked={item.isActive !== false}
+                          title={item.isActive === false ? 'Producto oculto — clic para mostrar' : 'Producto visible — clic para ocultar'}
                           onClick={() => handleToggleProductActive(item)}
                           disabled={menuSavingId === item.docId}
-                          className="rounded-full border border-white/20 px-3 py-2 text-xs font-semibold text-light-200/80 transition hover:border-white/40 hover:text-light-200"
+                          className={`relative inline-flex h-5 w-9 items-center rounded-full transition disabled:opacity-50 ${item.isActive === false ? 'bg-white/20' : 'bg-main-500'}`}
                         >
-                          {item.isActive === false ? 'Activar' : 'Desactivar'}
+                          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${item.isActive === false ? 'translate-x-1' : 'translate-x-[18px]'}`} />
                         </button>
                         <button
                           type="button"

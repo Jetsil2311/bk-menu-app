@@ -23,6 +23,7 @@ export const useSections = () => {
             docId: doc.id,
             ...doc.data(),
           }))
+          .filter((s) => s.visible !== false)
           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
         if (isActive) {
           setSections(results)
