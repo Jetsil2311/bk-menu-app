@@ -5,11 +5,11 @@ import { db } from '../firebase'
 
 // Desktop coverflow slot config: [offset, widthPx, heightPx, opacity, zIndex]
 const D_SLOTS = [
-  [-2, 88, 141, 0.18, 0],
-  [-1, 144, 230, 0.45, 1],
-  [0, 200, 320, 1, 2],
-  [+1, 144, 230, 0.45, 1],
-  [+2, 88, 141, 0.18, 0],
+  [-2, 155, 248, 0.18, 0],
+  [-1, 268, 428, 0.45, 1],
+  [0, 390, 624, 1, 2],
+  [+1, 268, 428, 0.45, 1],
+  [+2, 155, 248, 0.18, 0],
 ]
 
 
@@ -118,7 +118,7 @@ export const PromoCarousel = ({ onAddToCart }) => {
                 style={{
                   width: w, height: h, opacity, zIndex,
                   flexShrink: 0,
-                  margin: '0 10px',
+                  margin: '0 14px',
                   cursor: 'pointer',
                   borderRadius: 14,
                   overflow: 'hidden',
@@ -151,32 +151,32 @@ export const PromoCarousel = ({ onAddToCart }) => {
                     {product && (
                       <div style={{
                         position: 'absolute', bottom: 0, left: 0, right: 0,
-                        padding: isCenter ? '12px' : '8px',
+                        padding: isCenter ? '20px' : '10px',
                         zIndex: 2,
                       }}>
                         <div style={{
                           color: '#fef8e1',
-                          fontWeight: 500,
-                          fontSize: isCenter ? 13 : 10,
+                          fontWeight: 600,
+                          fontSize: isCenter ? 20 : 13,
                           lineHeight: 1.2,
-                          marginBottom: isCenter ? 4 : 0,
+                          marginBottom: isCenter ? 6 : 0,
                         }}>
                           {product.name}
                         </div>
                         {isCenter && (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
                             <span style={{
                               background: '#fef8e1', color: '#743121',
-                              fontSize: 12, fontWeight: 500,
-                              padding: '3px 8px', borderRadius: 20,
+                              fontSize: 16, fontWeight: 600,
+                              padding: '5px 14px', borderRadius: 20,
                             }}>
                               ${product.price}
                             </span>
                             <span style={{
                               background: '#743121', color: '#fef8e1',
-                              borderRadius: '50%', width: 22, height: 22,
+                              borderRadius: '50%', width: 36, height: 36,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 16, lineHeight: 1,
+                              fontSize: 24, lineHeight: 1,
                             }}>
                               +
                             </span>
@@ -249,8 +249,8 @@ export const PromoCarousel = ({ onAddToCart }) => {
               <div
                 ref={mCenterImg}
                 style={{
-                  width: '72vw',
-                  maxWidth: 260,
+                  width: '78vw',
+                  maxWidth: 380,
                   aspectRatio: '9/16',
                   borderRadius: 18,
                   overflow: 'hidden',
@@ -272,11 +272,11 @@ export const PromoCarousel = ({ onAddToCart }) => {
                   background: 'linear-gradient(to top, rgba(38,16,11,0.95) 0%, transparent 100%)',
                 }} />
                 {mProduct && (
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 14px', zIndex: 2 }}>
-                    <div style={{ color: '#fef8e1', fontWeight: 500, fontSize: 14, marginBottom: 6 }}>{mProduct.name}</div>
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '18px 18px', zIndex: 2 }}>
+                    <div style={{ color: '#fef8e1', fontWeight: 600, fontSize: 18, marginBottom: 8 }}>{mProduct.name}</div>
                     <span style={{
                       background: '#fef8e1', color: '#743121',
-                      fontSize: 12, fontWeight: 500, padding: '3px 10px', borderRadius: 20, display: 'inline-block',
+                      fontSize: 15, fontWeight: 600, padding: '5px 14px', borderRadius: 20, display: 'inline-block',
                     }}>
                       ${mProduct.price}
                     </span>
@@ -318,7 +318,7 @@ export const PromoCarousel = ({ onAddToCart }) => {
             )}
 
             {/* Action buttons */}
-            <div className="flex gap-3 mt-5 w-[72vw]" style={{ maxWidth: 260 }}>
+            <div className="flex gap-3 mt-5 w-[82vw]" style={{ maxWidth: 380 }}>
               <button
                 type="button"
                 onClick={() => {
