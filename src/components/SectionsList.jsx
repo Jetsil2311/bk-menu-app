@@ -7,6 +7,7 @@ export const SectionsList = ({
   sections,
   pathname,
   onAddToCart,
+  toppingsMap = {},
 }) => {
   // Skeletons shown while sections are loading from Firestore.
   if (isLoading) {
@@ -59,7 +60,7 @@ export const SectionsList = ({
             style={{ transitionDelay: `${Math.min(idx * 60, 240)}ms` }}
             className="opacity-0 translate-y-6 transition-all duration-700 ease-out will-change-transform"
           >
-            <MenuSection desc={section.desc} onAddToCart={onAddToCart}>
+            <MenuSection desc={section.desc} onAddToCart={onAddToCart} toppingsMap={toppingsMap}>
               {section.name}
             </MenuSection>
           </div>

@@ -4,7 +4,7 @@ import { MenuCard } from "./MenuCard.jsx";
 import { SectionBanner } from "./SectionBanner.jsx";
 import { db } from "../firebase";
 
-export const MenuSection = ({ children, desc, onAddToCart }) => {
+export const MenuSection = ({ children, desc, onAddToCart, toppingsMap = {} }) => {
     const [items, setItems] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [loadError, setLoadError] = useState("");
@@ -73,21 +73,29 @@ export const MenuSection = ({ children, desc, onAddToCart }) => {
                                 {loadError}
                             </div>
                         ) : (
-                            items.map((product) => (
-                                <MenuCard
-                                    key={product.docId ?? product.id}
-                                    name={product.name}
-                                    desc={product.desc}
-                                    price={product.price}
-                                    long_desc={product.long_desc}
-                                    flavors={product.flavors ? product.flavors : null}
-                                    image={product.image}
-                                    imageUrl={product.imageUrl}
-                                    id={product.id}
-                                    isActive={product.isActive}
-                                    onAddToCart={onAddToCart}
-                                />
-                            ))
+                            items.map((product) => {
+                                const availableToppings = Array.isArray(product.toppingIds)
+                                    ? product.toppingIds
+                                        .map((tid) => toppingsMap[tid])
+                                        .filter(Boolean)
+                                    : []
+                                return (
+                                    <MenuCard
+                                        key={product.docId ?? product.id}
+                                        name={product.name}
+                                        desc={product.desc}
+                                        price={product.price}
+                                        long_desc={product.long_desc}
+                                        flavors={product.flavors ? product.flavors : null}
+                                        image={product.image}
+                                        imageUrl={product.imageUrl}
+                                        id={product.id}
+                                        isActive={product.isActive}
+                                        availableToppings={availableToppings}
+                                        onAddToCart={onAddToCart}
+                                    />
+                                )
+                            })
                         )
                     }
                 </div>

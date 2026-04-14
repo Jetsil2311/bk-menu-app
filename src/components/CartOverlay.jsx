@@ -13,10 +13,10 @@ export const CartOverlay = ({
   onChangeQty,
   onOrder,
   onClearCart,
+  onEditToppings,
 }) => {
   const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false)
 
-  // Lock body scroll and allow Escape to close when the overlay is open.
   useEffect(() => {
     if (!isOpen) return
 
@@ -44,7 +44,7 @@ export const CartOverlay = ({
     <>
       <div
         className={
-          'fixed inset-0 z-[60] ' + (isOpen ? 'pointer-events-auto' : 'pointer-events-none')
+          'fixed inset-0 z-60 ' + (isOpen ? 'pointer-events-auto' : 'pointer-events-none')
         }
         aria-hidden={!isOpen}
         onClick={onClose}
@@ -57,7 +57,7 @@ export const CartOverlay = ({
           }
         />
 
-        {/* Content (stop propagation so clicking inside doesn't close) */}
+        {/* Content */}
         <div
           className={
             'fixed inset-0 flex flex-col items-center justify-center gap-4 px-8 transition-opacity duration-300 ' +
@@ -79,55 +79,92 @@ export const CartOverlay = ({
               <div className="text-sm text-light-200/80">🧺 Carrito vacío</div>
             ) : (
               <>
-                <ul className="max-h-64 overflow-auto pr-1 space-y-3">
-                  {cart.map((item) => (
-                    <li
-                      key={item.cartItemId}
-                      className="flex items-start justify-between gap-3 rounded-xl bg-white/10 p-3"
-                    >
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-light-100">
-                          {item.name}
-                        </div>
-                        {item.option && (
-                          <div className="mt-1 text-xs text-light-200/70">
-                            {item.option}
+                <ul className="max-h-72 overflow-auto pr-1 space-y-3">
+                  {cart.map((item) => {
+                    const toppingsPrice = (item.selectedToppings || []).reduce(
+                      (s, t) => s + Number(t.price || 0),
+                      0
+                    )
+                    const unitPrice = Number(item.price || 0) + toppingsPrice
+                    const lineTotal = unitPrice * (item.qty || 0)
+                    const hasToppings = item.availableToppings?.length > 0
+
+                    return (
+                      <li
+                        key={item.cartItemId}
+                        className="flex items-start justify-between gap-3 rounded-xl bg-white/10 p-3"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-light-100">
+                              {item.name}
+                            </span>
+                            {hasToppings && (
+                              <button
+                                type="button"
+                                onClick={() => onEditToppings?.(item.cartItemId)}
+                                className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 text-light-200 hover:bg-white/30 transition"
+                                aria-label={`Editar extras de ${item.name}`}
+                                title="Editar extras"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3 w-3">
+                                  <path d="M13.488 2.513a1.75 1.75 0 0 0-2.475 0L4.75 8.775a1.75 1.75 0 0 0-.505.952l-.5 2.5a.75.75 0 0 0 .878.878l2.5-.5a1.75 1.75 0 0 0 .952-.505l6.263-6.263a1.75 1.75 0 0 0 0-2.474Z" />
+                                </svg>
+                              </button>
+                            )}
                           </div>
-                        )}
-                        <div className="mt-2 text-xs text-light-200/70">
-                          {formatMoney(Number(item.price || 0))} c/u
+                          {item.option && (
+                            <div className="mt-0.5 text-xs text-light-200/70">
+                              {item.option}
+                            </div>
+                          )}
+                          {item.selectedToppings?.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {item.selectedToppings.map((t) => (
+                                <span
+                                  key={t.id}
+                                  className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] text-light-200/80"
+                                >
+                                  {t.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="mt-1.5 text-xs text-light-200/70">
+                            {formatMoney(unitPrice)} c/u
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="text-sm font-semibold text-light-100">
-                          {formatMoney(Number(item.price || 0) * (item.qty || 0))}
-                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <div className="text-sm font-semibold text-light-100">
+                            {formatMoney(lineTotal)}
+                          </div>
 
-                        <div className="inline-flex items-center gap-2 rounded-full bg-black/20 px-2 py-1">
-                          <button
-                            type="button"
-                            onClick={() => onChangeQty(item.id, item.option, -1)}
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-light-200 hover:bg-white/20"
-                            aria-label={`Quitar ${item.name}`}
-                          >
-                            -
-                          </button>
-                          <span className="text-sm font-semibold text-light-100 min-w-[18px] text-center">
-                            {item.qty || 0}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => onChangeQty(item.id, item.option, 1)}
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-light-200 hover:bg-white/20"
-                            aria-label={`Agregar ${item.name}`}
-                          >
-                            +
-                          </button>
+                          <div className="inline-flex items-center gap-2 rounded-full bg-black/20 px-2 py-1">
+                            <button
+                              type="button"
+                              onClick={() => onChangeQty(item.cartItemId, -1)}
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-light-200 hover:bg-white/20"
+                              aria-label={`Quitar ${item.name}`}
+                            >
+                              -
+                            </button>
+                            <span className="text-sm font-semibold text-light-100 min-w-[18px] text-center">
+                              {item.qty || 0}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => onChangeQty(item.cartItemId, 1)}
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-light-200 hover:bg-white/20"
+                              aria-label={`Agregar ${item.name}`}
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    </li>
-                  ))}
+                      </li>
+                    )
+                  })}
                 </ul>
 
                 <label className="mt-4 block text-sm text-light-200/80">
@@ -185,7 +222,7 @@ export const CartOverlay = ({
       {/* Clear cart confirmation */}
       {isClearConfirmOpen && (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center px-6"
+          className="fixed inset-0 z-80 flex items-center justify-center px-6"
           role="dialog"
           aria-modal="true"
           aria-label="Confirmar limpiar carrito"

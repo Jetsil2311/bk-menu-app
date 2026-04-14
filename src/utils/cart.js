@@ -7,7 +7,9 @@ export const formatMoney = (value) =>
     maximumFractionDigits: 2,
   }).format(value)
 
-export const getCartKey = (id, option) => `${id}::${option ?? ''}`
+// toppingIds is an optional array of topping doc IDs; sorted for stable keys.
+export const getCartKey = (id, option, toppingIds = []) =>
+  `${id}::${option ?? ''}::${[...toppingIds].sort().join(',')}`
 
 // Creates a short "fly to cart" animation from the product card to the cart button.
 export const flyToCart = ({ fromRect, imgSrc, target }) => {

@@ -108,6 +108,18 @@ export const Admin = () => {
   const [editingSlide, setEditingSlide] = useState(null)
   const [editingSlideImageFile, setEditingSlideImageFile] = useState(null)
   const [deleteSlideTarget, setDeleteSlideTarget] = useState(null)
+  // Toppings state.
+  const [isToppingsOpen, setIsToppingsOpen] = useState(false)
+  const [toppingsList, setToppingsList] = useState([])
+  const [toppingsLoading, setToppingsLoading] = useState(false)
+  const [toppingsError, setToppingsError] = useState('')
+  const [toppingsSuccess, setToppingsSuccess] = useState('')
+  const [toppingName, setToppingName] = useState('')
+  const [toppingPrice, setToppingPrice] = useState('')
+  const [editingTopping, setEditingTopping] = useState(null)
+  const [deleteToppingTarget, setDeleteToppingTarget] = useState(null)
+  // Product form: selected topping IDs.
+  const [productToppingIds, setProductToppingIds] = useState([])
 
   const googleProvider = useMemo(() => new GoogleAuthProvider(), [])
 
@@ -263,7 +275,8 @@ export const Admin = () => {
             : '',
         }))
 
-      setMenuItems(items)
+      // Also ensure toppingIds is always loaded for the editor.
+      setMenuItems(items.map((it) => ({ ...it, toppingIds: Array.isArray(it.toppingIds) ? it.toppingIds : [] })))
     } catch (err) {
       setMenuError('No se pudo cargar el menú.')
     } finally {
@@ -498,6 +511,7 @@ export const Admin = () => {
         long_desc: item.long_desc?.trim?.() ?? '',
         price: priceValue,
         flavors,
+        toppingIds: Array.isArray(item.toppingIds) ? item.toppingIds : [],
         image: item.image?.trim?.() ?? '',
         isActive: item.isActive ?? true,
       })
@@ -731,6 +745,94 @@ export const Admin = () => {
     }
   }
 
+  // ── Toppings CRUD ────────────────────────────────────────────────────────────
+
+  const loadToppings = async () => {
+    setToppingsLoading(true)
+    setToppingsError('')
+    try {
+      const snap = await getDocs(collection(db, 'toppings'))
+      setToppingsList(
+        snap.docs
+          .map((d) => ({ docId: d.id, ...d.data() }))
+          .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+      )
+    } catch {
+      setToppingsError('No se pudieron cargar los toppings.')
+    } finally {
+      setToppingsLoading(false)
+    }
+  }
+
+  const handleAddTopping = async (event) => {
+    event.preventDefault()
+    setToppingsError('')
+    setToppingsSuccess('')
+    const name = toppingName.trim()
+    const price = Number(toppingPrice)
+    if (!name || !Number.isFinite(price)) {
+      setToppingsError('Nombre y precio válido son obligatorios.')
+      return
+    }
+    setIsSubmitting(true)
+    try {
+      const ref = await addDoc(collection(db, 'toppings'), {
+        name,
+        price,
+        isActive: true,
+        createdAt: serverTimestamp(),
+      })
+      setToppingsList((prev) =>
+        [...prev, { docId: ref.id, name, price, isActive: true }].sort((a, b) =>
+          String(a.name).localeCompare(String(b.name))
+        )
+      )
+      setToppingName('')
+      setToppingPrice('')
+      setToppingsSuccess('Topping guardado.')
+    } catch {
+      setToppingsError('No se pudo guardar el topping.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleSaveTopping = async (topping) => {
+    if (!topping?.docId) return
+    const name = topping.name?.trim?.() ?? ''
+    const price = Number(topping.price)
+    if (!name || !Number.isFinite(price)) {
+      setToppingsError('Nombre y precio válido son obligatorios.')
+      return
+    }
+    setToppingsError('')
+    try {
+      await updateDoc(doc(db, 'toppings', topping.docId), { name, price })
+      setToppingsList((prev) =>
+        prev
+          .map((t) => (t.docId === topping.docId ? { ...t, name, price } : t))
+          .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+      )
+      setEditingTopping(null)
+    } catch {
+      setToppingsError('No se pudo actualizar el topping.')
+    }
+  }
+
+  const handleDeleteTopping = async (topping) => {
+    if (!topping?.docId) return
+    setToppingsError('')
+    try {
+      await deleteDoc(doc(db, 'toppings', topping.docId))
+      setToppingsList((prev) => prev.filter((t) => t.docId !== topping.docId))
+      setDeleteToppingTarget(null)
+    } catch {
+      setToppingsError('No se pudo eliminar el topping.')
+    }
+  }
+
+  // ── End toppings CRUD ─────────────────────────────────────────────────────
+
   // Keep the menu editor data fresh when opening it.
   useEffect(() => {
     if (isMenuEditOpen) {
@@ -755,8 +857,15 @@ export const Admin = () => {
   useEffect(() => {
     if (isProductFormOpen) {
       loadMenuSections()
+      loadToppings()
     }
   }, [isProductFormOpen])
+
+  useEffect(() => {
+    if (isToppingsOpen) {
+      loadToppings()
+    }
+  }, [isToppingsOpen])
 
   // Creates a product document in Firestore.
   const withTimeout = (promise, ms, label) =>
@@ -796,6 +905,7 @@ export const Admin = () => {
         long_desc: productLongDesc.trim(),
         price: priceValue,
         flavors,
+        toppingIds: productToppingIds,
         image: productImage.trim(),
         isActive: true,
         createdAt: serverTimestamp(),
@@ -819,6 +929,7 @@ export const Admin = () => {
       setProductFlavors('')
       setProductImage('')
       setProductImageFile(null)
+      setProductToppingIds([])
       setProductSuccess('Producto guardado correctamente.')
     } catch (err) {
       setError('No se pudo guardar el producto. Intenta de nuevo.')
@@ -1059,6 +1170,7 @@ export const Admin = () => {
                       setIsMenuEditOpen(false)
                       setIsPromoFormOpen(false)
                       setIsCarouselOpen(false)
+                      setIsToppingsOpen(false)
                     }
                     if (action === 'Actualizar menú') {
                       setIsMenuEditOpen((prev) => !prev)
@@ -1066,6 +1178,7 @@ export const Admin = () => {
                       setIsSectionFormOpen(false)
                       setIsPromoFormOpen(false)
                       setIsCarouselOpen(false)
+                      setIsToppingsOpen(false)
                     }
                     if (action === 'Programar promociones') {
                       setIsPromoFormOpen((prev) => !prev)
@@ -1073,6 +1186,7 @@ export const Admin = () => {
                       setIsSectionFormOpen(false)
                       setIsMenuEditOpen(false)
                       setIsCarouselOpen(false)
+                      setIsToppingsOpen(false)
                     }
                   }}
                   className="rounded-2xl border border-white/15 bg-main-900/60 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
@@ -1089,6 +1203,7 @@ export const Admin = () => {
                   setIsProductFormOpen(false)
                   setIsMenuEditOpen(false)
                   setIsCarouselOpen(false)
+                  setIsToppingsOpen(false)
                 }}
                 className="w-full rounded-2xl border border-white/15 bg-main-900/60 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
               >
@@ -1102,10 +1217,25 @@ export const Admin = () => {
                   setIsSectionFormOpen(false)
                   setIsMenuEditOpen(false)
                   setIsPromoFormOpen(false)
+                  setIsToppingsOpen(false)
                 }}
                 className="w-full rounded-2xl border border-white/15 bg-main-900/60 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
               >
                 {isCarouselOpen ? 'Ocultar carrusel' : 'Gestionar carrusel'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsToppingsOpen((prev) => !prev)
+                  setIsProductFormOpen(false)
+                  setIsSectionFormOpen(false)
+                  setIsMenuEditOpen(false)
+                  setIsPromoFormOpen(false)
+                  setIsCarouselOpen(false)
+                }}
+                className="w-full rounded-2xl border border-white/15 bg-main-900/60 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
+              >
+                {isToppingsOpen ? 'Ocultar toppings' : 'Gestionar toppings'}
               </button>
             </div>
           </div>
@@ -1207,6 +1337,37 @@ export const Admin = () => {
                   placeholder="Taro, Mango, Matcha"
                 />
               </label>
+
+              {toppingsList.length > 0 && (
+                <div className="grid gap-2 text-sm lg:col-span-2">
+                  <span className="text-light-200/80">Toppings disponibles para este producto</span>
+                  <div className="flex flex-wrap gap-2">
+                    {toppingsList.map((t) => {
+                      const checked = productToppingIds.includes(t.docId)
+                      return (
+                        <label
+                          key={t.docId}
+                          className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-xs transition ${checked ? 'border-main-400 bg-main-700/40 text-light-200' : 'border-white/10 bg-main-900/50 text-light-200/70 hover:border-white/30'}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() =>
+                              setProductToppingIds((prev) =>
+                                prev.includes(t.docId)
+                                  ? prev.filter((id) => id !== t.docId)
+                                  : [...prev, t.docId]
+                              )
+                            }
+                            className="h-3.5 w-3.5 accent-main-400"
+                          />
+                          {t.name} (+${t.price})
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               {error && (
                 <p className="rounded-2xl border border-red-300/20 bg-red-500/10 px-4 py-3 text-sm text-red-100 lg:col-span-2">
@@ -1746,6 +1907,191 @@ export const Admin = () => {
           </div>
         )}
 
+        {isToppingsOpen && (
+          <section className="mt-8 rounded-3xl border border-white/10 bg-main-800/60 p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold">Gestionar toppings</h2>
+                <p className="mt-1 text-sm text-light-200/70">
+                  Crea, edita o elimina los extras que pueden agregarse a los productos.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={loadToppings}
+                className="rounded-full border border-white/20 px-4 py-2 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400"
+              >
+                Recargar
+              </button>
+            </div>
+
+            {/* Add topping form */}
+            <form
+              className="mt-6 rounded-2xl border border-white/10 bg-main-900/50 p-5 grid gap-4 sm:grid-cols-[1fr_auto_auto]"
+              onSubmit={handleAddTopping}
+            >
+              <input
+                type="text"
+                value={toppingName}
+                onChange={(e) => setToppingName(e.target.value)}
+                placeholder="Nombre del topping (ej. Queso extra)"
+                className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                required
+              />
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={toppingPrice}
+                onChange={(e) => setToppingPrice(e.target.value)}
+                placeholder="Precio"
+                className="w-32 rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                required
+              />
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="rounded-2xl border border-white/20 bg-main-900/70 px-5 py-3 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:opacity-60"
+              >
+                {isSubmitting ? 'Guardando...' : 'Agregar'}
+              </button>
+
+              {toppingsError && (
+                <p className="col-span-full rounded-2xl border border-red-300/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                  {toppingsError}
+                </p>
+              )}
+              {toppingsSuccess && (
+                <p className="col-span-full rounded-2xl border border-emerald-300/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+                  {toppingsSuccess}
+                </p>
+              )}
+            </form>
+
+            {/* Toppings list */}
+            <div className="mt-6">
+              {toppingsLoading ? (
+                <div className="grid gap-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="h-14 rounded-2xl bg-main-900/50 animate-pulse" />
+                  ))}
+                </div>
+              ) : toppingsList.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3 text-sm text-light-200/70">
+                  No hay toppings creados aún.
+                </div>
+              ) : (
+                <div className="grid gap-3">
+                  {toppingsList.map((topping) => (
+                    <div
+                      key={topping.docId}
+                      className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3"
+                    >
+                      {editingTopping?.docId === topping.docId ? (
+                        <>
+                          <input
+                            type="text"
+                            value={editingTopping.name ?? ''}
+                            onChange={(e) =>
+                              setEditingTopping((prev) => ({ ...prev, name: e.target.value }))
+                            }
+                            className="flex-1 rounded-xl border border-white/10 bg-main-900/70 px-3 py-2 text-sm text-light-200 outline-none focus:border-white/40"
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={editingTopping.price ?? ''}
+                            onChange={(e) =>
+                              setEditingTopping((prev) => ({ ...prev, price: e.target.value }))
+                            }
+                            className="w-28 rounded-xl border border-white/10 bg-main-900/70 px-3 py-2 text-sm text-light-200 outline-none focus:border-white/40"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSaveTopping(editingTopping)}
+                            className="rounded-full border border-white/20 px-3 py-2 text-xs font-semibold text-light-200 transition hover:border-white/40"
+                          >
+                            Guardar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingTopping(null)}
+                            className="rounded-full border border-white/20 px-3 py-2 text-xs text-light-200/70 transition hover:border-white/40"
+                          >
+                            Cancelar
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-light-200">{topping.name}</p>
+                            <p className="text-xs text-light-200/60">
+                              +${Number(topping.price || 0).toFixed(2)}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setEditingTopping({ ...topping })}
+                            className="rounded-full border border-white/20 px-3 py-2 text-xs font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteToppingTarget(topping)}
+                            className="rounded-full border border-red-300/20 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/20"
+                          >
+                            Eliminar
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Delete topping confirmation */}
+        {deleteToppingTarget && (
+          <div
+            className="fixed inset-0 z-90 flex items-center justify-center px-6"
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setDeleteToppingTarget(null)}
+          >
+            <div className="absolute inset-0 bg-black/60" />
+            <div
+              className="relative w-full max-w-sm rounded-2xl bg-light-200 p-6 text-main-800 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="text-lg font-semibold">¿Eliminar topping?</p>
+              <p className="mt-2 text-sm text-main-600">
+                Se eliminará <strong>{deleteToppingTarget.name}</strong>. Los productos que lo tenían
+                asignado dejarán de mostrarlo.
+              </p>
+              <div className="mt-5 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteToppingTarget(null)}
+                  className="rounded-lg border border-main-300 px-3 py-2 text-sm text-main-700 hover:bg-main-100"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteTopping(deleteToppingTarget)}
+                  className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                >
+                  Sí, eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {isMenuEditOpen && (
           <section className="mt-8 rounded-3xl border border-white/10 bg-main-800/60 p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1879,7 +2225,9 @@ export const Admin = () => {
                                     flavorsText: Array.isArray(item.flavors)
                                       ? item.flavors.join(', ')
                                       : item.flavorsText ?? '',
+                                    toppingIds: Array.isArray(item.toppingIds) ? item.toppingIds : [],
                                   })
+                                  loadToppings()
                                   setIsMenuEditorOpen(true)
                                 }}
                                 className="rounded-full border border-white/20 px-3 py-2 text-xs font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400"
@@ -2109,6 +2457,38 @@ export const Admin = () => {
                     placeholder="Taro, Mango, Matcha"
                   />
                 </label>
+
+                {toppingsList.length > 0 && (
+                  <div className="grid gap-2 text-sm md:col-span-2">
+                    <span className="text-light-200/80">Toppings disponibles para este producto</span>
+                    <div className="flex flex-wrap gap-2">
+                      {toppingsList.map((t) => {
+                        const checked = (editingItem.toppingIds || []).includes(t.docId)
+                        return (
+                          <label
+                            key={t.docId}
+                            className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-xs transition ${checked ? 'border-main-400 bg-main-700/40 text-light-200' : 'border-white/10 bg-main-900/50 text-light-200/70 hover:border-white/30'}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() =>
+                                setEditingItem((prev) => ({
+                                  ...prev,
+                                  toppingIds: (prev.toppingIds || []).includes(t.docId)
+                                    ? (prev.toppingIds || []).filter((id) => id !== t.docId)
+                                    : [...(prev.toppingIds || []), t.docId],
+                                }))
+                              }
+                              className="h-3.5 w-3.5 accent-main-400"
+                            />
+                            {t.name} (+${t.price})
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 flex items-center justify-end gap-2">

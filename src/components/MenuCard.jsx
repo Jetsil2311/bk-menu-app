@@ -13,6 +13,7 @@ export const MenuCard = ({
   imageUrl,
   id,
   isActive = true,
+  availableToppings = [],
   onAddToCart,
 }) => {
   const [isInfoOpen, setIsInfoOpen] = useState(false);
@@ -91,7 +92,7 @@ export const MenuCard = ({
   return (
     <li
       ref={wrapperRef}
-      className={`relative overflow-visible ${isInfoOpen || isFlavorsOpen ? "z-[999]" : "z-0"} w-full flex items-center gap-3 rounded-xl bg-light-200 px-4  py-4 text-main-800 shadow-[inset_1px_1px_5px_rgba(69,26,3,0.10)] ${isDisabled ? "opacity-75" : ""}`}
+      className={`relative overflow-visible ${isInfoOpen || isFlavorsOpen ? "z-999" : "z-0"} w-full flex items-center gap-3 rounded-xl bg-light-200 px-4  py-4 text-main-800 shadow-[inset_1px_1px_5px_rgba(69,26,3,0.10)] ${isDisabled ? "opacity-75" : ""}`}
     >
       <img
         className="h-28 mr-5 ml-2 w-28 shrink-0 rounded-xl object-cover shadow-xl bg-main-200/40"
@@ -131,7 +132,7 @@ export const MenuCard = ({
             </button>
 
             {isInfoOpen && (
-              <div data-menu="popover" className="absolute left-0 top-10 z-[1000] w-72 rounded-xl border border-light-400/60 bg-light-200 p-3 text-sm text-main-800 shadow-xl">
+              <div data-menu="popover" className="absolute left-0 top-10 z-1000 w-72 rounded-xl border border-light-400/60 bg-light-200 p-3 text-sm text-main-800 shadow-xl">
                 <p className="whitespace-pre-line">{long_desc ?? ''}</p>
                 <div className="mt-2 text-xs text-main-500">Haz click afuera para cerrar</div>
               </div>
@@ -193,6 +194,7 @@ export const MenuCard = ({
                             option: flavor,
                             fromRect: rect,
                             flyImageSrc: src,
+                            availableToppings,
                           });
                           setIsFlavorsOpen(false);
                         }}
@@ -218,7 +220,7 @@ export const MenuCard = ({
                   e.currentTarget.getBoundingClientRect();
                 const src =
                   imgRef.current?.currentSrc || imgRef.current?.src || null;
-                onAddToCart?.({ id, name, price, fromRect: rect, flyImageSrc: src });
+                onAddToCart?.({ id, name, price, fromRect: rect, flyImageSrc: src, availableToppings });
               }}
               disabled={isDisabled}
               className={`inline-flex h-8 items-center justify-center rounded-md text-main-600 transition hover:bg-light-400/40 focus:outline-none shadow-lg hover:shadow-md px-3 ${isDisabled ? "cursor-not-allowed opacity-60" : ""}`}
@@ -242,5 +244,8 @@ MenuCard.propTypes = {
   imageUrl: PropTypes.string,
   isActive: PropTypes.bool,
   id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
+  availableToppings: PropTypes.arrayOf(
+    PropTypes.shape({ id: PropTypes.string, name: PropTypes.string, price: PropTypes.number })
+  ),
   onAddToCart: PropTypes.func,
 };

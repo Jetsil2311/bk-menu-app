@@ -4,6 +4,7 @@ import { Navbar } from '../components/Navbar'
 import { PromoCarousel } from '../components/PromoCarousel'
 import { CartButton } from '../components/CartButton'
 import { CartOverlay } from '../components/CartOverlay'
+import { ToppingsOverlay } from '../components/ToppingsOverlay'
 import { PromoBanner } from '../components/PromoBanner'
 import { SectionsList } from '../components/SectionsList'
 import { addDoc, collection, getDocs, orderBy, query, serverTimestamp, writeBatch } from 'firebase/firestore'
@@ -14,34 +15,65 @@ import { db } from '../firebase'
 
 export const Home = () => {
   const location = useLocation()
-  // Phone number used to generate WhatsApp order links.
   const WHATSAPP_NUMBER = '5574182443'
 
   // Cart + overlay state.
   const [cart, setCart] = useState([])
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [orderNotes, setOrderNotes] = useState('')
-  // Sections are fetched from Firestore via a dedicated hook.
+
+  // Toppings map: docId → {id, name, price}
+  const [toppingsMap, setToppingsMap] = useState({})
+
+  // Pending item waiting for topping selection before being added.
+  // Shape: { id, name, price, option, fromRect, flyImageSrc, availableToppings }
+  const [pendingToppingItem, setPendingToppingItem] = useState(null)
+
+  // Cart item being edited (to change its toppings).
+  // Shape: cartItemId string
+  const [editingToppingCartItemId, setEditingToppingCartItemId] = useState(null)
+
   const { sections, isLoading: sectionsLoading, error: sectionsError } = useSections()
   const { promotion } = usePromotion()
-  // Ref used by the "fly to cart" animation.
   const cartBtnRef = useRef(null)
   const [isPromoVisible, setIsPromoVisible] = useState(true)
 
-  // Derived cart metrics used in multiple UI spots.
-  const cartCount = cart.reduce((sum, item) => sum + (item.qty || 0), 0)
-  const cartTotal = cart.reduce(
-    (sum, item) => sum + Number(item.price || 0) * (item.qty || 0),
-    0
-  )
+  // Load all toppings once on mount.
+  useEffect(() => {
+    let active = true
+    getDocs(collection(db, 'toppings'))
+      .then((snap) => {
+        if (!active) return
+        const map = {}
+        snap.docs.forEach((d) => {
+          const data = d.data()
+          if (data.isActive !== false) {
+            map[d.id] = { id: d.id, name: data.name, price: Number(data.price || 0) }
+          }
+        })
+        setToppingsMap(map)
+      })
+      .catch(() => {}) // non-fatal
+    return () => { active = false }
+  }, [])
 
-  // Resets the cart + notes.
+  // Derived cart metrics.
+  const cartCount = cart.reduce((sum, item) => sum + (item.qty || 0), 0)
+  const cartTotal = cart.reduce((sum, item) => {
+    const toppingsPrice = (item.selectedToppings || []).reduce(
+      (s, t) => s + Number(t.price || 0),
+      0
+    )
+    return sum + (Number(item.price || 0) + toppingsPrice) * (item.qty || 0)
+  }, 0)
+
   const clearCart = () => {
     setCart([])
     setOrderNotes('')
   }
 
   // Adds a new item or increments an existing one.
+  // If the product has available toppings, opens the toppings overlay instead.
   const addToCart = ({
     id,
     name,
@@ -49,13 +81,37 @@ export const Home = () => {
     option = null,
     fromRect = null,
     flyImageSrc = null,
+    availableToppings = [],
   }) => {
+    if (availableToppings.length > 0) {
+      // Park the pending item and show the topping picker.
+      setPendingToppingItem({ id, name, price, option, fromRect, flyImageSrc, availableToppings })
+      return
+    }
+
+    // No toppings — add directly.
+    _commitToCart({ id, name, price, option, fromRect, flyImageSrc, selectedToppings: [] })
+  }
+
+  // Called when the ToppingsOverlay confirms a selection (add flow).
+  const handleToppingConfirmAdd = (selectedToppings) => {
+    if (!pendingToppingItem) return
+    const { id, name, price, option, fromRect, flyImageSrc, availableToppings } = pendingToppingItem
+    _commitToCart({ id, name, price, option, fromRect, flyImageSrc, selectedToppings, availableToppings })
+    setPendingToppingItem(null)
+  }
+
+  // Writes the resolved item into cart (merges if identical key).
+  const _commitToCart = ({ id, name, price, option, fromRect, flyImageSrc, selectedToppings, availableToppings = [] }) => {
     if (fromRect) {
       flyToCart({ fromRect, imgSrc: flyImageSrc, target: cartBtnRef.current })
     }
     setCart((prev) => {
-      const key = getCartKey(id, option)
-      const idx = prev.findIndex((it) => getCartKey(it.id, it.option) === key)
+      const toppingIds = selectedToppings.map((t) => t.id)
+      const key = getCartKey(id, option, toppingIds)
+      const idx = prev.findIndex(
+        (it) => getCartKey(it.id, it.option, (it.selectedToppings || []).map((t) => t.id)) === key
+      )
 
       if (idx === -1) {
         return [
@@ -67,6 +123,8 @@ export const Home = () => {
             price,
             option,
             qty: 1,
+            selectedToppings,
+            availableToppings,
           },
         ]
       }
@@ -77,11 +135,24 @@ export const Home = () => {
     })
   }
 
+  // Called when the ToppingsOverlay confirms a selection (edit flow).
+  const handleToppingConfirmEdit = (selectedToppings) => {
+    if (!editingToppingCartItemId) return
+    setCart((prev) =>
+      prev.map((item) =>
+        item.cartItemId === editingToppingCartItemId
+          ? { ...item, selectedToppings }
+          : item
+      )
+    )
+    setEditingToppingCartItemId(null)
+  }
+
   // Adjust quantity by delta; removes the item when it hits 0.
-  const changeQty = (id, option, delta) => {
+  // Uses cartItemId for precise targeting (supports multiple items with same product).
+  const changeQty = (cartItemId, delta) => {
     setCart((prev) => {
-      const key = getCartKey(id, option)
-      const idx = prev.findIndex((it) => getCartKey(it.id, it.option) === key)
+      const idx = prev.findIndex((it) => it.cartItemId === cartItemId)
       if (idx === -1) return prev
 
       const next = [...prev]
@@ -105,12 +176,17 @@ export const Home = () => {
       'Items:',
       ...cart.map((item, idx) => {
         const optionText = item.option ? ` (${item.option})` : ''
-        const unit = Number(item.price || 0)
-        const qty = item.qty || 0
-        const lineTotal = unit * qty
-        return `${idx + 1}. ${qty} x ${item.name}${optionText} - ${formatMoney(
-          lineTotal
-        )}`
+        const toppingsText =
+          item.selectedToppings?.length
+            ? ` [${item.selectedToppings.map((t) => t.name).join(', ')}]`
+            : ''
+        const toppingsPrice = (item.selectedToppings || []).reduce(
+          (s, t) => s + Number(t.price || 0),
+          0
+        )
+        const unitTotal = Number(item.price || 0) + toppingsPrice
+        const lineTotal = unitTotal * (item.qty || 0)
+        return `${idx + 1}. ${item.qty} x ${item.name}${optionText}${toppingsText} - ${formatMoney(lineTotal)}`
       }),
       '',
       `Total: ${formatMoney(cartTotal)}`,
@@ -123,18 +199,14 @@ export const Home = () => {
     return lines.join('\n')
   }
 
-  // Sends the order via WhatsApp.
   const handleWhatsAppOrder = () => {
     if (cart.length === 0) return
     const message = buildOrderMessage()
     saveOrderSnapshot(message, cartTotal)
-    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-      message
-    )}`
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
-  // Stores the order text in Firestore and keeps only the latest 50.
   const saveOrderSnapshot = async (message, total) => {
     try {
       const orderId = `BK-${Date.now().toString(36).toUpperCase()}-${Math.random()
@@ -174,7 +246,6 @@ export const Home = () => {
       (entries) => {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return
-
           const el = entry.target
           el.classList.remove('opacity-0', 'translate-y-6')
           el.classList.add('opacity-100', 'translate-y-0')
@@ -185,16 +256,19 @@ export const Home = () => {
     )
 
     els.forEach((el) => observer.observe(el))
-
     return () => observer.disconnect()
   }, [location.pathname, sections.length])
 
-  // Reset promo visibility when a new promotion arrives.
   useEffect(() => {
     if (promotion) {
       setIsPromoVisible(true)
     }
   }, [promotion?.id])
+
+  // Derived data for the active edit overlay
+  const editingCartItem = editingToppingCartItemId
+    ? cart.find((it) => it.cartItemId === editingToppingCartItemId)
+    : null
 
   return (
     <>
@@ -216,7 +290,6 @@ export const Home = () => {
 
       <PromoCarousel onAddToCart={addToCart} />
 
-      {/* Sections list */}
       <div className="mb-50">
         <SectionsList
           isLoading={sectionsLoading}
@@ -224,10 +297,10 @@ export const Home = () => {
           sections={sections}
           pathname={location.pathname}
           onAddToCart={addToCart}
+          toppingsMap={toppingsMap}
         />
       </div>
 
-      {/* Floating cart button (all screen sizes) */}
       <CartButton
         ref={cartBtnRef}
         isOpen={isCartOpen}
@@ -235,7 +308,6 @@ export const Home = () => {
         onClick={() => setIsCartOpen((v) => !v)}
       />
 
-      {/* Cart overlay (separate component to keep Home lean). */}
       <CartOverlay
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}
@@ -247,6 +319,31 @@ export const Home = () => {
         onChangeQty={changeQty}
         onOrder={handleWhatsAppOrder}
         onClearCart={clearCart}
+        onEditToppings={(cartItemId) => setEditingToppingCartItemId(cartItemId)}
+      />
+
+      {/* Toppings overlay — add flow */}
+      <ToppingsOverlay
+        isOpen={Boolean(pendingToppingItem)}
+        onClose={() => setPendingToppingItem(null)}
+        productName={pendingToppingItem?.name ?? ''}
+        productPrice={pendingToppingItem?.price ?? 0}
+        toppings={pendingToppingItem?.availableToppings ?? []}
+        initialSelected={[]}
+        onConfirm={handleToppingConfirmAdd}
+        confirmLabel="Agregar al carrito"
+      />
+
+      {/* Toppings overlay — edit flow */}
+      <ToppingsOverlay
+        isOpen={Boolean(editingToppingCartItemId)}
+        onClose={() => setEditingToppingCartItemId(null)}
+        productName={editingCartItem?.name ?? ''}
+        productPrice={editingCartItem?.price ?? 0}
+        toppings={editingCartItem?.availableToppings ?? []}
+        initialSelected={editingCartItem?.selectedToppings ?? []}
+        onConfirm={handleToppingConfirmEdit}
+        confirmLabel="Guardar cambios"
       />
     </>
   )
