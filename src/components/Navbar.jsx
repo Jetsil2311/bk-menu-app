@@ -28,7 +28,7 @@ export const Navbar = () => {
       <button
         type="button"
         onClick={() => setIsMobileMenuOpen((v) => !v)}
-        className="sm:hidden fixed top-4 right-4 z-50 inline-flex h-12 w-12 items-center justify-center rounded-full bg-main-600 text-light-200 shadow-2xl transition hover:bg-main-700 hover:text-light-400"
+        className="sm:hidden fixed top-15 right-4 z-50 inline-flex h-12 w-12 items-center justify-center rounded-full bg-main-600 text-light-200 shadow-2xl transition hover:bg-main-700 hover:text-light-400"
         aria-label={isMobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
         aria-expanded={isMobileMenuOpen}
       >
@@ -46,7 +46,7 @@ export const Navbar = () => {
         {/* Expanding circle background */}
         <div
           className={
-            "fixed top-4 right-4 h-11 w-11 rounded-full bg-main-700 transition-transform duration-500 ease-in-out " +
+            "fixed top-15 right-4 h-11 w-11 rounded-full bg-main-700 transition-transform duration-500 ease-in-out " +
             (isMobileMenuOpen ? "scale-[40]" : "scale-0")
           }
         />

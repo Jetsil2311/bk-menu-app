@@ -7,6 +7,7 @@ import { CartOverlay } from '../components/CartOverlay'
 import { ToppingsOverlay } from '../components/ToppingsOverlay'
 import { PromoBanner } from '../components/PromoBanner'
 import { SectionsList } from '../components/SectionsList'
+import { CategoryTabs } from '../components/CategoryTabs'
 import { addDoc, collection, getDocs, orderBy, query, serverTimestamp, writeBatch } from 'firebase/firestore'
 import { usePromotion } from '../hooks/usePromotion'
 import { useSections } from '../hooks/useSections'
@@ -37,6 +38,13 @@ export const Home = () => {
   const { promotion } = usePromotion()
   const cartBtnRef = useRef(null)
   const [isPromoVisible, setIsPromoVisible] = useState(true)
+  const [activeSection, setActiveSection] = useState('')
+  const activeSectionInitialized = useRef(false)
+
+  // Sections visible on the current route (mirrors the filter in SectionsList).
+  const visibleSections = sections.filter(
+    (s) => `/${s.category?.toLowerCase?.()}` === location.pathname || location.pathname === '/'
+  )
 
   // Load all toppings once on mount.
   useEffect(() => {
@@ -259,11 +267,46 @@ export const Home = () => {
     return () => observer.disconnect()
   }, [location.pathname, sections.length])
 
+  // Scroll-spy: update activeSection as sections enter the viewport.
+  useEffect(() => {
+    const els = Array.from(document.querySelectorAll('[data-section-anchor]'))
+    if (!els.length) return
+
+    // Initialise to first visible section once when sections first load.
+    if (!activeSectionInitialized.current && els.length > 0) {
+      setActiveSection(els[0].dataset.sectionAnchor)
+      activeSectionInitialized.current = true
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.dataset.sectionAnchor)
+          }
+        })
+      },
+      { threshold: 0, rootMargin: '-50px 0px -40% 0px' }
+    )
+
+    els.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [visibleSections.length, location.pathname])
+
   useEffect(() => {
     if (promotion) {
       setIsPromoVisible(true)
     }
+    // Re-run only when promotion changes identity, not on every reference change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [promotion?.id])
+
+  // Smooth-scroll to the target section when a category tab is clicked.
+  const handleTabClick = (name) => {
+    const el = document.getElementById(`section-${name}`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setActiveSection(name)
+  }
 
   // Derived data for the active edit overlay
   const editingCartItem = editingToppingCartItemId
@@ -290,7 +333,15 @@ export const Home = () => {
 
       <PromoCarousel onAddToCart={addToCart} />
 
-      <div className="mb-50">
+      {visibleSections.length > 1 && (
+        <CategoryTabs
+          sections={visibleSections}
+          activeSection={activeSection}
+          onTabClick={handleTabClick}
+        />
+      )}
+
+      <div className="mb-24 sm:mb-50">
         <SectionsList
           isLoading={sectionsLoading}
           error={sectionsError}
@@ -305,6 +356,7 @@ export const Home = () => {
         ref={cartBtnRef}
         isOpen={isCartOpen}
         count={cartCount}
+        total={cartTotal}
         onClick={() => setIsCartOpen((v) => !v)}
       />
 

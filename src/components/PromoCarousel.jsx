@@ -7,10 +7,14 @@ import { db } from '../firebase'
 const D_SLOTS = [
   [-2, 155, 248, 0.18, 0],
   [-1, 268, 428, 0.45, 1],
-  [0, 390, 624, 1, 2],
+  [0, 390, 680, 1, 2],
   [+1, 268, 428, 0.45, 1],
   [+2, 155, 248, 0.18, 0],
 ]
+
+const prefersReducedMotion =
+  typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 
 
@@ -123,7 +127,7 @@ export const PromoCarousel = ({ onAddToCart }) => {
                   borderRadius: 14,
                   overflow: 'hidden',
                   position: 'relative',
-                  transition: 'all 0.4s cubic-bezier(0.25,0.46,0.45,0.94)',
+                  transition: prefersReducedMotion ? 'none' : 'all 0.4s cubic-bezier(0.25,0.46,0.45,0.94)',
                   background: '#000',
                 }}
               >
@@ -174,9 +178,10 @@ export const PromoCarousel = ({ onAddToCart }) => {
                             </span>
                             <span style={{
                               background: '#743121', color: '#fef8e1',
-                              borderRadius: '50%', width: 36, height: 36,
+                              borderRadius: '50%', width: 44, height: 44,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 24, lineHeight: 1,
+                              fontSize: 26, lineHeight: 1,
+                              flexShrink: 0,
                             }}>
                               +
                             </span>
@@ -221,7 +226,10 @@ export const PromoCarousel = ({ onAddToCart }) => {
         return (
           <div
             className="md:hidden fixed inset-0 z-200 flex flex-col items-center justify-center"
-            style={{ background: 'rgba(20,8,4,0.72)' }}
+            style={{
+              background: 'rgba(20,8,4,0.72)',
+              animation: prefersReducedMotion ? 'none' : 'modal-in 0.25s ease-out',
+            }}
           >
             {/* X close button — top-right */}
             <button
@@ -325,14 +333,14 @@ export const PromoCarousel = ({ onAddToCart }) => {
                   const imgEl = mCenterImg.current?.querySelector('img') ?? null
                   triggerAdd(mSlide, imgEl)
                 }}
-                className="flex-1 rounded-xl bg-main-600 text-light-200 text-sm font-medium py-3"
+                className="flex-1 rounded-xl bg-main-600 text-light-200 text-sm font-medium py-3 min-h-[48px] cursor-pointer transition hover:bg-main-700"
               >
                 + Agregar al carrito
               </button>
               <button
                 type="button"
                 onClick={dismissModal}
-                className="rounded-xl px-4 py-3 text-xs text-light-200/80"
+                className="rounded-xl px-4 py-3 text-xs text-light-200/80 min-h-[48px] cursor-pointer transition hover:bg-white/10"
                 style={{ border: '0.5px solid rgba(254,248,225,0.25)' }}
               >
                 Ver menú

@@ -34,3 +34,38 @@ body {
   margin: 0;
   padding: 0;
 }
+
+/* Scrollbar hide utility — used by CategoryTabs horizontal scroll */
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Scroll-margin for sticky category tab nav */
+[data-section-anchor] {
+  scroll-margin-top: 52px; /* mobile: tab bar height */
+}
+@media (min-width: 640px) {
+  [data-section-anchor] {
+    scroll-margin-top: 148px; /* desktop: navbar (104px) + tab bar (44px) */
+  }
+}
+
+/* Safe area bottom padding for notched devices */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+}
+
+/* Carousel entrance animation (mobile overlay) */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
