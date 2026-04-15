@@ -8,6 +8,7 @@ import { Overview } from './views/admin/Overview'
 import { Orders } from './views/admin/Orders'
 import { Metrics } from './views/admin/Metrics'
 import { Promos } from './views/admin/Promos'
+import { MenuEditor } from './views/admin/MenuEditor'
 import { Admin } from './views/Admin'
 
 createRoot(document.getElementById('root')).render(
@@ -20,6 +21,7 @@ createRoot(document.getElementById('root')).render(
           <Route path="pedidos" element={<Orders />} />
           <Route path="metricas" element={<Metrics />} />
           <Route path="promociones" element={<Promos />} />
+          <Route path="menu" element={<MenuEditor />} />
           <Route path="legacy" element={<Admin />} />
         </Route>
       </Routes>

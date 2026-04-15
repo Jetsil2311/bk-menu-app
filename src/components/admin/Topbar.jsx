@@ -18,7 +18,8 @@ export const Topbar = ({ user, handleLogout }) => {
     if (path === '/admin/pedidos') return 'Pedidos'
     if (path === '/admin/metricas') return 'Métricas'
     if (path === '/admin/promociones') return 'Promociones'
-    if (path === '/admin/legacy') return 'Menu Editor'
+    if (path === '/admin/menu') return 'Editor de Menú'
+    if (path === '/admin/legacy') return 'Menu Editor (Legacy)'
     return 'Admin'
   }
 
