@@ -35,6 +35,8 @@ export const MenuCard = ({
   onAddToCart,
 }) => {
   const [isInfoOpen, setIsInfoOpen] = useState(false)
+  const [added, setAdded] = useState(false)
+  const addedTimerRef = useRef(null)
   const wrapperRef = useRef(null)
   const imgRef = useRef(null)
   const cardInstanceId = useRef(
@@ -86,6 +88,8 @@ export const MenuCard = ({
     }
   }, [isInfoOpen])
 
+  useEffect(() => () => clearTimeout(addedTimerRef.current), [])
+
   const isDisabled = isActive === false
   const showBadge = featured || popular
   const hasOptions =
@@ -113,14 +117,28 @@ export const MenuCard = ({
       availableToppings,
       optionGroups,
     })
+    // Flash checkmark only for direct-add (no overlay will open)
+    if (!hasOptions && availableToppings.length === 0) {
+      clearTimeout(addedTimerRef.current)
+      setAdded(true)
+      addedTimerRef.current = setTimeout(() => setAdded(false), 700)
+    }
   }
 
   return (
     <li
       ref={wrapperRef}
-      className={`relative overflow-visible flex flex-col rounded-2xl border border-amber-50 bg-light-100 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer ${
+      role="button"
+      tabIndex={isDisabled ? -1 : 0}
+      onClick={handleAddClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleAddClick(e) }
+      }}
+      className={`relative overflow-visible flex flex-col rounded-2xl border bg-light-100 shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-xl cursor-pointer ${
         isInfoOpen ? 'z-999' : 'z-0'
-      } ${isDisabled ? 'opacity-60' : ''}`}
+      } ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''} ${
+        added ? 'border-main-400 ring-2 ring-main-400/40 scale-[1.02]' : 'border-amber-50'
+      }`}
     >
       {/* ── Image area ─────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-t-2xl bg-main-200/40">
@@ -168,7 +186,20 @@ export const MenuCard = ({
             </span>
           </div>
         )}
+
+        {/* Added confirmation flash */}
+        {added && (
+          <div
+            className="absolute inset-0 flex items-center justify-center rounded-t-2xl pointer-events-none"
+            style={{ background: 'rgba(116,49,33,0.30)', animation: 'cardCheckIn 0.65s ease-out forwards' }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12 drop-shadow-lg">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+        )}
       </div>
+      <style>{`@keyframes cardCheckIn{0%{opacity:0;transform:scale(0.6)}40%{opacity:1;transform:scale(1.08)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1)}}`}</style>
 
       {/* ── Card body ──────────────────────────────────────────────────── */}
       <div className="flex flex-col px-4 pb-4 pt-3 flex-1">
@@ -224,7 +255,8 @@ export const MenuCard = ({
               <button
                 type="button"
                 data-menu-btn
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation()
                   document.dispatchEvent(
                     new CustomEvent('bk-menu:open', {
                       detail: { sourceId: cardInstanceId.current },
@@ -242,6 +274,7 @@ export const MenuCard = ({
               {isInfoOpen && (
                 <div
                   data-menu="popover"
+                  onClick={(e) => e.stopPropagation()}
                   className="absolute bottom-full right-0 mb-2 z-[1000] w-72 rounded-xl border border-amber-100 bg-[#faf6f0] p-4 text-sm text-[#1a0a00] shadow-xl"
                 >
                   <p className="whitespace-pre-line leading-relaxed text-[#6b5c52]">
@@ -254,17 +287,31 @@ export const MenuCard = ({
               )}
             </div>
 
-            {/* Agregar button — always shown, single action */}
-            <button
-              type="button"
-              onClick={handleAddClick}
-              disabled={isDisabled}
-              className={`inline-flex h-9 items-center rounded-full bg-main-500 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-main-400 hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-main-400/60 cursor-pointer ${
-                isDisabled ? 'cursor-not-allowed opacity-60' : ''
+            {/* Visual add indicator — the whole card is the tap target */}
+            <span
+              aria-hidden="true"
+              className={`inline-flex h-9 w-9 items-center justify-center rounded-full shadow-sm transition-all duration-200 select-none ${
+                isDisabled
+                  ? 'bg-main-300/40 text-main-400'
+                  : added
+                  ? 'bg-main-400 text-white scale-110'
+                  : 'bg-main-500 text-white'
               }`}
             >
-              {isDisabled ? 'Agotado' : 'Agregar'}
-            </button>
+              {added ? (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                  <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
+                </svg>
+              ) : hasOptions ? (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                  <path d="M10 3.75a2 2 0 1 0-4 0 2 2 0 0 0 4 0ZM17.25 4.5a.75.75 0 0 0 0-1.5h-5.5a.75.75 0 0 0 0 1.5h5.5ZM5 3.75a.75.75 0 0 1-.75.75h-1.5a.75.75 0 0 1 0-1.5h1.5a.75.75 0 0 1 .75.75ZM4.25 17a.75.75 0 0 0 0-1.5h-1.5a.75.75 0 0 0 0 1.5h1.5ZM17.25 17a.75.75 0 0 0 0-1.5h-5.5a.75.75 0 0 0 0 1.5h5.5ZM9 10a.75.75 0 0 1-.75.75h-5.5a.75.75 0 0 1 0-1.5h5.5A.75.75 0 0 1 9 10ZM17.25 10.75a.75.75 0 0 0 0-1.5h-1.5a.75.75 0 0 0 0 1.5h1.5ZM14 10a2 2 0 1 0-4 0 2 2 0 0 0 4 0ZM10 16.25a2 2 0 1 0-4 0 2 2 0 0 0 4 0Z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                  <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
+                </svg>
+              )}
+            </span>
 
           </div>
         </div>

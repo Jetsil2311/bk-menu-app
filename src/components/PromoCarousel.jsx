@@ -53,6 +53,7 @@ export const PromoCarousel = ({ onAddToCart }) => {
               name: data.name ?? '',
               price: data.price ?? 0,
               imageUrl: data.imageUrl ?? '',
+              optionGroups: Array.isArray(data.optionGroups) ? data.optionGroups : [],
             }
           })
         setProductMap(map)
@@ -72,14 +73,17 @@ export const PromoCarousel = ({ onAddToCart }) => {
     const p = productMap[slide?.linkedId]
     if (!p) { fireToast('Producto no disponible'); return }
     const fromRect = imgEl?.getBoundingClientRect() ?? null
+    const hasOptions = Array.isArray(p.optionGroups) && p.optionGroups.length > 0
     onAddToCart?.({
       id: slide.linkedId,
       name: p.name,
       price: p.price,
       fromRect,
       flyImageSrc: p.imageUrl || null,
+      optionGroups: p.optionGroups ?? [],
     })
-    fireToast(`${p.name} agregado`)
+    // Only show toast for direct adds — BottomSheet shows its own confirmation
+    if (!hasOptions) fireToast(`${p.name} agregado`)
   }, [productMap, onAddToCart, fireToast])
 
   const dismissModal = useCallback(() => {
