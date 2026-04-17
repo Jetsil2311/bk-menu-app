@@ -1,6 +1,8 @@
 /* eslint-disable react/prop-types */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
+import { writeBatch, doc } from 'firebase/firestore'
+import { db } from '../../firebase'
 import { useAdminData } from '../../hooks/useAdminData'
 import {
   Plus,
@@ -248,7 +250,7 @@ const ProductsTab = ({ data }) => {
     menuItems, menuLoading, menuError, menuSections, menuSectionsLoading,
     menuSectionsError, menuSavingId, toppingsList,
     handleSaveMenuItem, handleDeleteMenuItem, handleToggleProductActive, handleToggleSectionVisible,
-    handleAddProduct, handleSaveSection, handleDeleteSection,
+    handleAddProduct, handleAddSection, handleSaveSection, handleDeleteSection,
     editingItem, setEditingItem, editingImageFile, setEditingImageFile,
     deleteTarget, setDeleteTarget,
     editingSection, setEditingSection,
@@ -268,6 +270,8 @@ const ProductsTab = ({ data }) => {
   const [collapsedSections, setCollapsedSections] = useState({})
   const [addProductOpen, setAddProductOpen] = useState(false)
   const [addSectionOpen, setAddSectionOpen] = useState(false)
+  const [dragOverSection, setDragOverSection] = useState(null)
+  const dragSectionRef = useRef(null)
 
   // Open drawer if navigated here with state
   const location = useLocation()
@@ -335,6 +339,42 @@ const ProductsTab = ({ data }) => {
     handleAddSection({ preventDefault: () => {} })
   }
 
+  // Section drag-and-drop reorder
+  const handleSectionDragStart = (idx) => {
+    dragSectionRef.current = idx
+  }
+  const handleSectionDragOver = (e, idx) => {
+    e.preventDefault()
+    setDragOverSection(idx)
+  }
+  const handleSectionDrop = async (dropIdx) => {
+    setDragOverSection(null)
+    const fromIdx = dragSectionRef.current
+    dragSectionRef.current = null
+    if (fromIdx === null || fromIdx === dropIdx) return
+
+    // Reorder the docId-backed sections only
+    const docSections = grouped.filter(g => g.section.docId)
+    if (fromIdx >= docSections.length || dropIdx >= docSections.length) return
+
+    const reordered = [...docSections]
+    const [moved] = reordered.splice(fromIdx, 1)
+    reordered.splice(dropIdx, 0, moved)
+
+    // Persist new order via writeBatch
+    try {
+      const batch = writeBatch(db)
+      reordered.forEach(({ section }, i) => {
+        batch.update(doc(db, 'sections', section.docId), { order: i })
+      })
+      await batch.commit()
+      // Reload sections to reflect new order
+      loadMenuSections()
+    } catch (err) {
+      console.error('Error reordering sections:', err)
+    }
+  }
+
   // Edit section state
   const handleEditSectionChange = (field, value) => {
     setEditingSection(prev => prev ? { ...prev, [field]: value } : prev)
@@ -387,11 +427,19 @@ const ProductsTab = ({ data }) => {
         </div>
       ) : (
         <div className="space-y-4">
-          {grouped.map(({ section, products }) => (
-            <div key={section.docId ?? section.name} className="rounded-2xl border border-white/8 bg-main-900/20 overflow-hidden">
+          {grouped.map(({ section, products }, idx) => (
+            <div
+              key={section.docId ?? section.name}
+              className={`rounded-2xl border overflow-hidden transition-colors ${dragOverSection === idx ? 'border-main-500/60 bg-main-500/5' : 'border-white/8 bg-main-900/20'}`}
+              draggable={Boolean(section.docId)}
+              onDragStart={() => handleSectionDragStart(idx)}
+              onDragOver={(e) => handleSectionDragOver(e, idx)}
+              onDrop={() => handleSectionDrop(idx)}
+              onDragLeave={() => setDragOverSection(null)}
+            >
               {/* Section header */}
               <div className="flex items-center gap-3 px-4 py-3 bg-main-900/40 border-b border-white/5">
-                <GripVertical size={16} className="text-light-200/20 shrink-0" />
+                <GripVertical size={16} className={`shrink-0 ${section.docId ? 'text-light-200/30 cursor-grab' : 'text-light-200/10'}`} />
                 <button onClick={() => toggleSection(section.name)} className="flex items-center gap-2 flex-1 text-left">
                   <span className="font-semibold text-light-100 text-sm">{section.name}</span>
                   <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-light-200/50">{products.length}</span>
@@ -552,7 +600,7 @@ const ProductsTab = ({ data }) => {
         <DeleteConfirm
           label={`¿Seguro que deseas eliminar "${deleteTarget.name}"? Esta acción no se puede deshacer.`}
           loading={menuSavingId === deleteTarget.docId}
-          onConfirm={() => handleDeleteMenuItem(deleteTarget)}
+          onConfirm={async () => { await handleDeleteMenuItem(deleteTarget); setDeleteTarget(null) }}
           onCancel={() => setDeleteTarget(null)}
         />
       )}
