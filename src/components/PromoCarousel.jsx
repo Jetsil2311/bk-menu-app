@@ -18,7 +18,7 @@ const prefersReducedMotion =
 
 
 
-export const PromoCarousel = ({ onAddToCart }) => {
+export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
   const [slides, setSlides] = useState([])
   const [productMap, setProductMap] = useState({})
   const [loading, setLoading] = useState(true)
@@ -53,7 +53,11 @@ export const PromoCarousel = ({ onAddToCart }) => {
               name: data.name ?? '',
               price: data.price ?? 0,
               imageUrl: data.imageUrl ?? '',
+              image: data.image ?? '',
+              desc: data.desc ?? '',
+              long_desc: data.long_desc ?? '',
               optionGroups: Array.isArray(data.optionGroups) ? data.optionGroups : [],
+              toppingIds: Array.isArray(data.toppingIds) ? data.toppingIds : [],
             }
           })
         setProductMap(map)
@@ -74,17 +78,25 @@ export const PromoCarousel = ({ onAddToCart }) => {
     if (!p) { fireToast('Producto no disponible'); return }
     const fromRect = imgEl?.getBoundingClientRect() ?? null
     const hasOptions = Array.isArray(p.optionGroups) && p.optionGroups.length > 0
+    const availableToppings = p.toppingIds
+      .map((tid) => toppingsMap[tid])
+      .filter(Boolean)
     onAddToCart?.({
       id: slide.linkedId,
       name: p.name,
       price: p.price,
+      desc: p.desc,
+      long_desc: p.long_desc,
+      image: p.image,
+      imageUrl: p.imageUrl,
       fromRect,
       flyImageSrc: p.imageUrl || null,
-      optionGroups: p.optionGroups ?? [],
+      optionGroups: p.optionGroups,
+      availableToppings,
     })
-    // Only show toast for direct adds — BottomSheet shows its own confirmation
-    if (!hasOptions) fireToast(`${p.name} agregado`)
-  }, [productMap, onAddToCart, fireToast])
+    // Toast only for direct adds — overlays show their own confirmation
+    if (!hasOptions && availableToppings.length === 0) fireToast(`${p.name} agregado`)
+  }, [productMap, toppingsMap, onAddToCart, fireToast])
 
   const dismissModal = useCallback(() => {
     setShowModal(false)
@@ -336,6 +348,7 @@ export const PromoCarousel = ({ onAddToCart }) => {
                 onClick={() => {
                   const imgEl = mCenterImg.current?.querySelector('img') ?? null
                   triggerAdd(mSlide, imgEl)
+                  dismissModal()
                 }}
                 className="flex-1 rounded-xl bg-main-600 text-light-200 text-sm font-medium py-3 min-h-[48px] cursor-pointer transition hover:bg-main-700"
               >
@@ -367,4 +380,5 @@ export const PromoCarousel = ({ onAddToCart }) => {
 
 PromoCarousel.propTypes = {
   onAddToCart: PropTypes.func,
+  toppingsMap: PropTypes.object,
 }

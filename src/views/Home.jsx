@@ -461,6 +461,14 @@ export const Home = () => {
   const toppingOverlayAddProduct =
     pendingBottomSheetResult ?? pendingToppingItem
 
+  // Price shown in ToppingsOverlay must include any options delta already chosen
+  // in the BottomSheet so the running total is always base + options + toppings.
+  const toppingOverlayPrice =
+    Number(toppingOverlayAddProduct?.price ?? 0) +
+    (toppingOverlayAddProduct?.selectedOptions ?? []).reduce(
+      (s, o) => s + Number(o.priceModifier || 0), 0
+    )
+
   return (
     <>
       <Navbar />
@@ -508,7 +516,7 @@ export const Home = () => {
         </div>
       )}
 
-      <PromoCarousel onAddToCart={addToCart} />
+      <PromoCarousel onAddToCart={addToCart} toppingsMap={toppingsMap} />
 
       {visibleSections.length > 1 && (
         <CategoryTabs
@@ -567,7 +575,7 @@ export const Home = () => {
           setPendingBottomSheetResult(null)
         }}
         productName={toppingOverlayAddProduct?.name ?? ''}
-        productPrice={toppingOverlayAddProduct?.price ?? 0}
+        productPrice={toppingOverlayPrice}
         toppings={toppingOverlayAddProduct?.availableToppings ?? []}
         initialSelected={[]}
         onConfirm={handleToppingConfirmAdd}
@@ -579,7 +587,12 @@ export const Home = () => {
         isOpen={Boolean(editingToppingCartItemId)}
         onClose={() => setEditingToppingCartItemId(null)}
         productName={editingCartItem?.name ?? ''}
-        productPrice={editingCartItem?.price ?? 0}
+        productPrice={
+          Number(editingCartItem?.price ?? 0) +
+          (editingCartItem?.selectedOptions ?? []).reduce(
+            (s, o) => s + Number(o.priceModifier || 0), 0
+          )
+        }
         toppings={editingCartItem?.availableToppings ?? []}
         initialSelected={editingCartItem?.selectedToppings ?? []}
         onConfirm={handleToppingConfirmEdit}
