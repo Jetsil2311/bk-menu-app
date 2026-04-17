@@ -90,12 +90,14 @@ export const MenuSection = ({ children, desc, onAddToCart, toppingsMap = {} }) =
                                         desc={product.desc}
                                         price={product.price}
                                         long_desc={product.long_desc}
-                                        flavors={product.flavors ? product.flavors : null}
                                         image={product.image}
                                         imageUrl={product.imageUrl}
                                         id={product.id}
                                         isActive={product.isActive}
+                                        featured={product.featured || false}
+                                        popular={product.popular || false}
                                         availableToppings={availableToppings}
+                                        optionGroups={Array.isArray(product.optionGroups) ? product.optionGroups : []}
                                         onAddToCart={onAddToCart}
                                     />
                                 )

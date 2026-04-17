@@ -118,6 +118,19 @@ export const CartOverlay = ({
                               {item.option}
                             </div>
                           )}
+                          {item.selectedOptions?.length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {item.selectedOptions.map((o) => (
+                                <span
+                                  key={`${o.groupId}_${o.optionId}`}
+                                  className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] text-light-200/80"
+                                >
+                                  {o.optionName}
+                                  {o.priceModifier > 0 && ` +$${o.priceModifier}`}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                           {item.selectedToppings?.length > 0 && (
                             <div className="mt-1 flex flex-wrap gap-1">
                               {item.selectedToppings.map((t) => (

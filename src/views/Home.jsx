@@ -5,10 +5,19 @@ import { PromoCarousel } from '../components/PromoCarousel'
 import { CartButton } from '../components/CartButton'
 import { CartOverlay } from '../components/CartOverlay'
 import { ToppingsOverlay } from '../components/ToppingsOverlay'
+import { BottomSheet } from '../components/BottomSheet'
 import { PromoBanner } from '../components/PromoBanner'
 import { SectionsList } from '../components/SectionsList'
 import { CategoryTabs } from '../components/CategoryTabs'
-import { addDoc, collection, getDocs, orderBy, query, serverTimestamp, writeBatch } from 'firebase/firestore'
+import {
+  addDoc,
+  collection,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  writeBatch,
+} from 'firebase/firestore'
 import { usePromotion } from '../hooks/usePromotion'
 import { useSections } from '../hooks/useSections'
 import { flyToCart, formatMoney, getCartKey } from '../utils/cart'
@@ -26,14 +35,38 @@ export const Home = () => {
   // Toppings map: docId → {id, name, price}
   const [toppingsMap, setToppingsMap] = useState({})
 
+  // ── BottomSheet state ─────────────────────────────────────────────────────
+  // Product currently open in the BottomSheet (null = closed).
+  // Shape: { id, name, price, desc, long_desc, imageUrl, image, fromRect,
+  //          flyImageSrc, availableToppings, optionGroups }
+  const [bottomSheetProduct, setBottomSheetProduct] = useState(null)
+
+  // When BottomSheet completes and the product ALSO has toppings, we park the
+  // partial result here before showing the ToppingsOverlay.
+  // Shape: { ...product fields, selectedOptions, qty }
+  const [pendingBottomSheetResult, setPendingBottomSheetResult] = useState(null)
+
+  // ── ToppingsOverlay state ─────────────────────────────────────────────────
   // Pending item waiting for topping selection before being added.
   // Shape: { id, name, price, option, fromRect, flyImageSrc, availableToppings }
   const [pendingToppingItem, setPendingToppingItem] = useState(null)
 
   // Cart item being edited (to change its toppings).
-  // Shape: cartItemId string
   const [editingToppingCartItemId, setEditingToppingCartItemId] = useState(null)
 
+  // ── Toast ─────────────────────────────────────────────────────────────────
+  const [toast, setToast] = useState(null)
+  const toastTimerRef = useRef(null)
+
+  const showToast = (msg) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setToast(msg)
+    toastTimerRef.current = setTimeout(() => setToast(null), 2000)
+  }
+
+  useEffect(() => () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current) }, [])
+
+  // ── Sections / promos ─────────────────────────────────────────────────────
   const { sections, isLoading: sectionsLoading, error: sectionsError } = useSections()
   const { promotion } = usePromotion()
   const cartBtnRef = useRef(null)
@@ -41,9 +74,10 @@ export const Home = () => {
   const [activeSection, setActiveSection] = useState('')
   const activeSectionInitialized = useRef(false)
 
-  // Sections visible on the current route (mirrors the filter in SectionsList).
   const visibleSections = sections.filter(
-    (s) => `/${s.category?.toLowerCase?.()}` === location.pathname || location.pathname === '/'
+    (s) =>
+      `/${s.category?.toLowerCase?.()}` === location.pathname ||
+      location.pathname === '/'
   )
 
   // Load all toppings once on mount.
@@ -61,18 +95,27 @@ export const Home = () => {
         })
         setToppingsMap(map)
       })
-      .catch(() => {}) // non-fatal
-    return () => { active = false }
+      .catch(() => {})
+    return () => {
+      active = false
+    }
   }, [])
 
-  // Derived cart metrics.
+  // ── Cart metrics ──────────────────────────────────────────────────────────
   const cartCount = cart.reduce((sum, item) => sum + (item.qty || 0), 0)
+
   const cartTotal = cart.reduce((sum, item) => {
     const toppingsPrice = (item.selectedToppings || []).reduce(
       (s, t) => s + Number(t.price || 0),
       0
     )
-    return sum + (Number(item.price || 0) + toppingsPrice) * (item.qty || 0)
+    const optionsPrice = (item.selectedOptions || []).reduce(
+      (s, o) => s + Number(o.priceModifier || 0),
+      0
+    )
+    return (
+      sum + (Number(item.price || 0) + toppingsPrice + optionsPrice) * (item.qty || 0)
+    )
   }, 0)
 
   const clearCart = () => {
@@ -80,46 +123,36 @@ export const Home = () => {
     setOrderNotes('')
   }
 
-  // Adds a new item or increments an existing one.
-  // If the product has available toppings, opens the toppings overlay instead.
-  const addToCart = ({
+  // ── Core cart mutators ────────────────────────────────────────────────────
+
+  // Writes a resolved item into the cart (merges if identical key).
+  // qty param lets the BottomSheet add multiple units at once.
+  const _commitToCart = ({
     id,
     name,
     price,
     option = null,
     fromRect = null,
     flyImageSrc = null,
+    selectedToppings = [],
     availableToppings = [],
+    selectedOptions = [],
+    qty: addQty = 1,
   }) => {
-    if (availableToppings.length > 0) {
-      // Park the pending item and show the topping picker.
-      setPendingToppingItem({ id, name, price, option, fromRect, flyImageSrc, availableToppings })
-      return
-    }
-
-    // No toppings — add directly.
-    _commitToCart({ id, name, price, option, fromRect, flyImageSrc, selectedToppings: [] })
-  }
-
-  // Called when the ToppingsOverlay confirms a selection (add flow).
-  const handleToppingConfirmAdd = (selectedToppings) => {
-    if (!pendingToppingItem) return
-    const { id, name, price, option, fromRect, flyImageSrc, availableToppings } = pendingToppingItem
-    _commitToCart({ id, name, price, option, fromRect, flyImageSrc, selectedToppings, availableToppings })
-    setPendingToppingItem(null)
-  }
-
-  // Writes the resolved item into cart (merges if identical key).
-  const _commitToCart = ({ id, name, price, option, fromRect, flyImageSrc, selectedToppings, availableToppings = [] }) => {
     if (fromRect) {
       flyToCart({ fromRect, imgSrc: flyImageSrc, target: cartBtnRef.current })
     }
+
     setCart((prev) => {
       const toppingIds = selectedToppings.map((t) => t.id)
-      const key = getCartKey(id, option, toppingIds)
-      const idx = prev.findIndex(
-        (it) => getCartKey(it.id, it.option, (it.selectedToppings || []).map((t) => t.id)) === key
-      )
+      const optionIds = selectedOptions.map((o) => o.optionId)
+      const key = getCartKey(id, option, toppingIds, optionIds)
+
+      const idx = prev.findIndex((it) => {
+        const itToppingIds = (it.selectedToppings || []).map((t) => t.id)
+        const itOptionIds = (it.selectedOptions || []).map((o) => o.optionId)
+        return getCartKey(it.id, it.option, itToppingIds, itOptionIds) === key
+      })
 
       if (idx === -1) {
         return [
@@ -130,20 +163,119 @@ export const Home = () => {
             name,
             price,
             option,
-            qty: 1,
+            qty: addQty,
             selectedToppings,
             availableToppings,
+            selectedOptions,
           },
         ]
       }
 
       const next = [...prev]
-      next[idx] = { ...next[idx], qty: (next[idx].qty || 0) + 1 }
+      next[idx] = { ...next[idx], qty: (next[idx].qty || 0) + addQty }
       return next
     })
   }
 
-  // Called when the ToppingsOverlay confirms a selection (edit flow).
+  // Entry point called by MenuCard / PromoCarousel "Agregar" buttons.
+  const addToCart = ({
+    id,
+    name,
+    price,
+    desc = '',
+    long_desc = '',
+    image = null,
+    imageUrl = null,
+    option = null,
+    fromRect = null,
+    flyImageSrc = null,
+    availableToppings = [],
+    optionGroups = [],
+  }) => {
+    // 1. Has option groups → open BottomSheet
+    if (Array.isArray(optionGroups) && optionGroups.length > 0) {
+      setBottomSheetProduct({
+        id, name, price, desc, long_desc, image, imageUrl,
+        option, fromRect, flyImageSrc, availableToppings, optionGroups,
+      })
+      return
+    }
+
+    // 2. Has toppings only → open ToppingsOverlay
+    if (availableToppings.length > 0) {
+      setPendingToppingItem({
+        id, name, price, option, fromRect, flyImageSrc, availableToppings,
+      })
+      return
+    }
+
+    // 3. No options / toppings → add directly + toast
+    _commitToCart({ id, name, price, option, fromRect, flyImageSrc, selectedToppings: [], selectedOptions: [] })
+    showToast('¡Agregado! 🧋')
+  }
+
+  // Called when the BottomSheet's "Agregar al carrito" button is tapped.
+  const handleBottomSheetConfirm = ({ selectedOptions, qty }) => {
+    if (!bottomSheetProduct) return
+    const {
+      id, name, price, option, fromRect, flyImageSrc, availableToppings,
+    } = bottomSheetProduct
+
+    setBottomSheetProduct(null) // closes the sheet
+
+    if (availableToppings.length > 0) {
+      // Park partial result; continue to ToppingsOverlay
+      setPendingBottomSheetResult({
+        id, name, price, option, fromRect, flyImageSrc,
+        availableToppings, selectedOptions, qty,
+      })
+      setPendingToppingItem({ id, name, price, option, fromRect, flyImageSrc, availableToppings })
+      return
+    }
+
+    _commitToCart({
+      id, name, price, option, fromRect, flyImageSrc,
+      selectedToppings: [],
+      availableToppings,
+      selectedOptions,
+      qty,
+    })
+    showToast('¡Agregado! 🧋')
+  }
+
+  // Called when ToppingsOverlay confirms a selection (add flow).
+  const handleToppingConfirmAdd = (selectedToppings) => {
+    if (pendingBottomSheetResult) {
+      // Came via BottomSheet → ToppingsOverlay path
+      const {
+        id, name, price, option, fromRect, flyImageSrc,
+        availableToppings, selectedOptions, qty,
+      } = pendingBottomSheetResult
+      _commitToCart({
+        id, name, price, option, fromRect, flyImageSrc,
+        selectedToppings,
+        availableToppings,
+        selectedOptions,
+        qty,
+      })
+      setPendingBottomSheetResult(null)
+      showToast('¡Agregado! 🧋')
+    } else {
+      if (!pendingToppingItem) return
+      const { id, name, price, option, fromRect, flyImageSrc, availableToppings } =
+        pendingToppingItem
+      _commitToCart({
+        id, name, price, option, fromRect, flyImageSrc,
+        selectedToppings,
+        availableToppings,
+        selectedOptions: [],
+        qty: 1,
+      })
+    }
+    setPendingToppingItem(null)
+  }
+
+  // Called when ToppingsOverlay confirms a selection (edit flow).
   const handleToppingConfirmEdit = (selectedToppings) => {
     if (!editingToppingCartItemId) return
     setCart((prev) =>
@@ -156,8 +288,7 @@ export const Home = () => {
     setEditingToppingCartItemId(null)
   }
 
-  // Adjust quantity by delta; removes the item when it hits 0.
-  // Uses cartItemId for precise targeting (supports multiple items with same product).
+  // Adjust quantity by delta; removes item when it hits 0.
   const changeQty = (cartItemId, delta) => {
     setCart((prev) => {
       const idx = prev.findIndex((it) => it.cartItemId === cartItemId)
@@ -175,7 +306,7 @@ export const Home = () => {
     })
   }
 
-  // Builds the WhatsApp order summary.
+  // ── WhatsApp order ────────────────────────────────────────────────────────
   const buildOrderMessage = () => {
     const notes = orderNotes.trim()
     const lines = [
@@ -184,17 +315,34 @@ export const Home = () => {
       'Items:',
       ...cart.map((item, idx) => {
         const optionText = item.option ? ` (${item.option})` : ''
+
+        const selectedOptionsText =
+          item.selectedOptions?.length
+            ? ` [${item.selectedOptions
+                .map((o) =>
+                  o.priceModifier > 0
+                    ? `${o.optionName} (+$${o.priceModifier})`
+                    : o.optionName
+                )
+                .join(', ')}]`
+            : ''
+
         const toppingsText =
           item.selectedToppings?.length
             ? ` [${item.selectedToppings.map((t) => t.name).join(', ')}]`
             : ''
+
         const toppingsPrice = (item.selectedToppings || []).reduce(
           (s, t) => s + Number(t.price || 0),
           0
         )
-        const unitTotal = Number(item.price || 0) + toppingsPrice
+        const optionsPrice = (item.selectedOptions || []).reduce(
+          (s, o) => s + Number(o.priceModifier || 0),
+          0
+        )
+        const unitTotal = Number(item.price || 0) + toppingsPrice + optionsPrice
         const lineTotal = unitTotal * (item.qty || 0)
-        return `${idx + 1}. ${item.qty} x ${item.name}${optionText}${toppingsText} - ${formatMoney(lineTotal)}`
+        return `${idx + 1}. ${item.qty} x ${item.name}${optionText}${selectedOptionsText}${toppingsText} - ${formatMoney(lineTotal)}`
       }),
       '',
       `Total: ${formatMoney(cartTotal)}`,
@@ -217,10 +365,9 @@ export const Home = () => {
 
   const saveOrderSnapshot = async (message, total) => {
     try {
-      const orderId = `BK-${Date.now().toString(36).toUpperCase()}-${Math.random()
+      const orderId = `BK-${Date.now()
         .toString(36)
-        .slice(2, 6)
-        .toUpperCase()}`
+        .toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
       await addDoc(collection(db, 'orders'), {
         orderId,
         content: message,
@@ -245,7 +392,7 @@ export const Home = () => {
     }
   }
 
-  // Scroll reveal for sections.
+  // ── Scroll / intersection effects ─────────────────────────────────────────
   useEffect(() => {
     const els = Array.from(document.querySelectorAll('[data-reveal]'))
     if (!els.length) return
@@ -267,12 +414,10 @@ export const Home = () => {
     return () => observer.disconnect()
   }, [location.pathname, sections.length])
 
-  // Scroll-spy: update activeSection as sections enter the viewport.
   useEffect(() => {
     const els = Array.from(document.querySelectorAll('[data-section-anchor]'))
     if (!els.length) return
 
-    // Initialise to first visible section once when sections first load.
     if (!activeSectionInitialized.current && els.length > 0) {
       setActiveSection(els[0].dataset.sectionAnchor)
       activeSectionInitialized.current = true
@@ -297,21 +442,24 @@ export const Home = () => {
     if (promotion) {
       setIsPromoVisible(true)
     }
-    // Re-run only when promotion changes identity, not on every reference change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [promotion?.id])
 
-  // Smooth-scroll to the target section when a category tab is clicked.
   const handleTabClick = (name) => {
     const el = document.getElementById(`section-${name}`)
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
     setActiveSection(name)
   }
 
-  // Derived data for the active edit overlay
+  // Derived data for the toppings edit overlay
   const editingCartItem = editingToppingCartItemId
     ? cart.find((it) => it.cartItemId === editingToppingCartItemId)
     : null
+
+  // ToppingsOverlay for "add" flow: uses pendingBottomSheetResult product name
+  // when triggered after BottomSheet, or pendingToppingItem otherwise.
+  const toppingOverlayAddProduct =
+    pendingBottomSheetResult ?? pendingToppingItem
 
   return (
     <>
@@ -323,13 +471,42 @@ export const Home = () => {
           onClose={() => setIsPromoVisible(false)}
         />
       )}
+
       <style>{`
         @keyframes cartbump {
-          0% { transform: scale(1); }
-          35% { transform: scale(1.15); }
+          0%   { transform: scale(1); }
+          35%  { transform: scale(1.15); }
           100% { transform: scale(1); }
         }
+        @keyframes toastIn {
+          0%   { opacity: 0; transform: translate(-50%, -8px); }
+          100% { opacity: 1; transform: translate(-50%, 0); }
+        }
       `}</style>
+
+      {/* ── Brief add-to-cart toast ──────────────────────────────────── */}
+      {toast && (
+        <div
+          className="fixed left-1/2 pointer-events-none"
+          style={{
+            top: 72,
+            zIndex: 9100,
+            animation: 'toastIn 200ms ease-out forwards',
+          }}
+        >
+          <div
+            className="rounded-full px-5 py-2.5 text-sm font-semibold shadow-2xl"
+            style={{
+              background: '#1c0d05',
+              border: '1px solid rgba(120,60,20,0.4)',
+              color: '#faf6f0',
+              transform: 'translateX(-50%)',
+            }}
+          >
+            {toast}
+          </div>
+        </div>
+      )}
 
       <PromoCarousel onAddToCart={addToCart} />
 
@@ -374,19 +551,30 @@ export const Home = () => {
         onEditToppings={(cartItemId) => setEditingToppingCartItemId(cartItemId)}
       />
 
-      {/* Toppings overlay — add flow */}
+      {/* ── BottomSheet — option groups ──────────────────────────────── */}
+      <BottomSheet
+        isOpen={Boolean(bottomSheetProduct)}
+        onClose={() => setBottomSheetProduct(null)}
+        product={bottomSheetProduct}
+        onConfirm={handleBottomSheetConfirm}
+      />
+
+      {/* ── ToppingsOverlay — add flow ────────────────────────────────── */}
       <ToppingsOverlay
         isOpen={Boolean(pendingToppingItem)}
-        onClose={() => setPendingToppingItem(null)}
-        productName={pendingToppingItem?.name ?? ''}
-        productPrice={pendingToppingItem?.price ?? 0}
-        toppings={pendingToppingItem?.availableToppings ?? []}
+        onClose={() => {
+          setPendingToppingItem(null)
+          setPendingBottomSheetResult(null)
+        }}
+        productName={toppingOverlayAddProduct?.name ?? ''}
+        productPrice={toppingOverlayAddProduct?.price ?? 0}
+        toppings={toppingOverlayAddProduct?.availableToppings ?? []}
         initialSelected={[]}
         onConfirm={handleToppingConfirmAdd}
         confirmLabel="Agregar al carrito"
       />
 
-      {/* Toppings overlay — edit flow */}
+      {/* ── ToppingsOverlay — edit flow ───────────────────────────────── */}
       <ToppingsOverlay
         isOpen={Boolean(editingToppingCartItemId)}
         onClose={() => setEditingToppingCartItemId(null)}

@@ -43,6 +43,7 @@ export const useAdminData = () => {
   const [productImage, setProductImage] = useState('')
   const [productImageFile, setProductImageFile] = useState(null)
   const [productSuccess, setProductSuccess] = useState('')
+  const [productOptionGroups, setProductOptionGroups] = useState([])
   // Section form state.
   const [sectionName, setSectionName] = useState('')
   const [sectionDesc, setSectionDesc] = useState('')
@@ -512,6 +513,7 @@ export const useAdminData = () => {
         price: priceValue,
         flavors,
         toppingIds: Array.isArray(item.toppingIds) ? item.toppingIds : [],
+        optionGroups: Array.isArray(item.optionGroups) ? item.optionGroups : [],
         image: item.image?.trim?.() ?? '',
         isActive: item.isActive ?? true,
       })
@@ -906,6 +908,7 @@ export const useAdminData = () => {
         price: priceValue,
         flavors,
         toppingIds: productToppingIds,
+        optionGroups: Array.isArray(productOptionGroups) ? productOptionGroups : [],
         image: productImage.trim(),
         isActive: true,
         createdAt: serverTimestamp(),
@@ -930,6 +933,7 @@ export const useAdminData = () => {
       setProductImage('')
       setProductImageFile(null)
       setProductToppingIds([])
+      setProductOptionGroups([])
       setProductSuccess('Producto guardado correctamente.')
     } catch (err) {
       setError('No se pudo guardar el producto. Intenta de nuevo.')
@@ -1062,6 +1066,7 @@ export const useAdminData = () => {
     productImageFile,
     productLongDesc,
     productName,
+    productOptionGroups,
     productPrice,
     productSection,
     productSuccess,
@@ -1130,6 +1135,7 @@ export const useAdminData = () => {
     setProductImageFile,
     setProductLongDesc,
     setProductName,
+    setProductOptionGroups,
     setProductPrice,
     setProductSection,
     setProductSuccess,

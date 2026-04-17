@@ -8,8 +8,9 @@ export const formatMoney = (value) =>
   }).format(value)
 
 // toppingIds is an optional array of topping doc IDs; sorted for stable keys.
-export const getCartKey = (id, option, toppingIds = []) =>
-  `${id}::${option ?? ''}::${[...toppingIds].sort().join(',')}`
+// selectedOptionIds is an optional array of option IDs from optionGroups; sorted for stable keys.
+export const getCartKey = (id, option, toppingIds = [], selectedOptionIds = []) =>
+  `${id}::${option ?? ''}::${[...toppingIds].sort().join(',')}::${[...selectedOptionIds].sort().join(',')}`
 
 // Creates a short "fly to cart" animation from the product card to the cart button.
 export const flyToCart = ({ fromRect, imgSrc, target }) => {

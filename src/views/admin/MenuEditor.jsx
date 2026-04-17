@@ -28,6 +28,207 @@ const inputCls =
 
 const labelCls = 'block text-xs font-medium text-light-200/60 mb-1.5'
 
+// ── Option Groups Editor ──────────────────────────────────────────────────────
+// Renders inside ProductDrawer to manage the optionGroups array.
+const OptionGroupsEditor = ({ groups = [], onChange }) => {
+  const addGroup = () => {
+    const newGroup = {
+      id: `group_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      name: '',
+      type: 'single',
+      required: false,
+      options: [],
+    }
+    onChange([...groups, newGroup])
+  }
+
+  const updateGroup = (gIdx, field, value) => {
+    const next = [...groups]
+    next[gIdx] = { ...next[gIdx], [field]: value }
+    onChange(next)
+  }
+
+  const removeGroup = (gIdx) => {
+    onChange(groups.filter((_, i) => i !== gIdx))
+  }
+
+  const addOption = (gIdx) => {
+    const newOption = {
+      id: `opt_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      name: '',
+      priceModifier: 0,
+    }
+    const next = [...groups]
+    next[gIdx] = { ...next[gIdx], options: [...(next[gIdx].options || []), newOption] }
+    onChange(next)
+  }
+
+  const updateOption = (gIdx, oIdx, field, value) => {
+    const next = [...groups]
+    const opts = [...(next[gIdx].options || [])]
+    opts[oIdx] = { ...opts[oIdx], [field]: value }
+    next[gIdx] = { ...next[gIdx], options: opts }
+    onChange(next)
+  }
+
+  const removeOption = (gIdx, oIdx) => {
+    const next = [...groups]
+    next[gIdx] = {
+      ...next[gIdx],
+      options: (next[gIdx].options || []).filter((_, i) => i !== oIdx),
+    }
+    onChange(next)
+  }
+
+  return (
+    <div className="col-span-2 space-y-3">
+      {/* Section header */}
+      <div className="flex items-center justify-between">
+        <span className={labelCls + ' mb-0'}>Grupos de Opciones</span>
+        <button
+          type="button"
+          onClick={addGroup}
+          className="flex items-center gap-1 rounded-lg border border-main-500/30 bg-main-600/20 px-2.5 py-1 text-xs font-medium text-main-300 transition-colors hover:bg-main-600/40 cursor-pointer"
+        >
+          <Plus size={12} /> Agregar grupo
+        </button>
+      </div>
+
+      {groups.length === 0 && (
+        <p className="text-[11px] italic text-light-200/25">
+          Sin grupos configurados. Agrega grupos para mostrar opciones al cliente (Sabores, Estilo, Temperatura, etc.).
+        </p>
+      )}
+
+      {groups.map((group, gIdx) => (
+        <div
+          key={group.id}
+          className="rounded-xl border border-amber-900/20 p-4 space-y-3"
+          style={{ background: 'rgba(255,255,255,0.04)' }}
+        >
+          {/* Row 1: drag handle + name + required toggle */}
+          <div className="flex items-center gap-2">
+            <GripVertical
+              size={14}
+              className="text-light-200/20 shrink-0 cursor-grab"
+            />
+            <input
+              className={inputCls + ' flex-1'}
+              placeholder="Nombre del grupo, ej. Sabores"
+              value={group.name}
+              onChange={(e) => updateGroup(gIdx, 'name', e.target.value)}
+            />
+            {/* Required toggle */}
+            <button
+              type="button"
+              onClick={() => updateGroup(gIdx, 'required', !group.required)}
+              title={group.required ? 'Requerido — clic para desactivar' : 'Opcional — clic para hacer requerido'}
+              className={`shrink-0 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors cursor-pointer ${
+                group.required
+                  ? 'border-red-500/30 bg-red-500/15 text-red-300'
+                  : 'border-white/10 bg-white/5 text-light-200/30 hover:border-white/20'
+              }`}
+            >
+              * req
+            </button>
+          </div>
+
+          {/* Row 2: type toggle — single / multi */}
+          <div className="flex gap-2">
+            {[
+              { value: 'single', label: 'Elige 1' },
+              { value: 'multi', label: 'Elige varios' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => updateGroup(gIdx, 'type', opt.value)}
+                className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+                  group.type === opt.value
+                    ? 'border border-main-500/40 bg-main-500/20 text-main-300'
+                    : 'border border-white/10 bg-white/5 text-light-200/40 hover:bg-white/10'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Options list */}
+          {(group.options || []).length > 0 && (
+            <div className="space-y-2">
+              {(group.options || []).map((opt, oIdx) => (
+                <div key={opt.id} className="flex items-center gap-2">
+                  <input
+                    className={inputCls + ' flex-1'}
+                    placeholder="Nombre, ej. Mango"
+                    value={opt.name}
+                    onChange={(e) =>
+                      updateOption(gIdx, oIdx, 'name', e.target.value)
+                    }
+                  />
+                  <div className="relative w-24 shrink-0">
+                    <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-light-200/30">
+                      +$
+                    </span>
+                    <input
+                      className={inputCls + ' pl-7'}
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                      value={opt.priceModifier === 0 ? '' : opt.priceModifier}
+                      onChange={(e) =>
+                        updateOption(
+                          gIdx,
+                          oIdx,
+                          'priceModifier',
+                          e.target.value === '' ? 0 : Number(e.target.value)
+                        )
+                      }
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeOption(gIdx, oIdx)}
+                    className="shrink-0 p-1.5 rounded-lg text-light-200/30 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                    aria-label="Eliminar opción"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add option */}
+          <button
+            type="button"
+            onClick={() => addOption(gIdx)}
+            className="flex items-center gap-1 text-xs text-main-400 hover:text-main-300 transition-colors cursor-pointer"
+          >
+            <Plus size={12} /> Agregar opción
+          </button>
+
+          {/* Group footer: delete group */}
+          <div
+            className="flex justify-end pt-2"
+            style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
+          >
+            <button
+              type="button"
+              onClick={() => removeGroup(gIdx)}
+              className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-light-200/25 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+            >
+              <Trash2 size={12} /> Eliminar grupo
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Slide-over drawer wrapper ─────────────────────────────────────────────────
 const Drawer = ({ isOpen, onClose, title, children }) => {
   useEffect(() => {
@@ -170,6 +371,12 @@ const ProductDrawer = ({
               </div>
             </div>
           )}
+          {/* Option Groups */}
+          <OptionGroupsEditor
+            groups={Array.isArray(item.optionGroups) ? item.optionGroups : []}
+            onChange={(groups) => onChange('optionGroups', groups)}
+          />
+
           <div className="col-span-2 flex items-center justify-between py-2 px-3 rounded-xl bg-white/5 border border-white/10">
             <span className="text-sm text-light-200/70">Disponible (activo)</span>
             <button type="button" onClick={() => onChange('isActive', item.isActive === false ? true : false)} className={`transition-colors ${item.isActive !== false ? 'text-main-400' : 'text-light-200/20'}`}>
@@ -260,7 +467,7 @@ const ProductsTab = ({ data }) => {
     productDesc, setProductDesc, productLongDesc, setProductLongDesc,
     productPrice, setProductPrice, productFlavors, setProductFlavors,
     productImage, setProductImage, productImageFile, setProductImageFile,
-    productToppingIds, setProductToppingIds, productSuccess,
+    productToppingIds, setProductToppingIds, productOptionGroups, productSuccess,
     sectionName, setSectionName, sectionCategory, setSectionCategory,
     sectionDesc, setSectionDesc, sectionOrder, setSectionOrder,
     sectionSuccess, setSectionSuccess,
@@ -304,7 +511,9 @@ const ProductsTab = ({ data }) => {
   const newProductObj = {
     name: productName, section: productSection, desc: productDesc,
     long_desc: productLongDesc, price: productPrice, flavorsText: productFlavors,
-    image: productImage, toppingIds: productToppingIds, isActive: true,
+    image: productImage, toppingIds: productToppingIds,
+    optionGroups: productOptionGroups || [],
+    isActive: true,
   }
 
   const handleNewProductChange = (field, value) => {
@@ -312,6 +521,7 @@ const ProductsTab = ({ data }) => {
       name: setProductName, section: setProductSection, desc: setProductDesc,
       long_desc: setProductLongDesc, price: setProductPrice, flavorsText: setProductFlavors,
       image: setProductImage, toppingIds: setProductToppingIds,
+      optionGroups: data.setProductOptionGroups,
     }
     setters[field]?.(value)
   }
