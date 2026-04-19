@@ -214,15 +214,15 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
 
   // ── Shared add-button styles ─────────────────────────────────────────────
   const addBtnStyle = isRequiredComplete
-    ? { background: '#7c2d12', cursor: 'pointer' }
-    : { background: '#3a1810', color: '#6b5c52', cursor: 'not-allowed' }
+    ? { background: '#3b5bdb', cursor: 'pointer' }
+    : { background: '#213380', color: '#6B7280', cursor: 'not-allowed' }
 
   const addBtnHover = {
     onMouseEnter: (e) => {
-      if (isRequiredComplete) e.currentTarget.style.background = '#9a3a17'
+      if (isRequiredComplete) e.currentTarget.style.background = '#4a6ee0'
     },
     onMouseLeave: (e) => {
-      if (isRequiredComplete) e.currentTarget.style.background = '#7c2d12'
+      if (isRequiredComplete) e.currentTarget.style.background = '#3b5bdb'
     },
   }
 
@@ -246,7 +246,7 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
           className="absolute inset-x-0 bottom-0 pointer-events-none"
           style={{
             height: '50%',
-            background: 'linear-gradient(to top, #1c0d05, transparent)',
+            background: 'linear-gradient(to top, #0d1535, transparent)',
           }}
         />
       </div>
@@ -256,21 +256,21 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
     <div className={isDesktop ? 'px-6 pt-5 pb-3' : 'px-5 pt-4 pb-2'}>
       <h3
         className="font-bold leading-tight"
-        style={{ fontSize: isDesktop ? 18 : 20, color: '#faf6f0' }}
+        style={{ fontSize: isDesktop ? 18 : 20, color: '#e8ecf4' }}
       >
         {localProduct.name}
       </h3>
       {localProduct.desc && (
         <p
           className="mt-1 text-sm italic leading-relaxed line-clamp-2"
-          style={{ color: '#b09080' }}
+          style={{ color: '#6B7280' }}
         >
           {localProduct.desc}
         </p>
       )}
       <p
         className="mt-2 font-semibold"
-        style={{ fontSize: isDesktop ? 15 : 18, color: '#c84b2f' }}
+        style={{ fontSize: isDesktop ? 15 : 18, color: '#3b5bdb' }}
       >
         ${Number(localProduct.price).toLocaleString('es-MX')}
       </p>
@@ -285,12 +285,12 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
           <div
             key={group.id}
             className={isDesktop ? 'px-6 py-4' : 'px-5 py-4'}
-            style={{ borderTop: '1px solid rgba(120,60,20,0.25)' }}
+            style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
           >
             <div className="flex items-center gap-2 mb-3 flex-wrap">
               <span
                 className="text-xs font-semibold uppercase tracking-wider"
-                style={{ color: '#b09080' }}
+                style={{ color: '#6B7280' }}
               >
                 {group.name}
               </span>
@@ -306,8 +306,8 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
               <span
                 className="rounded-full px-2 py-0.5 text-[10px]"
                 style={{
-                  border: '1px solid rgba(146,84,32,0.4)',
-                  color: '#b09080',
+                  border: '1px solid rgba(59,91,219,0.4)',
+                  color: '#b0bdd6',
                 }}
               >
                 {group.type === 'single' ? 'Elige 1' : 'Elige varios'}
@@ -322,11 +322,11 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
                     key={opt.id}
                     type="button"
                     onClick={() => toggleOption(group, opt.id)}
-                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
+                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-main-400/50"
                     style={
                       isSelected
-                        ? { background: '#7c2d12', border: '1px solid #7c2d12', color: '#ffffff' }
-                        : { background: 'transparent', border: '1px solid rgba(146,84,32,0.5)', color: '#faf6f0' }
+                        ? { background: '#3b5bdb', border: '1px solid #3b5bdb', color: '#ffffff' }
+                        : { background: 'transparent', border: '1px solid rgba(59,91,219,0.5)', color: '#e8ecf4' }
                     }
                     aria-pressed={isSelected}
                   >
@@ -350,17 +350,17 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
   const QtySelector = () => (
     <div
       className={`flex items-center justify-center gap-6 ${isDesktop ? 'px-6 py-4 mt-2' : 'px-5 py-4'}`}
-      style={{ borderTop: '1px solid rgba(120,60,20,0.25)' }}
+      style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
     >
       <button
         type="button"
         onClick={() => setQty((q) => Math.max(1, q - 1))}
         disabled={qty <= 1}
-        className="h-9 w-9 flex items-center justify-center rounded-full text-xl font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
+        className="h-9 w-9 flex items-center justify-center rounded-full text-xl font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-main-400/50"
         style={
           qty <= 1
-            ? { border: '1px solid rgba(120,60,20,0.2)', color: 'rgba(120,60,20,0.3)', cursor: 'not-allowed' }
-            : { border: '1px solid rgba(146,84,32,0.5)', color: '#faf6f0', cursor: 'pointer' }
+            ? { border: '1px solid rgba(59,91,219,0.2)', color: 'rgba(59,91,219,0.3)', cursor: 'not-allowed' }
+            : { border: '1px solid rgba(59,91,219,0.5)', color: '#e8ecf4', cursor: 'pointer' }
         }
         aria-label="Disminuir cantidad"
       >
@@ -368,15 +368,15 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
       </button>
       <span
         className="font-semibold text-lg min-w-[24px] text-center select-none"
-        style={{ color: '#faf6f0' }}
+        style={{ color: '#e8ecf4' }}
       >
         {qty}
       </span>
       <button
         type="button"
         onClick={() => setQty((q) => q + 1)}
-        className="h-9 w-9 flex items-center justify-center rounded-full text-xl font-bold transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
-        style={{ border: '1px solid rgba(146,84,32,0.5)', color: '#faf6f0' }}
+        className="h-9 w-9 flex items-center justify-center rounded-full text-xl font-bold transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-main-400/50"
+        style={{ border: '1px solid rgba(59,91,219,0.5)', color: '#e8ecf4' }}
         aria-label="Aumentar cantidad"
       >
         +
@@ -416,7 +416,7 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
         {isDesktop && (
           <div
             className="flex flex-col overflow-y-auto"
-            style={{ background: '#1c0d05', maxHeight: '85vh' }}
+            style={{ background: '#0d1535', maxHeight: '85vh' }}
           >
             <ProductImage />
             <ProductInfo />
@@ -428,13 +428,13 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
             {/* Inline add button — not sticky on desktop */}
             <div
               className="px-6 py-5"
-              style={{ borderTop: '1px solid rgba(120,60,20,0.3)' }}
+              style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
             >
               <button
                 type="button"
                 onClick={handleConfirm}
                 disabled={!isRequiredComplete}
-                className="w-full rounded-xl py-3 text-base font-bold text-white transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
+                className="w-full rounded-xl py-3 text-base font-bold text-white transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-main-400/50"
                 style={addBtnStyle}
                 {...addBtnHover}
               >
@@ -448,7 +448,7 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
         {!isDesktop && (
           <div
             className="flex flex-col"
-            style={{ background: '#1c0d05', maxHeight: '80vh' }}
+            style={{ background: '#0d1535', maxHeight: '80vh' }}
           >
             {/* Drag handle pill */}
             <div className="flex justify-center pt-3 pb-2 shrink-0">
@@ -472,8 +472,8 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
             <div
               className="shrink-0 px-5 py-4"
               style={{
-                borderTop: '1px solid rgba(120,60,20,0.3)',
-                background: '#0f0602',
+                borderTop: '1px solid rgba(255,255,255,0.08)',
+                background: '#080c18',
                 paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))',
               }}
             >
@@ -481,7 +481,7 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
                 type="button"
                 onClick={handleConfirm}
                 disabled={!isRequiredComplete}
-                className="w-full rounded-2xl py-4 text-base font-bold text-white transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
+                className="w-full rounded-2xl py-4 text-base font-bold text-white transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-main-400/50"
                 style={addBtnStyle}
                 {...addBtnHover}
               >

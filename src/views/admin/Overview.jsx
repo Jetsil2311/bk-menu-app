@@ -1,4 +1,6 @@
 /* eslint-disable react/prop-types */
+import { useState } from 'react'
+import { useOutletContext } from 'react-router'
 import { useAdminDashboard } from '../../hooks/useAdminDashboard'
 import {
   TrendingUp,
@@ -11,12 +13,18 @@ import {
   Clock,
   Package,
   ShoppingCart,
+  X,
+  ShieldAlert,
 } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router'
 
 export const Overview = () => {
   const { stats, recentOrders, loading } = useAdminDashboard()
   const navigate = useNavigate()
+  const { emailCheck } = useOutletContext() || {}
+  const [warnDismissed, setWarnDismissed] = useState(false)
+
+  const showNoEmailsWarning = !warnDismissed && emailCheck === 'no-list'
 
   const calculateTrend = (current, previous) => {
     if (previous === 0) return current > 0 ? 100 : 0
@@ -50,31 +58,11 @@ export const Overview = () => {
   }
 
   const quickActions = [
-    {
-      name: 'Abrir POS',
-      icon: ShoppingCart,
-      action: () => navigate('/admin/pos'),
-    },
-    {
-      name: 'Agregar producto',
-      icon: PlusCircle,
-      action: () => navigate('/admin/menu', { state: { openAddProduct: true } }),
-    },
-    {
-      name: 'Actualizar menú',
-      icon: ListPlus,
-      action: () => navigate('/admin/menu'),
-    },
-    {
-      name: 'Agregar sección',
-      icon: Plus,
-      action: () => navigate('/admin/menu', { state: { openAddSection: true } }),
-    },
-    {
-      name: 'Gestionar toppings',
-      icon: Settings,
-      action: () => navigate('/admin/menu', { state: { tab: 'toppings' } }),
-    },
+    { name: 'Abrir POS',         icon: ShoppingCart, action: () => navigate('/admin/pos') },
+    { name: 'Agregar producto',  icon: PlusCircle,   action: () => navigate('/admin/menu', { state: { openAddProduct: true } }) },
+    { name: 'Actualizar menú',   icon: ListPlus,     action: () => navigate('/admin/menu') },
+    { name: 'Agregar sección',   icon: Plus,         action: () => navigate('/admin/menu', { state: { openAddSection: true } }) },
+    { name: 'Gestionar toppings',icon: Settings,     action: () => navigate('/admin/menu', { state: { tab: 'toppings' } }) },
   ]
 
   const getStatusColor = (status) => {
@@ -90,26 +78,33 @@ export const Overview = () => {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500">
+
+      {/* ── No-emails warning banner — only shown if authorizedEmails is empty ── */}
+      {showNoEmailsWarning && (
+        <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-2xl border border-amber-500/20 bg-amber-500/[0.06]">
+          <div className="flex items-center gap-3 min-w-0">
+            <ShieldAlert size={16} className="text-amber-400 shrink-0" />
+            <p className="text-sm text-amber-200/80">
+              No hay correos autorizados configurados. Agrega uno para proteger el acceso.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setWarnDismissed(true)}
+            aria-label="Cerrar aviso"
+            className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-white/10 text-light-200/40 hover:text-light-200 transition-colors cursor-pointer shrink-0"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {/* Hero Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard
-          title="Pedidos Hoy"
-          value={stats.ordersToday}
-          previousValue={stats.prevOrdersToday}
-        />
-        <StatCard
-          title="Ingresos del Día"
-          value={stats.revenueToday}
-          previousValue={stats.prevRevenueToday}
-          prefix="$"
-        />
-        <StatCard
-          title="Promedio Ticket"
-          value={stats.avgTicket}
-          previousValue={0}
-          prefix="$"
-        />
+        <StatCard title="Pedidos Hoy"      value={stats.ordersToday}   previousValue={stats.prevOrdersToday} />
+        <StatCard title="Ingresos del Día" value={stats.revenueToday}  previousValue={stats.prevRevenueToday} prefix="$" />
+        <StatCard title="Promedio Ticket"  value={stats.avgTicket}     previousValue={0} prefix="$" />
       </div>
 
       {/* Quick Actions Strip */}
@@ -168,7 +163,6 @@ export const Overview = () => {
                   ? order.createdAt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
                   : order.createdAt?.toDate?.()?.toLocaleTimeString?.('es-MX', { hour: '2-digit', minute: '2-digit' }) ?? '—'
 
-                // Parse item names from content string (format: "1. 1 x ProductName - $XX")
                 const contentLines = (order.content || '').split('\n')
                 const itemLines = contentLines.filter(l => /^\d+\./.test(l.trim()))
                 const itemNames = itemLines.map(l => l.replace(/^\d+\.\s*\d+\s*x\s*/, '').split(' -')[0].trim()).filter(Boolean)

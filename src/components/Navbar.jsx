@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import Logo from '../assets/bklogo.svg'
+import Logo from '../assets/logo.svg'
 import { NavLink } from 'react-router'
 import Boba from '../assets/Boba.svg'
 import Croissant from '../assets/Croissant.svg'
@@ -59,8 +59,8 @@ export const Navbar = () => {
           }
         >
           <NavLink to="/" onClick={closeMobileMenu} className="flex items-center gap-3">
-            <img src={Logo} alt="BK Logo" className="h-14" />
-            <span className="text-2xl font-bold text-light-200">Bubble Kaapeh</span>
+            <img src={Logo} alt="Mi Cafetería" className="h-14" />
+            <span className="text-2xl font-bold text-light-200">Mi Cafetería</span>
           </NavLink>
 
           <div className="mt-6 flex w-full max-w-sm flex-col gap-3">
@@ -107,7 +107,7 @@ export const Navbar = () => {
           <div className="flex items-center space-x-2">
             <div className='text-main-500'>
               <NavLink to="/">
-                <img src={Logo} alt="BK Logo" className="h-14 fill-current" />
+                <img src={Logo} alt="Mi Cafetería" className="h-14 fill-current" />
               </NavLink>
             </div>
           </div>

@@ -137,7 +137,7 @@ export const MenuCard = ({
       className={`relative overflow-visible flex flex-col rounded-2xl border bg-light-100 shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-xl cursor-pointer ${
         isInfoOpen ? 'z-999' : 'z-0'
       } ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''} ${
-        added ? 'border-main-400 ring-2 ring-main-400/40 scale-[1.02]' : 'border-amber-50'
+        added ? 'border-main-400 ring-2 ring-main-400/40 scale-[1.02]' : 'border-main-100'
       }`}
     >
       {/* ── Image area ─────────────────────────────────────────────────── */}
@@ -150,7 +150,7 @@ export const MenuCard = ({
           className="w-full aspect-[4/3] object-cover"
           onError={(e) => {
             e.currentTarget.onerror = null
-            e.currentTarget.src = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='112' height='112' viewBox='0 0 112 112'><rect width='112' height='112' fill='%23e6c5be'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='32' fill='%23743121'>☕</text></svg>`
+            e.currentTarget.src = 'https://placehold.co/400x400/e2e8f0/94a3b8?text=Producto'
           }}
         />
 
@@ -159,7 +159,7 @@ export const MenuCard = ({
           className="absolute inset-x-0 bottom-0 h-1/3 pointer-events-none"
           style={{
             background:
-              'linear-gradient(to top, rgba(26,10,0,0.15), transparent)',
+              'linear-gradient(to top, rgba(15,22,41,0.15), transparent)',
           }}
         />
 
@@ -191,7 +191,7 @@ export const MenuCard = ({
         {added && (
           <div
             className="absolute inset-0 flex items-center justify-center rounded-t-2xl pointer-events-none"
-            style={{ background: 'rgba(116,49,33,0.30)', animation: 'cardCheckIn 0.65s ease-out forwards' }}
+            style={{ background: 'rgba(59,91,219,0.30)', animation: 'cardCheckIn 0.65s ease-out forwards' }}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12 drop-shadow-lg">
               <polyline points="20 6 9 17 4 12" />
@@ -205,35 +205,35 @@ export const MenuCard = ({
       <div className="flex flex-col px-4 pb-4 pt-3 flex-1">
 
         {/* 1. Product name */}
-        <h4 className="text-base font-semibold text-[#1a0a00] truncate leading-snug">
+        <h4 className="text-base font-semibold text-[#1C1C1E] truncate leading-snug">
           {name}
         </h4>
 
         {/* 2. Short description */}
         {desc && (
-          <p className="mt-1 text-sm italic text-[#6b5c52] line-clamp-2 leading-relaxed">
+          <p className="mt-1 text-sm italic text-[#6B7280] line-clamp-2 leading-relaxed">
             {desc}
           </p>
         )}
 
         {/* 3. Option group hint / toppings badge */}
         {(hasOptions || availableToppings.length > 0) && (
-          <div className="border-t border-amber-100 mt-2.5 pt-2">
+          <div className="border-t border-main-100 mt-2.5 pt-2">
             <div className="flex flex-wrap items-center gap-1.5">
               {hasOptions && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-main-300/30 bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-main-600">
+                <span className="inline-flex items-center gap-1 rounded-full border border-main-300/30 bg-main-50 px-2.5 py-0.5 text-[11px] font-medium text-main-600">
                   ✦ {optionGroups[0]?.name ?? 'Opciones'}{' '}
                   {optionGroups.length > 1 && `+${optionGroups.length - 1} más`}
                 </span>
               )}
               {!hasOptions && availableToppings.length > 0 && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-main-300/30 bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-main-600">
+                <span className="inline-flex items-center gap-1 rounded-full border border-main-300/30 bg-main-50 px-2.5 py-0.5 text-[11px] font-medium text-main-600">
                   ✦ Agrega {availableToppings[0].name} +$
                   {availableToppings[0].price}
                 </span>
               )}
               {!hasOptions && extraToppings > 0 && (
-                <span className="inline-flex items-center rounded-full border border-main-200/40 bg-amber-50 px-2 py-0.5 text-[11px] text-main-500">
+                <span className="inline-flex items-center rounded-full border border-main-200/40 bg-main-50 px-2 py-0.5 text-[11px] text-main-500">
                   +{extraToppings} más
                 </span>
               )}
@@ -245,7 +245,7 @@ export const MenuCard = ({
         <div className="mt-auto pt-3 flex items-center justify-between gap-2">
 
           {/* Price */}
-          <span className="text-xl font-bold text-[#1a0a00]">${price}</span>
+          <span className="text-xl font-bold text-[#1C1C1E]">${price}</span>
 
           {/* Info button + Agregar button */}
           <div className="flex items-center gap-1.5">
@@ -264,7 +264,7 @@ export const MenuCard = ({
                   )
                   setIsInfoOpen((v) => !v)
                 }}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-main-500/60 transition-colors duration-200 hover:bg-amber-100/70 hover:text-main-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-main-400/50 cursor-pointer"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-main-500/60 transition-colors duration-200 hover:bg-main-100/70 hover:text-main-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-main-400/50 cursor-pointer"
                 aria-label="Más información"
                 aria-expanded={isInfoOpen}
               >
@@ -275,9 +275,9 @@ export const MenuCard = ({
                 <div
                   data-menu="popover"
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute bottom-full right-0 mb-2 z-[1000] w-72 rounded-xl border border-amber-100 bg-[#faf6f0] p-4 text-sm text-[#1a0a00] shadow-xl"
+                  className="absolute bottom-full right-0 mb-2 z-[1000] w-72 rounded-xl border border-main-100 bg-white p-4 text-sm text-[#1C1C1E] shadow-xl"
                 >
-                  <p className="whitespace-pre-line leading-relaxed text-[#6b5c52]">
+                  <p className="whitespace-pre-line leading-relaxed text-[#6B7280]">
                     {long_desc ?? ''}
                   </p>
                   <div className="mt-2.5 text-xs text-main-400">

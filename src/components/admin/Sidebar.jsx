@@ -53,7 +53,7 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
       <div className="flex-shrink-0 h-16 flex items-center px-4 border-b border-white/5">
         {!isCollapsed && (
           <span className="flex-1 text-lg font-bold tracking-tight text-light-100 truncate">
-            Bubble Kaapeh
+            Mi Cafetería
           </span>
         )}
         <button

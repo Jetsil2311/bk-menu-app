@@ -1,5 +1,5 @@
 /**
- * importCustomers.js — Bubble Kaapeh Customer CSV Import
+ * importCustomers.js — Mi Cafetería Customer CSV Import
  * =======================================================
  *
  * PREREQUISITES

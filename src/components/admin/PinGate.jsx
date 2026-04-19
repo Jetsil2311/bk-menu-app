@@ -2,9 +2,12 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router'
 import PropTypes from 'prop-types'
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { db } from '../../firebase'
+// FALLBACK ONLY — source of truth is Firestore settings/general.adminPin.
+// This constant is used only if no PIN has been stored in Firestore yet.
 import { ADMIN_PIN } from '../../config/adminPin'
 
-// Phone-style keypad layout
 const ROWS = [
   ['1', '2', '3'],
   ['4', '5', '6'],
@@ -15,24 +18,44 @@ const ALL_KEYS = ROWS.flat()
 
 // ─── PinGate ──────────────────────────────────────────────────────────────────
 // Wraps a protected route. Shows a full-screen PIN overlay before revealing
-// the child content. Local `unlocked` state resets every time this component
-// mounts (i.e. every navigation to a protected route), so no session caching.
+// the child content. Fetches the active PIN fresh from Firestore on every mount
+// so any PIN change takes effect immediately across all devices.
 
 export const PinGate = ({ children }) => {
-  const [unlocked, setUnlocked]   = useState(false)
-  const [digits, setDigits]       = useState([])
-  const [shaking, setShaking]     = useState(false)
-  const [errorMsg, setErrorMsg]   = useState('')
-  const overlayRef                = useRef(null)
-  const navigate                  = useNavigate()
+  const [unlocked, setUnlocked] = useState(false)
+  const [digits, setDigits]     = useState([])
+  const [shaking, setShaking]   = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+  // activePin starts as the hardcoded fallback; updated async from Firestore
+  const [activePin, setActivePin] = useState(ADMIN_PIN)
+  const overlayRef = useRef(null)
+  const navigate   = useNavigate()
+
+  // Fetch PIN from Firestore on every mount. Falls back to ADMIN_PIN on error.
+  // If no PIN exists in Firestore yet, writes the fallback so future fetches work.
+  useEffect(() => {
+    let active = true
+    getDoc(doc(db, 'settings', 'general'))
+      .then(snap => {
+        if (!active) return
+        if (snap.exists() && snap.data().adminPin) {
+          setActivePin(snap.data().adminPin)
+        } else {
+          // First launch: persist the fallback PIN so the chip can manage it later
+          setDoc(doc(db, 'settings', 'general'), {
+            adminPin: ADMIN_PIN,
+            updatedAt: serverTimestamp(),
+          }, { merge: true }).catch(() => {})
+        }
+      })
+      .catch(() => {}) // network error — keep fallback
+    return () => { active = false }
+  }, [])
 
   const handleKey = useCallback((key) => {
     if (shaking) return
 
-    if (key === 'cancel') {
-      navigate('/admin/pedidos')
-      return
-    }
+    if (key === 'cancel') { navigate('/admin/pedidos'); return }
 
     if (key === 'backspace') {
       setDigits(prev => prev.slice(0, -1))
@@ -45,20 +68,12 @@ export const PinGate = ({ children }) => {
       const next = [...prev, key]
 
       if (next.length === 4) {
-        if (next.join('') === ADMIN_PIN) {
-          // Correct — unlock after state settles
-          setTimeout(() => {
-            setDigits([])
-            setUnlocked(true)
-          }, 0)
+        if (next.join('') === activePin) {
+          setTimeout(() => { setDigits([]); setUnlocked(true) }, 0)
         } else {
-          // Wrong — shake, then clear
           setShaking(true)
           setErrorMsg('PIN incorrecto, intenta de nuevo')
-          setTimeout(() => {
-            setShaking(false)
-            setDigits([])
-          }, 420)
+          setTimeout(() => { setShaking(false); setDigits([]) }, 420)
         }
       } else {
         setErrorMsg('')
@@ -66,44 +81,33 @@ export const PinGate = ({ children }) => {
 
       return next
     })
-  }, [shaking, navigate])
+  }, [shaking, navigate, activePin])
 
   // Escape → cancel
   useEffect(() => {
     if (unlocked) return
-    const handler = (e) => {
-      if (e.key === 'Escape') navigate('/admin/pedidos')
-    }
+    const handler = (e) => { if (e.key === 'Escape') navigate('/admin/pedidos') }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [unlocked, navigate])
 
-  // Focus trap — keep focus cycling inside the overlay buttons only
+  // Focus trap
   useEffect(() => {
     if (unlocked) return
     const el = overlayRef.current
     if (!el) return
-
     const buttons = () => Array.from(el.querySelectorAll('button[data-pin-key]'))
-
-    // Auto-focus first key on mount
     const timer = setTimeout(() => buttons()[0]?.focus(), 50)
-
     const trap = (e) => {
       if (e.key !== 'Tab') return
       e.preventDefault()
       const arr = buttons()
       const idx = arr.indexOf(document.activeElement)
-      const next = e.shiftKey
-        ? (idx - 1 + arr.length) % arr.length
-        : (idx + 1) % arr.length
+      const next = e.shiftKey ? (idx - 1 + arr.length) % arr.length : (idx + 1) % arr.length
       arr[next]?.focus()
     }
     document.addEventListener('keydown', trap)
-    return () => {
-      clearTimeout(timer)
-      document.removeEventListener('keydown', trap)
-    }
+    return () => { clearTimeout(timer); document.removeEventListener('keydown', trap) }
   }, [unlocked])
 
   if (unlocked) return children
@@ -118,10 +122,7 @@ export const PinGate = ({ children }) => {
       style={{ zIndex: 9999, animation: 'pinFadeIn 150ms ease-out both' }}
     >
       <style>{`
-        @keyframes pinFadeIn {
-          from { opacity: 0 }
-          to   { opacity: 1 }
-        }
+        @keyframes pinFadeIn { from { opacity: 0 } to { opacity: 1 } }
         @keyframes pinShake {
           0%,100% { transform: translateX(0) }
           15%     { transform: translateX(-10px) }
@@ -134,53 +135,31 @@ export const PinGate = ({ children }) => {
 
       <div className="w-full max-w-[300px] flex flex-col items-center gap-7">
 
-        {/* ── Brand ────────────────────────────────────────────────────── */}
         <div className="text-center space-y-1.5">
-          <h1 className="text-2xl font-bold tracking-tight text-light-100">
-            Bubble Kaapeh
-          </h1>
-          <p className="text-sm text-light-200/50">
-            Acceso restringido — ingresa tu PIN
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-light-100">Mi Cafetería</h1>
+          <p className="text-sm text-light-200/50">Acceso restringido — ingresa tu PIN</p>
         </div>
 
-        {/* ── Digit circles ─────────────────────────────────────────────── */}
-        <div
-          className="flex gap-3.5"
-          style={shaking ? { animation: 'pinShake 420ms ease-in-out' } : undefined}
-        >
+        <div className="flex gap-3.5" style={shaking ? { animation: 'pinShake 420ms ease-in-out' } : undefined}>
           {[0, 1, 2, 3].map(i => (
             <div
               key={i}
-              className={`
-                w-14 h-14 rounded-2xl border-2 flex items-center justify-center
-                transition-all duration-150
-                ${digits[i] !== undefined
-                  ? 'border-main-400 bg-main-500/15'
-                  : 'border-white/10 bg-white/[0.03]'
-                }
-              `}
+              className={`w-14 h-14 rounded-2xl border-2 flex items-center justify-center transition-all duration-150 ${
+                digits[i] !== undefined ? 'border-main-400 bg-main-500/15' : 'border-white/10 bg-white/[0.03]'
+              }`}
             >
-              {digits[i] !== undefined && (
-                <div className="w-3.5 h-3.5 rounded-full bg-main-400" />
-              )}
+              {digits[i] !== undefined && <div className="w-3.5 h-3.5 rounded-full bg-main-400" />}
             </div>
           ))}
         </div>
 
-        {/* ── Error message (always reserves space to prevent layout jump) ── */}
         <p
-          className={`
-            text-xs font-medium text-rose-400 -mt-3 h-4
-            transition-opacity duration-200
-            ${errorMsg ? 'opacity-100' : 'opacity-0'}
-          `}
+          className={`text-xs font-medium text-rose-400 -mt-3 h-4 transition-opacity duration-200 ${errorMsg ? 'opacity-100' : 'opacity-0'}`}
           aria-live="polite"
         >
           {errorMsg}
         </p>
 
-        {/* ── Keypad ───────────────────────────────────────────────────── */}
         <div className="w-full grid grid-cols-3 gap-2.5">
           {ALL_KEYS.map(key => {
             const isBackspace = key === 'backspace'
@@ -210,26 +189,13 @@ export const PinGate = ({ children }) => {
               >
                 {isBackspace ? (
                   <span className="flex items-center justify-center">
-                    <svg
-                      width="20" height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
                       <line x1="18" y1="9" x2="12" y2="15" />
                       <line x1="12" y1="9" x2="18" y2="15" />
                     </svg>
                   </span>
-                ) : isCancel ? (
-                  'Cancelar'
-                ) : (
-                  key
-                )}
+                ) : isCancel ? 'Cancelar' : key}
               </button>
             )
           })}
@@ -242,6 +208,4 @@ export const PinGate = ({ children }) => {
   return createPortal(overlay, document.body)
 }
 
-PinGate.propTypes = {
-  children: PropTypes.node.isRequired,
-}
+PinGate.propTypes = { children: PropTypes.node.isRequired }

@@ -3,18 +3,17 @@ export const categories = [
         name: 'Alimentos',
         id: 0,
         sections: [
-            'Panadería',
-            'Chapatas'
+            'Alimentos',
+            'Combos'
         ]
     },
     {
         name: 'Bebidas',
         id: 1,
         sections: [
-            'Bebidas Heladas (Leche)',
-            'Bebidas Heladas (Agua)',
+            'Bebidas Frías',
+            'Bebidas Frías con Café',
             'Bebidas Calientes'
         ]
     }
-
 ]
