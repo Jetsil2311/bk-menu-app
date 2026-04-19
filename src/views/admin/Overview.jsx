@@ -9,7 +9,8 @@ import {
   Plus,
   ArrowRight,
   Clock,
-  Package
+  Package,
+  ShoppingCart,
 } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router'
 
@@ -50,6 +51,11 @@ export const Overview = () => {
 
   const quickActions = [
     {
+      name: 'Abrir POS',
+      icon: ShoppingCart,
+      action: () => navigate('/admin/pos'),
+    },
+    {
       name: 'Agregar producto',
       icon: PlusCircle,
       action: () => navigate('/admin/menu', { state: { openAddProduct: true } }),
@@ -73,11 +79,13 @@ export const Overview = () => {
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
-      case 'nuevo': return 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-      case 'en preparación': return 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-      case 'listo': return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-      case 'entregado': return 'bg-light-200/5 text-light-200/40 border-light-200/10'
-      default: return 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+      case 'nuevo':            return 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+      case 'preparando':
+      case 'en preparación':   return 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+      case 'listo':            return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+      case 'pagado':
+      case 'entregado':        return 'bg-light-200/5 text-light-200/40 border-light-200/10'
+      default:                 return 'bg-amber-500/10 text-amber-400 border-amber-500/20'
     }
   }
 

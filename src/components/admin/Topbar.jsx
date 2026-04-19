@@ -2,10 +2,12 @@
 import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router'
 import { LogOut, User, Bell } from 'lucide-react'
+import { useRegister } from '../../hooks/useRegister'
 
 export const Topbar = ({ user, handleLogout }) => {
   const location = useLocation()
   const [dateTime, setDateTime] = useState(new Date())
+  const { isRegisterOpen, loading } = useRegister()
 
   useEffect(() => {
     const timer = setInterval(() => setDateTime(new Date()), 60000)
@@ -19,6 +21,9 @@ export const Topbar = ({ user, handleLogout }) => {
     if (path === '/admin/metricas') return 'Métricas'
     if (path === '/admin/promociones') return 'Promociones'
     if (path === '/admin/menu') return 'Editor de Menú'
+    if (path === '/admin/pos') return 'POS — Punto de Venta'
+    if (path === '/admin/caja') return 'Caja'
+    if (path === '/admin/clientes') return 'Clientes'
     if (path === '/admin/legacy') return 'Menu Editor (Legacy)'
     return 'Admin'
   }
@@ -32,7 +37,19 @@ export const Topbar = ({ user, handleLogout }) => {
   return (
     <header className="h-16 flex items-center justify-between px-6 bg-main-950 border-b border-white/5 sticky top-0 z-40">
       <div>
-        <h1 className="text-lg font-semibold text-light-100">{getPageTitle()}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-semibold text-light-100">{getPageTitle()}</h1>
+          {!loading && (
+            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider transition-all ${
+              isRegisterOpen 
+                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                : 'bg-rose-500/10 border-rose-500/20 text-rose-400'
+            }`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${isRegisterOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></div>
+              {isRegisterOpen ? 'Caja Abierta' : 'Caja Cerrada'}
+            </div>
+          )}
+        </div>
         <p className="text-xs text-light-200/40 capitalize">{formattedDate}</p>
       </div>
 

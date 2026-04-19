@@ -8,7 +8,10 @@ import {
   UtensilsCrossed,
   ChevronLeft,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  ShoppingCart,
+  Users,
+  Landmark,
 } from 'lucide-react'
 import PropTypes from 'prop-types'
 
@@ -20,7 +23,10 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
 
   const navItems = [
     { name: 'Overview',     path: '/admin',              icon: LayoutDashboard, end: true },
+    { name: 'POS',          path: '/admin/pos',          icon: ShoppingCart },
+    { name: 'Caja',         path: '/admin/caja',         icon: Landmark },
     { name: 'Pedidos',      path: '/admin/pedidos',      icon: ClipboardList },
+    { name: 'Clientes',     path: '/admin/clientes',     icon: Users },
     { name: 'Métricas',     path: '/admin/metricas',     icon: BarChart3 },
     { name: 'Promociones',  path: '/admin/promociones',  icon: Tag },
     { name: 'Menú',         path: '/admin/menu',         icon: UtensilsCrossed },
