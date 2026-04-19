@@ -23,7 +23,7 @@ const CheckIcon = () => (
 // ─── BottomSheet ─────────────────────────────────────────────────────────────
 // Mobile  (< 768 px) : full-width bottom sheet, slides up from bottom, swipe-to-dismiss
 // Desktop (≥ 768 px) : 420 px centered modal, scale+fade animation, no drag handle
-export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
+export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelections = null, initialQty = 1 }) => {
   const [selections, setSelections] = useState({})
   const [qty, setQty] = useState(1)
   // Mobile drag-to-dismiss state
@@ -58,10 +58,11 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm }) => {
 
   // Reset selections and qty whenever a new product opens.
   // Keyed on product?.id so we reset only when a *different* product is opened.
+  // initialSelections / initialQty allow pre-populating for edit mode.
   useEffect(() => {
     if (isOpen && product) {
-      setSelections({})
-      setQty(1)
+      setSelections(initialSelections ?? {})
+      setQty(initialQty ?? 1)
       setDragDeltaY(0)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

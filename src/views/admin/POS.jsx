@@ -15,7 +15,7 @@ import { RegisterOverlay } from '../../components/admin/RegisterOverlay'
 import {
   ShoppingCart, Search, X, Plus, Minus, User, UserPlus,
   CreditCard, Banknote, Wallet, Package, CheckCircle2,
-  Receipt, PenLine, Bookmark, RotateCcw,
+  Receipt, PenLine, Bookmark, RotateCcw, Edit2,
   Trash2, ChevronDown, Clock, AlertCircle as AlertCircleIcon,
 } from 'lucide-react'
 
@@ -42,10 +42,11 @@ const calcOrderTotal = (items) => items.reduce((s, it) => s + itemLineTotal(it),
 
 // ─── TicketItem ───────────────────────────────────────────────────────────────
 
-const TicketItem = ({ item, onChangeQty, onRemove, onSetNote }) => {
+const TicketItem = ({ item, onChangeQty, onRemove, onSetNote, onEdit }) => {
   const [noteOpen, setNoteOpen] = useState(false)
   const optSummary = item.selectedOptions?.map(o => o.optionName).join(', ') ?? ''
   const topSummary = item.selectedToppings?.map(t => t.name).join(', ') ?? ''
+  const hasCustomisation = Boolean(optSummary || topSummary)
 
   return (
     <div className="border-b border-white/5 last:border-0">
@@ -62,8 +63,17 @@ const TicketItem = ({ item, onChangeQty, onRemove, onSetNote }) => {
           </button>
         </div>
 
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-light-100 leading-snug">{item.name}</p>
+        <button
+          onClick={() => onEdit?.(item)}
+          className={`flex-1 min-w-0 text-left group/item rounded-lg px-1 py-0.5 -mx-1 transition-colors ${onEdit ? 'hover:bg-white/[0.04] cursor-pointer' : ''}`}
+          title={onEdit ? 'Editar opciones' : undefined}
+        >
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-semibold text-light-100 leading-snug">{item.name}</p>
+            {onEdit && hasCustomisation && (
+              <Edit2 size={10} className="text-light-200/20 group-hover/item:text-light-200/50 transition-colors shrink-0" />
+            )}
+          </div>
           {(optSummary || topSummary) && (
             <p className="text-xs text-light-200/40 mt-0.5 leading-relaxed truncate">
               {[optSummary, topSummary].filter(Boolean).join(' · ')}
@@ -72,7 +82,7 @@ const TicketItem = ({ item, onChangeQty, onRemove, onSetNote }) => {
           {item.itemNote && !noteOpen && (
             <p className="text-xs text-amber-400/70 mt-0.5 truncate">✎ {item.itemNote}</p>
           )}
-        </div>
+        </button>
 
         <div className="flex items-center gap-1 shrink-0 mt-0.5">
           <span className="text-sm font-semibold text-light-100 min-w-[56px] text-right tabular-nums">
@@ -103,36 +113,74 @@ const TicketItem = ({ item, onChangeQty, onRemove, onSetNote }) => {
 
 // ─── ParkedOrderCard ──────────────────────────────────────────────────────────
 
-const ParkedOrderCard = ({ order, onResume, onDelete }) => {
+const ParkedOrderCard = ({ order, onResume, onDelete, hasActiveItems }) => {
+  const [confirmState, setConfirmState] = useState(null)  // null | 'resume' | 'discard'
   const items   = order.items || []
-  const total   = calcOrderTotal(items)
+  const total   = order.total ?? calcOrderTotal(items)
   const count   = items.reduce((s, it) => s + (it.qty || 1), 0)
-  const preview = items[0]?.name ?? '—'
   const timeStr = order.parkedAt?.toDate?.()?.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) ?? '—'
+  const label   = order.label || 'Apartado'
+  const custName = order.customer?.name || order.customerName || null
+
+  const handleResumeClick = () => {
+    if (hasActiveItems) { setConfirmState('resume'); return }
+    onResume(order)
+  }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03] transition-colors group">
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-light-100 truncate">
-          {preview}{count > 1 ? ` +${count - 1} más` : ''}
-        </p>
-        <p className="text-xs text-light-200/35 flex items-center gap-1 mt-0.5">
-          <Clock size={10} />
-          {timeStr}
-          {order.customer && <><span className="mx-1 opacity-40">·</span>{order.customer.name}</>}
-        </p>
+    <div className="px-4 py-3 hover:bg-white/[0.025] transition-colors">
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-light-100 truncate">{label}</p>
+          <p className="text-xs text-light-200/35 flex items-center gap-1 mt-0.5 flex-wrap">
+            <Clock size={10} className="shrink-0" />
+            <span>{timeStr}</span>
+            <span className="opacity-40">·</span>
+            <span>{count} {count === 1 ? 'producto' : 'productos'}</span>
+            {custName && <><span className="opacity-40">·</span><span className="truncate">{custName}</span></>}
+          </p>
+        </div>
+        <span className="text-sm font-bold text-light-100 tabular-nums shrink-0">{formatMoney(total)}</span>
       </div>
-      <span className="text-sm font-bold text-light-100 tabular-nums shrink-0">{formatMoney(total)}</span>
-      <button onClick={() => onResume(order)}
-        className="shrink-0 h-8 w-8 rounded-xl bg-main-500/20 border border-main-500/30 flex items-center justify-center text-main-400 hover:bg-main-500/30 transition-all cursor-pointer"
-        title="Retomar">
-        <RotateCcw size={14} />
-      </button>
-      <button onClick={() => onDelete(order.id)}
-        className="shrink-0 h-8 w-8 rounded-xl bg-white/5 flex items-center justify-center text-light-200/30 hover:text-rose-400 hover:bg-rose-500/10 transition-all cursor-pointer"
-        title="Eliminar">
-        <Trash2 size={14} />
-      </button>
+
+      {confirmState === 'resume' ? (
+        <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+          <p className="flex-1 text-xs text-amber-200/80">¿Reemplazar la orden activa?</p>
+          <button onClick={() => { setConfirmState(null); onResume(order) }}
+            className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-xs font-semibold text-amber-300 transition cursor-pointer min-h-[36px]">
+            Sí, retomar
+          </button>
+          <button onClick={() => setConfirmState(null)}
+            className="px-3 py-1.5 rounded-lg hover:bg-white/5 text-xs text-light-200/40 hover:text-light-200/70 transition cursor-pointer min-h-[36px]">
+            Cancelar
+          </button>
+        </div>
+      ) : confirmState === 'discard' ? (
+        <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/5 px-3 py-2">
+          <p className="flex-1 text-xs text-rose-200/80">¿Eliminar este apartado?</p>
+          <button onClick={() => { setConfirmState(null); onDelete(order.id) }}
+            className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-xs font-semibold text-rose-300 transition cursor-pointer min-h-[36px]">
+            Descartar
+          </button>
+          <button onClick={() => setConfirmState(null)}
+            className="px-3 py-1.5 rounded-lg hover:bg-white/5 text-xs text-light-200/40 hover:text-light-200/70 transition cursor-pointer min-h-[36px]">
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        <div className="flex gap-2 mt-2.5">
+          <button onClick={handleResumeClick}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-main-500/20 border border-main-500/30 text-xs font-semibold text-main-300 hover:bg-main-500/30 transition-all cursor-pointer min-h-[44px]">
+            <RotateCcw size={13} />
+            Retomar
+          </button>
+          <button onClick={() => setConfirmState('discard')}
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/8 text-xs font-medium text-light-200/40 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all cursor-pointer min-h-[44px]">
+            <Trash2 size={13} />
+            Descartar
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -293,6 +341,16 @@ export const POS = () => {
   // ── Mobile ticket ──────────────────────────────────────────────────────────
   const [isTicketOpen, setIsTicketOpen] = useState(false)
 
+  // ── Apartado prompt ────────────────────────────────────────────────────────
+  const [showApartadoPrompt, setShowApartadoPrompt] = useState(false)
+  const [apartadoLabel, setApartadoLabel]           = useState('')
+
+  // ── Item editing (overlay pre-population) ─────────────────────────────────
+  const [editingCartItemId, setEditingCartItemId]         = useState(null)
+  const [bsInitialSelections, setBsInitialSelections]     = useState(null)
+  const [bsInitialQty, setBsInitialQty]                   = useState(1)
+  const [toppingInitialSelected, setToppingInitialSelected] = useState([])
+
   // ── Load catalog ──────────────────────────────────────────────────────────
   useEffect(() => {
     let alive = true
@@ -396,25 +454,57 @@ export const POS = () => {
     if (!bottomSheetProduct) return
     const p = bottomSheetProduct
     setBottomSheetProduct(null)
+    setBsInitialSelections(null)
+    setBsInitialQty(1)
+
     if (p.availableToppings.length > 0) {
       setPendingBottomSheetResult({ ...p, selectedOptions, qty })
       setPendingToppingItem({ ...p, availableToppings: p.availableToppings })
       return
     }
+
+    if (editingCartItemId) {
+      setOrderItems(prev => prev.map(it =>
+        it.cartItemId === editingCartItemId
+          ? { ...it, selectedOptions, selectedToppings: [], qty }
+          : it
+      ))
+      setEditingCartItemId(null)
+      return
+    }
     _commit({ id: p.id, name: p.name, price: p.price, imageUrl: p.imageUrl, selectedOptions, selectedToppings: [], availableToppings: [], qty })
-  }, [bottomSheetProduct])
+  }, [bottomSheetProduct, editingCartItemId])
 
   const handleToppingConfirm = useCallback((selectedToppings) => {
     if (pendingBottomSheetResult) {
       const p = pendingBottomSheetResult
-      _commit({ id: p.id, name: p.name, price: p.price, imageUrl: p.imageUrl, selectedOptions: p.selectedOptions, selectedToppings, availableToppings: p.availableToppings, qty: p.qty })
+      if (editingCartItemId) {
+        setOrderItems(prev => prev.map(it =>
+          it.cartItemId === editingCartItemId
+            ? { ...it, selectedOptions: p.selectedOptions, selectedToppings, qty: p.qty }
+            : it
+        ))
+        setEditingCartItemId(null)
+      } else {
+        _commit({ id: p.id, name: p.name, price: p.price, imageUrl: p.imageUrl, selectedOptions: p.selectedOptions, selectedToppings, availableToppings: p.availableToppings, qty: p.qty })
+      }
       setPendingBottomSheetResult(null)
     } else if (pendingToppingItem) {
       const p = pendingToppingItem
-      _commit({ id: p.id, name: p.name, price: p.price, imageUrl: p.imageUrl, selectedOptions: [], selectedToppings, availableToppings: p.availableToppings, qty: 1 })
+      if (editingCartItemId) {
+        setOrderItems(prev => prev.map(it =>
+          it.cartItemId === editingCartItemId
+            ? { ...it, selectedToppings }
+            : it
+        ))
+        setEditingCartItemId(null)
+      } else {
+        _commit({ id: p.id, name: p.name, price: p.price, imageUrl: p.imageUrl, selectedOptions: [], selectedToppings, availableToppings: p.availableToppings, qty: 1 })
+      }
     }
     setPendingToppingItem(null)
-  }, [pendingBottomSheetResult, pendingToppingItem])
+    setToppingInitialSelected([])
+  }, [pendingBottomSheetResult, pendingToppingItem, editingCartItemId])
 
   // ── Order mutations ───────────────────────────────────────────────────────
   const changeQty = (cartItemId, delta) => {
@@ -429,6 +519,37 @@ export const POS = () => {
   const removeItem  = (cartItemId) => setOrderItems(prev => prev.filter(it => it.cartItemId !== cartItemId))
   const setItemNote = (cartItemId, note) =>
     setOrderItems(prev => prev.map(it => it.cartItemId === cartItemId ? { ...it, itemNote: note } : it))
+
+  // ── Edit existing ticket item ─────────────────────────────────────────────
+  const openItemEdit = useCallback((item) => {
+    const product = allProducts.find(p => p.id === item.id || p.docId === item.id)
+    if (!product) return
+    const optionGroups     = Array.isArray(product.optionGroups) ? product.optionGroups : []
+    const availableToppings = (product.toppingIds || []).map(tid => toppingsMap[tid]).filter(Boolean)
+    if (optionGroups.length === 0 && availableToppings.length === 0) return
+
+    const fullProduct = { ...product, availableToppings, optionGroups }
+
+    // Reconstruct selection state from stored optionName strings
+    const initialSel = {}
+    for (const group of optionGroups) {
+      const matched = (group.options || [])
+        .filter(o => (item.selectedOptions || []).some(so => so.optionName === o.name))
+        .map(o => o.id)
+      if (matched.length > 0) initialSel[group.id] = matched
+    }
+
+    setEditingCartItemId(item.cartItemId)
+    setToppingInitialSelected(item.selectedToppings || [])
+
+    if (optionGroups.length > 0) {
+      setBsInitialSelections(initialSel)
+      setBsInitialQty(item.qty)
+      setBottomSheetProduct(fullProduct)
+    } else {
+      setPendingToppingItem(fullProduct)
+    }
+  }, [allProducts, toppingsMap])
 
   // ── Customer helpers ──────────────────────────────────────────────────────
   const selectCustomer = (c) => {
@@ -454,14 +575,15 @@ export const POS = () => {
     finally { setSavingCust(false) }
   }
 
-  // ── Save order to Pedidos (status Nuevo, no payment yet) ─────────────────
+  // ── Apartado: save current ticket as a parked order ──────────────────────
   const [isParking, setIsParking] = useState(false)
 
-  const parkCurrentOrder = async () => {
+  const saveAsApartado = async (label) => {
     if (orderItems.length === 0 || isParking) return
     setIsParking(true)
     try {
-      const orderId = `POS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`
+      const autoLabel = label?.trim()
+        || `Apartado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`
       const safeItems = orderItems.map(it => ({
         id: it.id ?? null, name: it.name ?? '', price: Number(it.price || 0),
         imageUrl: it.imageUrl ?? null, qty: it.qty ?? 1, itemNote: it.itemNote || null,
@@ -469,26 +591,32 @@ export const POS = () => {
         selectedToppings: (it.selectedToppings ?? []).map(t => ({ id: t.id ?? null, name: t.name ?? '', price: Number(t.price || 0) })),
       }))
       const total = calcOrderTotal(safeItems)
-      await addDoc(collection(db, 'orders'), {
-        orderId, items: safeItems, total,
-        status: 'Nuevo', source: 'pos',
+      await addDoc(collection(db, 'parked_orders'), {
+        label: autoLabel,
+        items: safeItems,
+        total,
+        status: 'apartado',
         customerId: customer?.id ?? null,
         customerName: customer?.name ?? null,
+        customer: customer
+          ? { id: customer.id, name: customer.name, phone: customer.phone || '', loyaltyBalance: customer.loyaltyBalance || 0 }
+          : null,
         generalNote: generalNote || null,
-        loyaltyEarned: 0, loyaltyRedeemed: 0,
-        createdAt: serverTimestamp(),
+        parkedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       })
       setOrderItems([]); setGeneralNote(''); setCustomer(null); setLoyaltyRedeemed(0)
+      setShowApartadoPrompt(false); setApartadoLabel('')
     } catch (e) {
-      console.error('Error al guardar orden:', e)
-      alert('No se pudo guardar la orden. Verifica la conexión e inténtalo de nuevo.')
+      console.error('Error al apartar:', e)
+      alert('No se pudo apartar la orden. Verifica la conexión e inténtalo de nuevo.')
     } finally {
       setIsParking(false)
     }
   }
 
+  // ── Retomar: load an apartado back into the active ticket ─────────────────
   const resumeParkedOrder = async (parkedOrder) => {
-    if (orderItems.length > 0 && !window.confirm('La orden activa será reemplazada. ¿Continuar?')) return
     setOrderItems((parkedOrder.items || []).map(it => ({ ...it, cartItemId: uid(), itemNote: it.itemNote || '' })))
     setGeneralNote(parkedOrder.generalNote || '')
     setCustomer(parkedOrder.customer || null)
@@ -704,7 +832,7 @@ export const POS = () => {
           </div>
         ) : (
           orderItems.map(item => (
-            <TicketItem key={item.cartItemId} item={item} onChangeQty={changeQty} onRemove={removeItem} onSetNote={setItemNote} />
+            <TicketItem key={item.cartItemId} item={item} onChangeQty={changeQty} onRemove={removeItem} onSetNote={setItemNote} onEdit={openItemEdit} />
           ))
         )}
       </div>
@@ -720,24 +848,57 @@ export const POS = () => {
           <span className="text-sm text-light-200/40">{itemCount} {itemCount === 1 ? 'producto' : 'productos'}</span>
           <span className="text-2xl font-bold text-light-100 tabular-nums">{formatMoney(subtotal)}</span>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={parkCurrentOrder}
-            disabled={orderItems.length === 0 || isParking}
-            title="Guardar orden"
-            className="flex-none flex items-center gap-1.5 px-4 py-3.5 rounded-2xl border border-white/10 text-sm font-semibold text-light-200/50 hover:border-white/20 hover:text-light-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer"
-          >
-            <Bookmark size={15} />
-            {isParking ? 'Guardando…' : 'Guardar'}
-          </button>
-          <button
-            onClick={() => { setIsPaymentOpen(true); setIsTicketOpen(false) }}
-            disabled={orderItems.length === 0}
-            className="flex-1 rounded-2xl bg-main-500 hover:bg-main-400 disabled:opacity-30 disabled:cursor-not-allowed py-3.5 text-sm font-bold text-white transition-all shadow-lg shadow-main-500/20 cursor-pointer"
-          >
-            Cobrar · {formatMoney(subtotal)}
-          </button>
-        </div>
+
+        {showApartadoPrompt ? (
+          <div className="space-y-2">
+            <input
+              type="text"
+              placeholder='Nombre del apartado, ej. "Mesa 3" o "Fernanda" (opcional)'
+              value={apartadoLabel}
+              onChange={e => setApartadoLabel(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') saveAsApartado(apartadoLabel)
+                if (e.key === 'Escape') { setShowApartadoPrompt(false); setApartadoLabel('') }
+              }}
+              autoFocus
+              className="w-full rounded-xl border border-amber-500/30 bg-main-800/60 px-3 py-2.5 text-sm text-light-200 placeholder-light-200/25 outline-none focus:border-amber-500/60 transition"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setShowApartadoPrompt(false); setApartadoLabel('') }}
+                className="flex-none px-4 py-3 rounded-2xl border border-white/10 text-sm font-medium text-light-200/50 hover:text-light-100 hover:border-white/20 transition cursor-pointer min-h-[44px]"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => saveAsApartado(apartadoLabel)}
+                disabled={isParking}
+                className="flex-1 rounded-2xl bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed py-3 text-sm font-bold text-white transition-all cursor-pointer shadow-lg shadow-amber-600/25 min-h-[44px]"
+              >
+                {isParking ? 'Apartando…' : 'Confirmar apartado'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowApartadoPrompt(true)}
+              disabled={orderItems.length === 0}
+              title="Guardar como apartado"
+              className="flex-none flex items-center gap-1.5 px-4 py-3.5 rounded-2xl border border-amber-500/25 text-sm font-semibold text-amber-400/70 hover:border-amber-500/50 hover:bg-amber-500/[0.07] hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer min-h-[44px]"
+            >
+              <Bookmark size={15} />
+              Apartar
+            </button>
+            <button
+              onClick={() => { setIsPaymentOpen(true); setIsTicketOpen(false) }}
+              disabled={orderItems.length === 0}
+              className="flex-1 rounded-2xl bg-main-500 hover:bg-main-400 disabled:opacity-30 disabled:cursor-not-allowed py-3.5 text-sm font-bold text-white transition-all shadow-lg shadow-main-500/20 cursor-pointer min-h-[44px]"
+            >
+              Cobrar · {formatMoney(subtotal)}
+            </button>
+          </div>
+        )}
       </div>
     </>
   )
@@ -753,7 +914,7 @@ export const POS = () => {
       ) : (
         <div className="divide-y divide-white/5">
           {parkedOrders.map(po => (
-            <ParkedOrderCard key={po.id} order={po} onResume={resumeParkedOrder} onDelete={deleteParkedOrder} />
+            <ParkedOrderCard key={po.id} order={po} onResume={resumeParkedOrder} onDelete={deleteParkedOrder} hasActiveItems={orderItems.length > 0} />
           ))}
         </div>
       )}
@@ -976,21 +1137,33 @@ export const POS = () => {
         {/* ── BottomSheet ────────────────────────────────────────────────── */}
         <BottomSheet
           isOpen={Boolean(bottomSheetProduct)}
-          onClose={() => setBottomSheetProduct(null)}
+          onClose={() => {
+            setBottomSheetProduct(null)
+            setBsInitialSelections(null)
+            setBsInitialQty(1)
+            setEditingCartItemId(null)
+          }}
           product={bottomSheetProduct}
           onConfirm={handleBottomSheetConfirm}
+          initialSelections={bsInitialSelections}
+          initialQty={bsInitialQty}
         />
 
         {/* ── ToppingsOverlay ────────────────────────────────────────────── */}
         <ToppingsOverlay
           isOpen={Boolean(pendingToppingItem)}
-          onClose={() => { setPendingToppingItem(null); setPendingBottomSheetResult(null) }}
+          onClose={() => {
+            setPendingToppingItem(null)
+            setPendingBottomSheetResult(null)
+            setEditingCartItemId(null)
+            setToppingInitialSelected([])
+          }}
           productName={toppingOverlayProduct?.name ?? ''}
           productPrice={toppingOverlayPrice}
           toppings={toppingOverlayProduct?.availableToppings ?? []}
-          initialSelected={[]}
+          initialSelected={toppingInitialSelected}
           onConfirm={handleToppingConfirm}
-          confirmLabel="Agregar al pedido"
+          confirmLabel={editingCartItemId ? 'Guardar cambios' : 'Agregar al pedido'}
         />
       </div>
     </RegisterOverlay>
