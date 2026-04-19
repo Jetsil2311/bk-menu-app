@@ -166,7 +166,7 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
                     <div style={{
                       position: 'absolute', bottom: 0, left: 0, right: 0,
                       height: '55%',
-                      background: 'linear-gradient(to top, rgba(13,21,53,0.95) 0%, transparent 100%)',
+                      background: 'linear-gradient(to top, rgba(38,16,11,0.95) 0%, transparent 100%)',
                     }} />
                     {product && (
                       <div style={{
@@ -175,7 +175,7 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
                         zIndex: 2,
                       }}>
                         <div style={{
-                          color: '#eef2ff',
+                          color: '#fef8e1',
                           fontWeight: 600,
                           fontSize: isCenter ? 20 : 13,
                           lineHeight: 1.2,
@@ -186,14 +186,14 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
                         {isCenter && (
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
                             <span style={{
-                              background: '#eef2ff', color: '#3b5bdb',
+                              background: '#fef8e1', color: '#743121',
                               fontSize: 16, fontWeight: 600,
                               padding: '5px 14px', borderRadius: 20,
                             }}>
                               ${product.price}
                             </span>
                             <span style={{
-                              background: '#3b5bdb', color: '#eef2ff',
+                              background: '#743121', color: '#fef8e1',
                               borderRadius: '50%', width: 44, height: 44,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               fontSize: 26, lineHeight: 1,
@@ -224,7 +224,7 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
                 style={{
                   border: 'none', padding: 0, cursor: 'pointer',
                   borderRadius: 9999,
-                  background: i === dCurrent ? '#3b5bdb' : '#a5b4fc',
+                  background: i === dCurrent ? '#743121' : '#c9a68a',
                   width: i === dCurrent ? 18 : 7,
                   height: 7,
                   transition: 'all 0.25s',
@@ -293,13 +293,13 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
                 <div style={{
                   position: 'absolute', bottom: 0, left: 0, right: 0,
                   height: '45%',
-                  background: 'linear-gradient(to top, rgba(13,21,53,0.95) 0%, transparent 100%)',
+                  background: 'linear-gradient(to top, rgba(38,16,11,0.95) 0%, transparent 100%)',
                 }} />
                 {mProduct && (
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '18px 18px', zIndex: 2 }}>
-                    <div style={{ color: '#eef2ff', fontWeight: 600, fontSize: 18, marginBottom: 8 }}>{mProduct.name}</div>
+                    <div style={{ color: '#fef8e1', fontWeight: 600, fontSize: 18, marginBottom: 8 }}>{mProduct.name}</div>
                     <span style={{
-                      background: '#eef2ff', color: '#3b5bdb',
+                      background: '#fef8e1', color: '#743121',
                       fontSize: 15, fontWeight: 600, padding: '5px 14px', borderRadius: 20, display: 'inline-block',
                     }}>
                       ${mProduct.price}
@@ -331,7 +331,7 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
                     style={{
                       border: 'none', padding: 0, cursor: 'pointer',
                       borderRadius: 9999,
-                      background: i === mCurrent ? '#eef2ff' : 'rgba(165,180,252,0.35)',
+                      background: i === mCurrent ? '#fef8e1' : 'rgba(254,248,225,0.35)',
                       width: i === mCurrent ? 16 : 6,
                       height: 6,
                       transition: 'all 0.25s',

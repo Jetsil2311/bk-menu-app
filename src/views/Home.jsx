@@ -25,7 +25,7 @@ import { db } from '../firebase'
 
 export const Home = () => {
   const location = useLocation()
-  const WHATSAPP_NUMBER = '7207487599'
+  const WHATSAPP_NUMBER = '5574182443'
 
   // Cart + overlay state.
   const [cart, setCart] = useState([])
@@ -95,7 +95,7 @@ export const Home = () => {
         })
         setToppingsMap(map)
       })
-      .catch(() => { })
+      .catch(() => {})
     return () => {
       active = false
     }
@@ -310,7 +310,7 @@ export const Home = () => {
   const buildOrderMessage = () => {
     const notes = orderNotes.trim()
     const lines = [
-      'Pedido Mi Cafetería',
+      'Pedido BK Menu',
       '',
       'Items:',
       ...cart.map((item, idx) => {
@@ -319,12 +319,12 @@ export const Home = () => {
         const selectedOptionsText =
           item.selectedOptions?.length
             ? ` [${item.selectedOptions
-              .map((o) =>
-                o.priceModifier > 0
-                  ? `${o.optionName} (+$${o.priceModifier})`
-                  : o.optionName
-              )
-              .join(', ')}]`
+                .map((o) =>
+                  o.priceModifier > 0
+                    ? `${o.optionName} (+$${o.priceModifier})`
+                    : o.optionName
+                )
+                .join(', ')}]`
             : ''
 
         const toppingsText =
@@ -365,7 +365,7 @@ export const Home = () => {
 
   const saveOrderSnapshot = async (message, total) => {
     try {
-      const orderId = `MC-${Date.now()
+      const orderId = `BK-${Date.now()
         .toString(36)
         .toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
       await addDoc(collection(db, 'orders'), {
@@ -505,9 +505,9 @@ export const Home = () => {
           <div
             className="rounded-full px-5 py-2.5 text-sm font-semibold shadow-2xl"
             style={{
-              background: '#0d1535',
-              border: '1px solid rgba(59,91,219,0.4)',
-              color: '#e8ecf4',
+              background: '#1c0d05',
+              border: '1px solid rgba(120,60,20,0.4)',
+              color: '#faf6f0',
               transform: 'translateX(-50%)',
             }}
           >

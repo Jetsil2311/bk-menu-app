@@ -1002,7 +1002,7 @@ export const Admin = () => {
               <p className="text-xs uppercase tracking-[0.35em] text-light-200/70">
                 Admin Panel
               </p>
-              <h1 className="text-2xl font-semibold">Mi Cafetería</h1>
+              <h1 className="text-2xl font-semibold">Bubble Kaapeh</h1>
             </div>
             <NavLink
               to="/"
@@ -1085,7 +1085,7 @@ export const Admin = () => {
         <div className="container mx-auto flex items-center justify-between px-4 py-5">
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-light-200/70">Admin Panel</p>
-            <h1 className="text-2xl font-semibold">Mi Cafetería</h1>
+            <h1 className="text-2xl font-semibold">Bubble Kaapeh</h1>
           </div>
           <div className="flex items-center gap-3">
             <button

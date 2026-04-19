@@ -4,7 +4,6 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { MenuCard } from "./MenuCard.jsx";
 import { SectionBanner } from "./SectionBanner.jsx";
 import { db } from "../firebase";
-import { products as staticProducts } from "../assets/products";
 
 export const MenuSection = ({ children, desc, onAddToCart, toppingsMap = {} }) => {
     const [items, setItems] = useState([]);
@@ -21,27 +20,17 @@ export const MenuSection = ({ children, desc, onAddToCart, toppingsMap = {} }) =
                 const productsRef = collection(db, "products");
                 const productsQuery = query(productsRef, where("section", "==", children));
                 const snapshot = await getDocs(productsQuery);
-                if (!snapshot.empty) {
-                    const results = snapshot.docs.map((doc) => ({
-                        id: doc.data()?.id ?? doc.id,
-                        docId: doc.id,
-                        ...doc.data(),
-                    }));
-                    if (isActive) setItems(results);
-                } else {
-                    // Firestore collection is empty — use bundled static data
-                    const fallback = staticProducts.filter((p) => p.section === children)
-                    if (isActive) setItems(fallback)
+                const results = snapshot.docs.map((doc) => ({
+                    id: doc.data()?.id ?? doc.id,
+                    docId: doc.id,
+                    ...doc.data(),
+                }));
+                if (isActive) {
+                    setItems(results);
                 }
             } catch {
-                // Fall back to static data on any Firestore error
-                const fallback = staticProducts.filter((p) => p.section === children)
                 if (isActive) {
-                    if (fallback.length > 0) {
-                        setItems(fallback)
-                    } else {
-                        setLoadError("No se pudieron cargar los productos.")
-                    }
+                    setLoadError("No se pudieron cargar los productos.");
                 }
             } finally {
                 if (isActive) {
@@ -69,7 +58,7 @@ export const MenuSection = ({ children, desc, onAddToCart, toppingsMap = {} }) =
                             Array.from({ length: 6 }).map((_, index) => (
                                 <div
                                     key={`skeleton-${index}`}
-                                    className="flex flex-col rounded-2xl border border-main-100 bg-white shadow-md overflow-hidden"
+                                    className="flex flex-col rounded-2xl border border-amber-50 bg-[#faf6f0] shadow-md overflow-hidden"
                                 >
                                     <div className="w-full aspect-[4/3] bg-main-200/40 animate-pulse" />
                                     <div className="flex-1 space-y-2.5 px-4 py-3">

@@ -154,25 +154,25 @@ export const Metrics = () => {
                     dataKey="name"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#e8ecf4', opacity: 0.4, fontSize: 11 }}
+                    tick={{ fill: '#fef8e1', opacity: 0.4, fontSize: 11 }}
                     dy={8}
                     interval={days > 14 ? Math.floor(days / 7) : 0}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#e8ecf4', opacity: 0.4, fontSize: 11 }}
+                    tick={{ fill: '#fef8e1', opacity: 0.4, fontSize: 11 }}
                     tickFormatter={v => v > 0 ? `$${(v / 1000).toFixed(v >= 1000 ? 1 : 0)}${v >= 1000 ? 'k' : ''}` : '0'}
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#162257',
+                      backgroundColor: '#26100b',
                       border: '1px solid rgba(255,255,255,0.1)',
                       borderRadius: '12px',
-                      color: '#e8ecf4',
+                      color: '#fef8e1',
                     }}
                     formatter={(value) => [`$${Number(value).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`, 'Ingresos']}
-                    itemStyle={{ color: '#818cf8' }}
+                    itemStyle={{ color: '#a34d3b' }}
                   />
                   <Area
                     type="monotone"

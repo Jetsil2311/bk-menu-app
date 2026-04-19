@@ -1,16 +1,16 @@
 export const sections = [
     {
-        name: 'Bebidas Frías',
+        name: 'Bebidas Heladas',
         id: 0,
         img: '',
-        desc: 'Bebidas frías y refrescantes para cualquier momento',
+        desc: 'Bebidas heladas a base de leche o agua',
         category: 'Bebidas'
     },
     {
-        name: 'Bebidas Frías con Café',
+        name: 'Bebidas Heladas con Café',
         id: 1,
         img: '',
-        desc: 'Bebidas frías con café de especialidad',
+        desc: 'Bebidas heladas con café',
         category: 'Bebidas'
     },
     {
@@ -21,17 +21,17 @@ export const sections = [
         category: 'Bebidas'
     },
     {
-        name: 'Alimentos',
-        id: 3,
+        name: 'Chapatas',
+        id: 4,
         img: '',
-        desc: 'Opciones para acompañar tu bebida',
+        desc: 'Deliciosas chapatas para cualquier hora del día',
         category: 'Alimentos'
     },
     {
-        name: 'Combos',
-        id: 4,
+        name: 'Panadería',
+        id: 3,
         img: '',
-        desc: 'Sandwiches y combos especiales para cualquier hora',
+        desc: 'Opciones para acompañar tu bebida',
         category: 'Alimentos'
     }
 ]

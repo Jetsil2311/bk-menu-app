@@ -503,7 +503,7 @@ export const POS = () => {
 
   // ── Build content string ──────────────────────────────────────────────────
   const buildContent = () => {
-    const lines = ['Pedido Mi Cafetería POS', '', 'Items:',
+    const lines = ['Pedido BK POS', '', 'Items:',
       ...orderItems.map((it, i) => {
         const optTxt = it.selectedOptions?.length ? ` [${it.selectedOptions.map(o => o.priceModifier > 0 ? `${o.optionName} (+$${o.priceModifier})` : o.optionName).join(', ')}]` : ''
         const topTxt = it.selectedToppings?.length ? ` [${it.selectedToppings.map(t => t.name).join(', ')}]` : ''
@@ -773,7 +773,7 @@ export const POS = () => {
         style={{ height: 'calc(100vh - 4rem)' }}>
 
         {/* ── Left: Product catalog ──────────────────────────────────────── */}
-        <div className="flex flex-col flex-1 min-w-0 bg-main-900 overflow-hidden">
+        <div className="flex flex-col flex-1 min-w-0 bg-[#2a1208] overflow-hidden">
 
           {/* Product search bar */}
           <div className="shrink-0 px-4 pt-3 pb-2">
