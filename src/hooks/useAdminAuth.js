@@ -9,7 +9,7 @@ import {
 import { auth } from '../firebase'
 
 export const useAdminAuth = () => {
-  const ALLOWED_EMAILS = ['jethrosiloe26@gmail.com']
+  const ALLOWED_EMAILS = ['jethrosiloe26@gmail.com', 'anqnmes@gmail.com', 'jzamnacc@gmail.com']
   const [user, setUser] = useState(null)
   const [isAuthReady, setIsAuthReady] = useState(false)
   const [email, setEmail] = useState('')
