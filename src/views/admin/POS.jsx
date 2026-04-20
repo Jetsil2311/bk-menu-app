@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   collection, getDocs, addDoc, updateDoc, doc,
-  serverTimestamp, where, query, onSnapshot,
+  serverTimestamp, onSnapshot,
   increment, deleteDoc,
 } from 'firebase/firestore'
 import { db } from '../../firebase'
@@ -324,7 +324,7 @@ export const POS = () => {
   const [customerPanelOpen, setCustomerPanelOpen] = useState(false)
   const [customerSearch, setCustomerSearch] = useState('')
   const [searchResults, setSearchResults] = useState([])
-  const [isSearching, setIsSearching]     = useState(false)
+  const [allCustomers, setAllCustomers]   = useState([])
   const [showNewCustomer, setShowNewCustomer] = useState(false)
   const [newCustName, setNewCustName]     = useState('')
   const [newCustPhone, setNewCustPhone]   = useState('')
@@ -383,6 +383,13 @@ export const POS = () => {
     return () => { alive = false }
   }, [])
 
+  // ── Load all customers once for client-side search ───────────────────────
+  useEffect(() => {
+    getDocs(collection(db, 'customers')).then(snap => {
+      setAllCustomers(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    }).catch(() => {})
+  }, [])
+
   // ── Parked orders (real-time) ─────────────────────────────────────────────
   useEffect(() => {
     const unsub = onSnapshot(
@@ -401,24 +408,19 @@ export const POS = () => {
     return unsub
   }, [])
 
-  // ── Customer search — debounced ───────────────────────────────────────────
+  // ── Customer search — client-side filter on cached list ──────────────────
+  // Matches phone as a plain digit string; matches name accent-insensitively.
   useEffect(() => {
-    if (!customerSearch.trim()) { setSearchResults([]); return }
-    const t = setTimeout(async () => {
-      setIsSearching(true)
-      try {
-        const q = query(
-          collection(db, 'customers'),
-          where('phone', '>=', customerSearch.trim()),
-          where('phone', '<=', customerSearch.trim() + '\uf8ff'),
-        )
-        const snap = await getDocs(q)
-        setSearchResults(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-      } catch { setSearchResults([]) }
-      finally { setIsSearching(false) }
-    }, 350)
-    return () => clearTimeout(t)
-  }, [customerSearch])
+    const trimmed = customerSearch.trim()
+    if (!trimmed) { setSearchResults([]); return }
+    const normInput = normalize(trimmed)
+    setSearchResults(
+      allCustomers.filter(c =>
+        (c.phone || '').includes(trimmed) ||
+        normalize(c.name).includes(normInput)
+      )
+    )
+  }, [customerSearch, allCustomers])
 
   // ── Add-to-order flow (mirrors Home.jsx addToCart exactly) ────────────────
   const addToOrder = useCallback((product) => {
@@ -661,20 +663,28 @@ export const POS = () => {
         selectedToppings: (it.selectedToppings ?? []).map(t => ({ id: t.id ?? null, name: t.name ?? '', price: Number(t.price || 0) })),
       }))
 
+      // PATH 1: direct POS charge (built and paid without saving first) → 'Pagado' immediately
+      // PATH 2: apartado retaken and charged from POS → also 'Pagado' immediately, skips Nuevo/Preparando/Listo
+      // PATH 3: apartado retaken and sent to kitchen without charging → write status 'Nuevo' in a
+      //         separate addDoc (not this function); register is updated only when it reaches 'Pagado'
       await addDoc(collection(db, 'orders'), {
         orderId, content: buildContent(), total: effectiveTotal,
-        status: 'Nuevo', source: 'pos',
+        status: 'Pagado', source: 'pos',
         paymentMethods: { cash: cashAmount, card: cardAmount, loyalty: loyaltyRedeemed },
         customerId: customer?.id ?? null, customerName: customer?.name ?? null,
         items: safeItems, generalNote: generalNote || null,
-        loyaltyEarned, loyaltyRedeemed, createdAt: serverTimestamp(),
+        loyaltyEarned, loyaltyRedeemed, createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
       })
 
-      // Increment counters in the current register session
+      // cashSaleAmount = cash portion of the order total (effectiveTotal minus what card covered).
+      // Never use cashAmount here — that is the cash received from the customer and may include
+      // change given back. Only the order total flows into the register.
+      const cashSaleAmount = effectiveTotal - cardAmount
       await updateDoc(doc(db, 'register_sessions', todayKey()), {
-        cashSales: increment(cashAmount),
+        cashSales: increment(cashSaleAmount),
         cardSales: increment(cardAmount),
         loyaltyRedemptions: increment(loyaltyRedeemed),
+        updatedAt: serverTimestamp(),
       })
 
       if (customer) {
@@ -683,6 +693,7 @@ export const POS = () => {
           loyaltyBalance: increment(netLoyalty),
           visitCount: increment(1),
           lastVisit: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         })
       }
 
@@ -763,7 +774,7 @@ export const POS = () => {
             <div className="mt-2 space-y-2">
               <div className="relative">
                 <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/25" />
-                <input type="text" placeholder="Buscar por teléfono..."
+                <input type="text" placeholder="Buscar por nombre o teléfono..."
                   value={customerSearch} onChange={e => { setCustomerSearch(e.target.value); setShowNewCustomer(false) }}
                   autoFocus
                   className="w-full rounded-xl border border-white/8 bg-main-800/50 pl-8 pr-3 py-2 text-sm text-light-200 placeholder-light-200/25 outline-none focus:border-main-500/40 transition" />
@@ -771,9 +782,7 @@ export const POS = () => {
 
               {customerSearch.trim() && (
                 <div className="rounded-xl border border-white/5 bg-main-900/80 overflow-hidden">
-                  {isSearching ? (
-                    <p className="px-3 py-2.5 text-xs text-light-200/30">Buscando...</p>
-                  ) : searchResults.length > 0 ? (
+                  {searchResults.length > 0 ? (
                     searchResults.slice(0, 4).map(c => (
                       <button key={c.id} onClick={() => selectCustomer(c)}
                         className="w-full text-left px-3 py-2.5 hover:bg-white/5 border-b border-white/5 last:border-0 transition-colors cursor-pointer">
