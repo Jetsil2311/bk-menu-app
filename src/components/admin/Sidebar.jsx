@@ -42,7 +42,7 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
     <aside
       className={`
         fixed inset-y-0 left-0 z-50
-        flex flex-col
+        hidden md:flex flex-col
         bg-main-950 text-light-200
         border-r border-white/5
         transition-all duration-300 overflow-hidden

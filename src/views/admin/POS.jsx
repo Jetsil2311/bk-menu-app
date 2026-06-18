@@ -16,10 +16,11 @@ import {
   ShoppingCart, Search, X, Plus, Minus, User, UserPlus,
   CreditCard, Banknote, Wallet, Package, CheckCircle2,
   Receipt, PenLine, Bookmark, RotateCcw, Edit2,
-  Trash2, ChevronDown, Clock, AlertCircle as AlertCircleIcon,
+  Trash2, ChevronDown, ChevronRight, Clock, AlertCircle as AlertCircleIcon, Send,
 } from 'lucide-react'
 
 const BASE_URL = import.meta.env.BASE_URL
+const DRAFT_KEY = 'pos_draft_v1'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -113,7 +114,7 @@ const TicketItem = ({ item, onChangeQty, onRemove, onSetNote, onEdit }) => {
 
 // ─── ParkedOrderCard ──────────────────────────────────────────────────────────
 
-const ParkedOrderCard = ({ order, onResume, onDelete, hasActiveItems }) => {
+const ParkedOrderCard = ({ order, onResume, onDelete, onSend, hasActiveItems }) => {
   const [confirmState, setConfirmState] = useState(null)  // null | 'resume' | 'discard'
   const items   = order.items || []
   const total   = order.total ?? calcOrderTotal(items)
@@ -131,7 +132,12 @@ const ParkedOrderCard = ({ order, onResume, onDelete, hasActiveItems }) => {
     <div className="px-4 py-3 hover:bg-white/[0.025] transition-colors">
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-light-100 truncate">{label}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-light-100 truncate">{label}</p>
+            <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+              Nuevo
+            </span>
+          </div>
           <p className="text-xs text-light-200/35 flex items-center gap-1 mt-0.5 flex-wrap">
             <Clock size={10} className="shrink-0" />
             <span>{timeStr}</span>
@@ -140,7 +146,16 @@ const ParkedOrderCard = ({ order, onResume, onDelete, hasActiveItems }) => {
             {custName && <><span className="opacity-40">·</span><span className="truncate">{custName}</span></>}
           </p>
         </div>
-        <span className="text-sm font-bold text-light-100 tabular-nums shrink-0">{formatMoney(total)}</span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-sm font-bold text-light-100 tabular-nums">{formatMoney(total)}</span>
+          {onSend && (
+            <button onClick={() => onSend(order)}
+              className="h-7 w-7 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-400 hover:bg-amber-500/25 transition-all cursor-pointer"
+              title="Enviar a Pedidos">
+              <Send size={12} />
+            </button>
+          )}
+        </div>
       </div>
 
       {confirmState === 'resume' ? (
@@ -197,6 +212,15 @@ const PaymentModal = ({
 }) => {
   const totalPaid  = cashAmount + cardAmount + loyaltyRedeemed
   const remaining  = Math.max(0, effectiveTotal - totalPaid)
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape') { onClose(); return }
+      if (e.key === 'Enter' && canConfirm && !isProcessing) onConfirm()
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose, onConfirm, canConfirm, isProcessing])
 
   return (
     <div className="fixed inset-0 z-[9100] flex items-center justify-center p-4">
@@ -293,6 +317,198 @@ const PaymentModal = ({
   )
 }
 
+// ─── LoyaltyLookupModal ───────────────────────────────────────────────────────
+
+const LoyaltyLookupModal = ({ allCustomers, onSelect, onSkip, onClose }) => {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [results, setResults] = useState([])
+  const [showNew, setShowNew] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newPhone, setNewPhone] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    const trimmed = searchQuery.trim()
+    if (!trimmed) { setResults([]); return }
+    const normInput = normalize(trimmed)
+    setResults(
+      allCustomers.filter(c =>
+        (c.phone || '').includes(trimmed) ||
+        normalize(c.name).includes(normInput)
+      ).slice(0, 5)
+    )
+  }, [searchQuery, allCustomers])
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
+
+  const openNewForm = () => {
+    const trimmed = searchQuery.trim()
+    const isPhone = /^\d+$/.test(trimmed)
+    setNewPhone(isPhone ? trimmed : '')
+    setNewName(isPhone ? '' : trimmed)
+    setShowNew(true)
+  }
+
+  const handleSaveNew = async () => {
+    if (!newName.trim() || !newPhone.trim() || saving) return
+    setSaving(true)
+    try {
+      const ref = await addDoc(collection(db, 'customers'), {
+        name: newName.trim(),
+        phone: newPhone.trim(),
+        loyaltyBalance: 0,
+        visitCount: 0,
+        createdAt: serverTimestamp(),
+        lastVisit: serverTimestamp(),
+      })
+      onSelect({ id: ref.id, name: newName.trim(), phone: newPhone.trim(), loyaltyBalance: 0, visitCount: 0 })
+    } catch (e) {
+      console.error('Error creating customer:', e)
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[9150] flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full sm:max-w-md bg-main-900 border border-white/8 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-2xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center shrink-0">
+              <User size={17} className="text-amber-400" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-light-100 leading-tight">¿Con quién es?</h3>
+              <p className="text-xs text-light-200/40 mt-0.5">Vincula un cliente para acumular loyalty</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/50 cursor-pointer transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-3 max-h-[55vh] overflow-y-auto">
+          {/* Search */}
+          <div className="relative">
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-light-200/30 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Nombre o teléfono…"
+              value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); if (showNew) setShowNew(false) }}
+              autoFocus
+              className="w-full pl-10 pr-4 py-3 rounded-2xl border border-white/10 bg-main-800/60 text-sm text-light-100 placeholder:text-light-200/30 outline-none focus:border-main-500/40 transition"
+            />
+          </div>
+
+          {/* Results */}
+          {searchQuery.trim() && (
+            <div className="rounded-2xl border border-white/5 bg-main-950/80 overflow-hidden">
+              {results.length > 0 ? (
+                results.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => onSelect(c)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.06] border-b border-white/5 last:border-0 transition-colors cursor-pointer text-left min-h-[52px]"
+                  >
+                    <div className="h-8 w-8 rounded-xl bg-main-800 border border-white/5 flex items-center justify-center text-main-400 font-bold text-xs shrink-0 select-none">
+                      {(c.name || '?')[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-light-100 truncate">{c.name}</p>
+                      <p className="text-xs text-light-200/35 truncate">{c.phone} · {c.visitCount || 0} visitas · {formatMoney(c.loyaltyBalance || 0)}</p>
+                    </div>
+                    <ChevronRight size={14} className="text-light-200/20 shrink-0" />
+                  </button>
+                ))
+              ) : (
+                <div className="px-4 py-4 space-y-3">
+                  <p className="text-sm text-light-200/30">Sin resultados para &ldquo;{searchQuery}&rdquo;</p>
+                  {!showNew && (
+                    <button
+                      onClick={openNewForm}
+                      className="flex items-center gap-2 text-sm text-main-400 hover:text-main-300 font-semibold cursor-pointer transition-colors"
+                    >
+                      <UserPlus size={14} />
+                      Registrar nuevo cliente
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* New client dashed button when no query */}
+          {!searchQuery.trim() && !showNew && (
+            <button
+              onClick={() => setShowNew(true)}
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-dashed border-white/10 text-sm font-medium text-light-200/40 hover:text-light-200/70 hover:border-white/20 hover:bg-white/[0.02] transition-all cursor-pointer min-h-[52px]"
+            >
+              <UserPlus size={15} />
+              Registrar nuevo cliente
+            </button>
+          )}
+
+          {/* New customer inline form */}
+          {showNew && (
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-4 space-y-2.5">
+              <p className="text-xs font-semibold text-amber-300/70 uppercase tracking-wider">Nuevo cliente</p>
+              <input
+                type="text"
+                placeholder="Nombre completo"
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                autoFocus
+                className="w-full rounded-xl border border-white/10 bg-main-800/60 px-3 py-2.5 text-sm text-light-200 placeholder:text-light-200/25 outline-none focus:border-amber-500/40 transition"
+              />
+              <input
+                type="tel"
+                placeholder="Teléfono"
+                value={newPhone}
+                onChange={e => setNewPhone(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleSaveNew() }}
+                className="w-full rounded-xl border border-white/10 bg-main-800/60 px-3 py-2.5 text-sm text-light-200 placeholder:text-light-200/25 outline-none focus:border-amber-500/40 transition"
+              />
+              <div className="flex gap-2 pt-0.5">
+                <button
+                  onClick={() => { setShowNew(false); setNewName(''); setNewPhone('') }}
+                  className="flex-none px-4 py-2.5 rounded-xl border border-white/10 text-xs text-light-200/40 hover:bg-white/5 transition cursor-pointer min-h-[40px]"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveNew}
+                  disabled={saving || !newName.trim() || !newPhone.trim()}
+                  className="flex-1 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed py-2.5 text-sm font-bold text-white transition cursor-pointer min-h-[40px]"
+                >
+                  {saving ? 'Guardando…' : 'Guardar y asociar'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer: skip action */}
+        <div className="px-5 pb-5 pt-3 border-t border-white/5 space-y-2">
+          <button
+            onClick={onSkip}
+            className="w-full py-3.5 rounded-2xl border border-white/8 bg-white/[0.03] hover:bg-white/[0.06] text-sm font-semibold text-light-200/60 hover:text-light-100 transition-all cursor-pointer min-h-[52px]"
+          >
+            Continuar sin cliente
+          </button>
+          <p className="text-center text-[11px] text-light-200/20">La compra no quedará registrada en loyalty</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── POS ─────────────────────────────────────────────────────────────────────
 
 export const POS = () => {
@@ -340,6 +556,15 @@ export const POS = () => {
 
   // ── Mobile ticket ──────────────────────────────────────────────────────────
   const [isTicketOpen, setIsTicketOpen] = useState(false)
+
+  // ── Draft cache ─────────────────────────────────────────────────────────────
+  const [draftRestored, setDraftRestored] = useState(false)
+
+  // ── Send-to-kitchen ─────────────────────────────────────────────────────────
+  const [isSending, setIsSending] = useState(null)  // parked order id being sent
+
+  // ── Loyalty lookup (before payment when no customer) ─────────────────────
+  const [showLoyaltyLookup, setShowLoyaltyLookup] = useState(false)
 
   // ── Apartado prompt ────────────────────────────────────────────────────────
   const [showApartadoPrompt, setShowApartadoPrompt] = useState(false)
@@ -392,21 +617,59 @@ export const POS = () => {
 
   // ── Parked orders (real-time) ─────────────────────────────────────────────
   useEffect(() => {
-    const unsub = onSnapshot(
-      collection(db, 'parked_orders'),
-      snap => {
-        const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-        orders.sort((a, b) => {
-          const ta = a.parkedAt?.toDate?.() ?? new Date(0)
-          const tb = b.parkedAt?.toDate?.() ?? new Date(0)
-          return tb - ta
-        })
-        setParkedOrders(orders)
-      },
-      () => {},
-    )
-    return unsub
+    let cancelled = false
+    let alive = true
+    let unsub = null
+    const timer = setTimeout(() => {
+      if (cancelled) return
+      unsub = onSnapshot(
+        collection(db, 'parked_orders'),
+        snap => {
+          if (!alive) return
+          const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          orders.sort((a, b) => {
+            const ta = a.parkedAt?.toDate?.() ?? new Date(0)
+            const tb = b.parkedAt?.toDate?.() ?? new Date(0)
+            return tb - ta
+          })
+          setParkedOrders(orders)
+        },
+        () => {},
+      )
+    }, 0)
+    return () => {
+      cancelled = true
+      alive = false
+      clearTimeout(timer)
+      if (unsub) try { unsub() } catch {}
+    }
   }, [])
+
+  // ── Draft restore on mount ────────────────────────────────────────────────
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const draft = JSON.parse(raw)
+      if (draft.orderItems?.length > 0) {
+        setOrderItems(draft.orderItems)
+        setGeneralNote(draft.generalNote || '')
+        setCustomer(draft.customer || null)
+        setDraftRestored(true)
+      }
+    } catch { /* silently ignore */ }
+  }, [])
+
+  // ── Auto-save draft on order changes ─────────────────────────────────────
+  useEffect(() => {
+    if (orderItems.length === 0 && !generalNote && !customer) {
+      localStorage.removeItem(DRAFT_KEY)
+      return
+    }
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ orderItems, generalNote, customer }))
+    } catch { /* silently ignore */ }
+  }, [orderItems, generalNote, customer])
 
   // ── Customer search — client-side filter on cached list ──────────────────
   // Matches phone as a plain digit string; matches name accent-insensitively.
@@ -609,6 +872,9 @@ export const POS = () => {
       })
       setOrderItems([]); setGeneralNote(''); setCustomer(null); setLoyaltyRedeemed(0)
       setShowApartadoPrompt(false); setApartadoLabel('')
+      setDraftRestored(false)
+      localStorage.removeItem(DRAFT_KEY)
+      setTicketTab('parked')
     } catch (e) {
       console.error('Error al apartar:', e)
       alert('No se pudo apartar la orden. Verifica la conexión e inténtalo de nuevo.')
@@ -629,6 +895,55 @@ export const POS = () => {
 
   const deleteParkedOrder = async (id) => {
     await deleteDoc(doc(db, 'parked_orders', id))
+  }
+
+  const sendToKitchen = async (parkedOrder) => {
+    if (isSending) return
+    setIsSending(parkedOrder.id)
+    try {
+      const orderId = `POS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`
+      await addDoc(collection(db, 'orders'), {
+        orderId,
+        items: parkedOrder.items || [],
+        total: parkedOrder.total ?? calcOrderTotal(parkedOrder.items || []),
+        status: 'Nuevo',
+        source: 'pos',
+        customer: parkedOrder.customer ?? null,
+        customerId: parkedOrder.customer?.id ?? null,
+        customerName: parkedOrder.customer?.name ?? null,
+        generalNote: parkedOrder.generalNote || null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+      await deleteDoc(doc(db, 'parked_orders', parkedOrder.id))
+    } catch (e) { console.error('sendToKitchen error:', e) }
+    finally { setIsSending(null) }
+  }
+
+  // ── Loyalty lookup handlers ───────────────────────────────────────────────
+  const handleCobrarClick = () => {
+    setIsTicketOpen(false)
+    if (!customer) {
+      setShowLoyaltyLookup(true)
+    } else {
+      setIsPaymentOpen(true)
+    }
+  }
+
+  const handleLoyaltySelect = (c) => {
+    setCustomer(c)
+    setCustomerSearch('')
+    setSearchResults([])
+    setCustomerPanelOpen(false)
+    setShowNewCustomer(false)
+    setAllCustomers(prev => prev.some(x => x.id === c.id) ? prev : [...prev, c])
+    setShowLoyaltyLookup(false)
+    setIsPaymentOpen(true)
+  }
+
+  const handleLoyaltySkip = () => {
+    setShowLoyaltyLookup(false)
+    setIsPaymentOpen(true)
   }
 
   // ── Build content string ──────────────────────────────────────────────────
@@ -701,6 +1016,8 @@ export const POS = () => {
       setOrderItems([]); setGeneralNote(''); setLoyaltyRedeemed(0)
       setCashAmount(0); setCardAmount(0); setCustomer(null)
       setCustomerSearch(''); setIsPaymentOpen(false)
+      setDraftRestored(false)
+      localStorage.removeItem(DRAFT_KEY)
       setOrderSuccess({ orderId: savedOrderId, change: savedChange })
     } catch (e) { console.error('POS payment error:', e) }
     finally { setIsProcessing(false) }
@@ -708,7 +1025,13 @@ export const POS = () => {
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const displayedProducts = productSearch.trim()
-    ? allProducts.filter(p => normalize(p.name).includes(normalize(productSearch.trim())))
+    ? allProducts.filter(p => {
+        const norm = normalize(productSearch.trim())
+        if (normalize(p.name).includes(norm)) return true
+        return (p.optionGroups || []).some(group =>
+          (group.options || []).some(opt => normalize(opt.name || '').includes(norm))
+        )
+      })
     : allProducts.filter(p => p.section === activeSection)
 
   const subtotal    = calcOrderTotal(orderItems)
@@ -831,6 +1154,14 @@ export const POS = () => {
   // ── Active order content ──────────────────────────────────────────────────
   const activeTicketContent = (
     <>
+      {draftRestored && (
+        <div className="mx-3 mt-2.5 flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] text-xs text-amber-200/80 shrink-0">
+          <span>Orden recuperada del caché local</span>
+          <button onClick={() => setDraftRestored(false)} className="text-amber-200/40 hover:text-amber-200 cursor-pointer transition-colors shrink-0">
+            <X size={13} />
+          </button>
+        </div>
+      )}
       {customerSection}
 
       <div className="flex-1 overflow-y-auto">
@@ -900,7 +1231,7 @@ export const POS = () => {
               Apartar
             </button>
             <button
-              onClick={() => { setIsPaymentOpen(true); setIsTicketOpen(false) }}
+              onClick={handleCobrarClick}
               disabled={orderItems.length === 0}
               className="flex-1 rounded-2xl bg-main-500 hover:bg-main-400 disabled:opacity-30 disabled:cursor-not-allowed py-3.5 text-sm font-bold text-white transition-all shadow-lg shadow-main-500/20 cursor-pointer min-h-[44px]"
             >
@@ -923,7 +1254,7 @@ export const POS = () => {
       ) : (
         <div className="divide-y divide-white/5">
           {parkedOrders.map(po => (
-            <ParkedOrderCard key={po.id} order={po} onResume={resumeParkedOrder} onDelete={deleteParkedOrder} hasActiveItems={orderItems.length > 0} />
+            <ParkedOrderCard key={po.id} order={po} onResume={resumeParkedOrder} onDelete={deleteParkedOrder} onSend={sendToKitchen} hasActiveItems={orderItems.length > 0} />
           ))}
         </div>
       )}
@@ -943,7 +1274,7 @@ export const POS = () => {
         style={{ height: 'calc(100vh - 4rem)' }}>
 
         {/* ── Left: Product catalog ──────────────────────────────────────── */}
-        <div className="flex flex-col flex-1 min-w-0 bg-[#2a1208] overflow-hidden">
+        <div className="flex flex-col flex-1 min-w-0 bg-main-950 overflow-hidden">
 
           {/* Product search bar */}
           <div className="shrink-0 px-4 pt-3 pb-2">
@@ -1105,6 +1436,16 @@ export const POS = () => {
             </div>
           )}
         </div>
+
+        {/* ── Loyalty Lookup Modal ──────────────────────────────────────── */}
+        {showLoyaltyLookup && (
+          <LoyaltyLookupModal
+            allCustomers={allCustomers}
+            onSelect={handleLoyaltySelect}
+            onSkip={handleLoyaltySkip}
+            onClose={() => setShowLoyaltyLookup(false)}
+          />
+        )}
 
         {/* ── Payment Modal ──────────────────────────────────────────────── */}
         {isPaymentOpen && (

@@ -58,6 +58,16 @@ const BalanceModal = ({ customer, onClose }) => {
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
 
+  // Keyboard: Escape closes, Enter confirms
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key === 'Escape') { onClose(); return }
+      if (e.key === 'Enter') { handleSave() }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  })
+
   const handleSave = async () => {
     const num = parseFloat(amount)
     if (!num || num <= 0) return
@@ -223,12 +233,24 @@ export const Customers = () => {
   }, [])
 
   useEffect(() => {
-    const q = query(collection(db, 'customers'), orderBy('createdAt', 'desc'))
-    const unsub = onSnapshot(q, (snap) => {
-      setCustomers(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-      setLoading(false)
-    }, () => setLoading(false))
-    return unsub
+    let cancelled = false
+    let alive = true
+    let unsub = null
+    const timer = setTimeout(() => {
+      if (cancelled) return
+      const q = query(collection(db, 'customers'), orderBy('createdAt', 'desc'))
+      unsub = onSnapshot(q, (snap) => {
+        if (!alive) return
+        setCustomers(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+        setLoading(false)
+      }, () => { if (alive) setLoading(false) })
+    }, 0)
+    return () => {
+      cancelled = true
+      alive = false
+      clearTimeout(timer)
+      if (unsub) try { unsub() } catch {}
+    }
   }, [])
 
   const filtered = customers.filter((c) => {

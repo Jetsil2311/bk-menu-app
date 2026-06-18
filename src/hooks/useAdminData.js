@@ -117,6 +117,7 @@ export const useAdminData = () => {
   const [toppingsSuccess, setToppingsSuccess] = useState('')
   const [toppingName, setToppingName] = useState('')
   const [toppingPrice, setToppingPrice] = useState('')
+  const [toppingDescription, setToppingDescription] = useState('')
   const [editingTopping, setEditingTopping] = useState(null)
   const [deleteToppingTarget, setDeleteToppingTarget] = useState(null)
   // Product form: selected topping IDs.
@@ -776,21 +777,24 @@ export const useAdminData = () => {
       setToppingsError('Nombre y precio válido son obligatorios.')
       return
     }
+    const description = toppingDescription.trim()
     setIsSubmitting(true)
     try {
       const ref = await addDoc(collection(db, 'toppings'), {
         name,
         price,
+        ...(description ? { description } : {}),
         isActive: true,
         createdAt: serverTimestamp(),
       })
       setToppingsList((prev) =>
-        [...prev, { docId: ref.id, name, price, isActive: true }].sort((a, b) =>
+        [...prev, { docId: ref.id, name, price, description: description || undefined, isActive: true }].sort((a, b) =>
           String(a.name).localeCompare(String(b.name))
         )
       )
       setToppingName('')
       setToppingPrice('')
+      setToppingDescription('')
       setToppingsSuccess('Topping guardado.')
     } catch {
       setToppingsError('No se pudo guardar el topping.')
@@ -807,12 +811,15 @@ export const useAdminData = () => {
       setToppingsError('Nombre y precio válido son obligatorios.')
       return
     }
+    const description = topping.description?.trim?.() ?? ''
     setToppingsError('')
     try {
-      await updateDoc(doc(db, 'toppings', topping.docId), { name, price })
+      const updates = { name, price }
+      if (description) updates.description = description
+      await updateDoc(doc(db, 'toppings', topping.docId), updates)
       setToppingsList((prev) =>
         prev
-          .map((t) => (t.docId === topping.docId ? { ...t, name, price } : t))
+          .map((t) => (t.docId === topping.docId ? { ...t, name, price, description: description || undefined } : t))
           .sort((a, b) => String(a.name).localeCompare(String(b.name)))
       )
       setEditingTopping(null)
@@ -914,15 +921,37 @@ export const useAdminData = () => {
         createdAt: serverTimestamp(),
       })
 
+      let imageUrl = undefined
       if (productImageFile) {
         try {
-          const { url: imageUrl } = await uploadToCloudinary(productImageFile, 'products')
+          const { url } = await uploadToCloudinary(productImageFile, 'products')
+          imageUrl = url
           await updateDoc(doc(db, 'products', productRef.id), { imageUrl })
         } catch (uploadError) {
           console.error('Failed to upload product image:', uploadError)
           setError('Producto creado, pero la imagen no se pudo subir.')
         }
       }
+
+      // Optimistic local update — add the new product to the list immediately
+      setMenuItems((prev) => [
+        ...prev,
+        {
+          docId: productRef.id,
+          name: trimmedName,
+          section: trimmedSection,
+          desc: productDesc.trim(),
+          long_desc: productLongDesc.trim(),
+          price: priceValue,
+          flavors: flavors,
+          flavorsText: productFlavors.trim(),
+          toppingIds: productToppingIds,
+          optionGroups: Array.isArray(productOptionGroups) ? productOptionGroups : [],
+          image: productImage.trim(),
+          imageUrl: imageUrl ?? null,
+          isActive: true,
+        },
+      ])
 
       setProductName('')
       setProductSection('')
@@ -965,7 +994,7 @@ export const useAdminData = () => {
 
       setIsSubmitting(true)
 
-      await addDoc(collection(db, 'sections'), {
+      const sectionRef = await addDoc(collection(db, 'sections'), {
         name: trimmedName,
         desc: sectionDesc.trim(),
         category: trimmedCategory,
@@ -973,6 +1002,19 @@ export const useAdminData = () => {
         image: sectionImage.trim(),
         createdAt: serverTimestamp(),
       })
+
+      // Optimistic local update — append to sections list immediately
+      setMenuSections((prev) => [
+        ...prev,
+        {
+          docId: sectionRef.id,
+          name: trimmedName,
+          desc: sectionDesc.trim(),
+          category: trimmedCategory,
+          order: orderValue ?? 0,
+          image: sectionImage.trim(),
+        },
+      ])
 
       setSectionName('')
       setSectionDesc('')
@@ -1157,6 +1199,7 @@ export const useAdminData = () => {
     setStats,
     setStatsError,
     setStatsLoading,
+    setToppingDescription,
     setToppingName,
     setToppingPrice,
     setToppingsError,
@@ -1168,6 +1211,7 @@ export const useAdminData = () => {
     stats,
     statsError,
     statsLoading,
+    toppingDescription,
     toppingName,
     toppingPrice,
     toppingsError,

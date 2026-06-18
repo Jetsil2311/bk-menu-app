@@ -1,8 +1,7 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect } from 'react'
 import {
-  collection, doc, onSnapshot, updateDoc,
-  getDocs, query, orderBy, limit,
+  doc, onSnapshot, updateDoc,
 } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { formatMoney } from '../../utils/cart'
@@ -37,7 +36,7 @@ const fmtTime = (isoOrTs) => {
 
 // ─── Past Session Row ─────────────────────────────────────────────────────────
 
-const PastSessionRow = ({ session }) => {
+export const PastSessionRow = ({ session }) => {
   const [open, setOpen] = useState(false)
 
   const totalWithdrawals = (session.withdrawals || []).reduce((s, w) => s + w.amount, 0)
@@ -97,9 +96,7 @@ const PastSessionRow = ({ session }) => {
 
 export const Register = () => {
   const { isRegisterOpen, openRegister, closeRegister, loading: sessionLoading } = useRegister()
-  const [session, setSession]         = useState(null)
-  const [pastSessions, setPastSessions] = useState([])
-  const [histLoading, setHistLoading] = useState(true)
+  const [session, setSession] = useState(null)
 
   // Opening float modal (for when no session or closed today)
   const [showOpenModal, setShowOpenModal] = useState(false)
@@ -117,23 +114,35 @@ export const Register = () => {
 
   // ── Listeners ───────────────────────────────────────────────────────────────
   useEffect(() => {
-    const unsub = onSnapshot(
-      doc(db, 'register_sessions', todayKey()),
-      snap => { setSession(snap.exists() ? { id: snap.id, ...snap.data() } : null) },
-    )
-    return unsub
+    let cancelled = false
+    let alive = true
+    let unsub = null
+    const timer = setTimeout(() => {
+      if (cancelled) return
+      unsub = onSnapshot(
+        doc(db, 'register_sessions', todayKey()),
+        snap => { if (alive) setSession(snap.exists() ? { id: snap.id, ...snap.data() } : null) },
+      )
+    }, 0)
+    return () => {
+      cancelled = true
+      alive = false
+      clearTimeout(timer)
+      if (unsub) try { unsub() } catch {}
+    }
   }, [])
 
+  // ── Keyboard shortcuts ───────────────────────────────────────────────────────
   useEffect(() => {
-    const q = query(collection(db, 'register_sessions'), orderBy('date', 'desc'), limit(31))
-    getDocs(q)
-      .then(snap => {
-        const today = todayKey()
-        setPastSessions(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.date !== today).slice(0, 30))
-        setHistLoading(false)
-      })
-      .catch(() => setHistLoading(false))
-  }, [session?.id])
+    if (!showOpenModal && !activeAction) return
+    const handler = (e) => {
+      if (e.key !== 'Escape') return
+      if (showOpenModal) { setShowOpenModal(false); return }
+      if (activeAction) setActiveAction(null)
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [showOpenModal, activeAction])
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
   const handleOpenRegister = async () => {
@@ -205,7 +214,10 @@ export const Register = () => {
   const openModal = showOpenModal && (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
       <div className="absolute inset-0 bg-main-950/80" onClick={() => setShowOpenModal(false)} />
-      <div className="relative w-full max-w-md scale-100 transform overflow-hidden rounded-3xl border border-white/10 bg-main-900 p-8 shadow-2xl transition-all">
+      <div
+        className="relative w-full max-w-md scale-100 transform overflow-hidden rounded-3xl border border-white/10 bg-main-900 p-8 shadow-2xl transition-all"
+        onKeyDown={e => { if (e.key === 'Enter' && !isOpening) { e.preventDefault(); handleOpenRegister() } }}
+      >
         <h3 className="mb-6 text-2xl font-bold text-light-100">Abrir Caja</h3>
         <p className="mb-6 text-sm text-light-200/40">Ingresa el fondo inicial de efectivo para comenzar el día</p>
         <div className="space-y-6">
@@ -260,16 +272,6 @@ export const Register = () => {
       </button>
 
       {openModal}
-
-      {/* Past sessions below the form */}
-      {!histLoading && pastSessions.length > 0 && (
-        <div className="w-full mt-8 space-y-3">
-          <p className="text-xs font-medium text-light-200/30 uppercase tracking-wider px-2">Historial de sesiones</p>
-          <div className="bg-main-900/30 border border-white/5 rounded-3xl overflow-hidden shadow-xl">
-            {pastSessions.map(s => <PastSessionRow key={s.id} session={s} />)}
-          </div>
-        </div>
-      )}
     </div>
   )
 
@@ -309,16 +311,6 @@ export const Register = () => {
         </div>
 
         {openModal}
-
-        {!histLoading && pastSessions.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-light-200/50 uppercase tracking-wider px-2">Historial Reciente</h2>
-            <div className="bg-main-900/30 border border-white/5 rounded-3xl overflow-hidden shadow-xl">
-              <PastSessionRow session={session} />
-              {pastSessions.map(s => <PastSessionRow key={s.id} session={s} />)}
-            </div>
-          </div>
-        )}
       </div>
     )
   }
@@ -394,11 +386,14 @@ export const Register = () => {
 
         {/* Deposit / Withdraw inline form */}
         {(activeAction === 'deposit' || activeAction === 'withdraw') && (
-          <div className={`rounded-2xl border p-4 space-y-3 ${
-            activeAction === 'deposit'
-              ? 'bg-emerald-500/5 border-emerald-500/20'
-              : 'bg-rose-500/5 border-rose-500/20'
-          }`}>
+          <div
+            className={`rounded-2xl border p-4 space-y-3 ${
+              activeAction === 'deposit'
+                ? 'bg-emerald-500/5 border-emerald-500/20'
+                : 'bg-rose-500/5 border-rose-500/20'
+            }`}
+            onKeyDown={e => { if (e.key === 'Enter' && actionAmount > 0 && !isSubmitting) { e.preventDefault(); submitAction() } }}
+          >
             <p className="text-sm font-semibold text-light-200/70">
               {activeAction === 'deposit' ? 'Registrar Depósito' : 'Registrar Retiro'}
             </p>
@@ -536,15 +531,6 @@ export const Register = () => {
         </div>
       )}
 
-      {/* Past sessions */}
-      {!histLoading && pastSessions.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-light-200/50 uppercase tracking-wider px-2">Historial de sesiones</h2>
-          <div className="bg-main-900/30 border border-white/5 rounded-3xl overflow-hidden shadow-xl">
-            {pastSessions.map(s => <PastSessionRow key={s.id} session={s} />)}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

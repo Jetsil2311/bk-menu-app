@@ -13,17 +13,28 @@ export const Promos = () => {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const q = query(collection(db, 'promotions'))
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const promosData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })).sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0))
-      setPromos(promosData)
-      setLoading(false)
-    })
-
-    return () => unsubscribe()
+    let cancelled = false
+    let alive = true
+    let unsubscribe = null
+    const timer = setTimeout(() => {
+      if (cancelled) return
+      const q = query(collection(db, 'promotions'))
+      unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!alive) return
+        const promosData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })).sort((a, b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0))
+        setPromos(promosData)
+        setLoading(false)
+      })
+    }, 0)
+    return () => {
+      cancelled = true
+      alive = false
+      clearTimeout(timer)
+      if (unsubscribe) try { unsubscribe() } catch {}
+    }
   }, [])
 
   const handleCreatePromotion = async (e) => {

@@ -16,25 +16,37 @@ export const RegisterProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      doc(db, 'register_sessions', todayKey()),
-      (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
-          setIsRegisterOpen(!data.isClosed);
-          setInitialAmount(data.openingFloat || 0);
-        } else {
-          setIsRegisterOpen(false);
-          setInitialAmount(0);
+    let cancelled = false;
+    let alive = true;
+    let unsub = null;
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      unsub = onSnapshot(
+        doc(db, 'register_sessions', todayKey()),
+        (snap) => {
+          if (!alive) return;
+          if (snap.exists()) {
+            const data = snap.data();
+            setIsRegisterOpen(!data.isClosed);
+            setInitialAmount(data.openingFloat || 0);
+          } else {
+            setIsRegisterOpen(false);
+            setInitialAmount(0);
+          }
+          setLoading(false);
+        },
+        (error) => {
+          console.error("Error listening to register session:", error);
+          if (alive) setLoading(false);
         }
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Error listening to register session:", error);
-        setLoading(false);
-      }
-    );
-    return unsub;
+      );
+    }, 0);
+    return () => {
+      cancelled = true;
+      alive = false;
+      clearTimeout(timer);
+      if (unsub) try { unsub(); } catch {}
+    };
   }, []);
 
   const openRegister = async (amount) => {

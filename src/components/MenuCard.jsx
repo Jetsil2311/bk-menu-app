@@ -241,6 +241,13 @@ export const MenuCard = ({
           </div>
         )}
 
+        {/* 3b. Options hint */}
+        {hasOptions && (
+          <p className="mt-1.5 text-[11px] font-serif italic text-brand/70 leading-snug">
+            Haz click para ver opciones →
+          </p>
+        )}
+
         {/* 4. Price + actions row — pinned to bottom */}
         <div className="mt-auto pt-3 flex items-center justify-between gap-2">
 

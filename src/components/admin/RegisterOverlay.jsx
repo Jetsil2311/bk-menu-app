@@ -1,11 +1,19 @@
 /* eslint-disable react/prop-types */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRegister } from '../../hooks/useRegister';
 
 export const RegisterOverlay = ({ children }) => {
   const { isRegisterOpen, openRegister } = useRegister();
   const [showModal, setShowModal] = useState(false);
   const [amount, setAmount] = useState('');
+
+  // Escape closes modal
+  useEffect(() => {
+    if (!showModal) return
+    const handler = (e) => { if (e.key === 'Escape') setShowModal(false) }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [showModal])
 
   const handleOpenRegister = (e) => {
     e.preventDefault();

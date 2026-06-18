@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Info } from 'lucide-react'
 import { formatMoney } from '../utils/cart'
 
 // Modal overlay for selecting toppings before adding to cart (or editing from cart).
@@ -7,7 +8,7 @@ import { formatMoney } from '../utils/cart'
 //   onClose         — called when user dismisses without confirming
 //   productName     — shown in the header
 //   productPrice    — base price (number) shown + used for total preview
-//   toppings        — [{id, name, price}] all available toppings for this product
+//   toppings        — [{id, name, price, description?}] all available toppings for this product
 //   initialSelected — [{id, name, price}] pre-selected toppings (edit mode)
 //   onConfirm       — (selectedToppings: [{id, name, price}]) => void
 //   confirmLabel    — button label, defaults to "Agregar al carrito"
@@ -22,11 +23,13 @@ export const ToppingsOverlay = ({
   confirmLabel = 'Agregar al carrito',
 }) => {
   const [selectedIds, setSelectedIds] = useState([])
+  const [expandedDescId, setExpandedDescId] = useState(null)
 
   // Sync pre-selection whenever the overlay opens.
   useEffect(() => {
     if (isOpen) {
       setSelectedIds(initialSelected.map((t) => t.id))
+      setExpandedDescId(null)
     }
   }, [isOpen])
 
@@ -87,22 +90,50 @@ export const ToppingsOverlay = ({
             <ul className="mt-3 max-h-60 space-y-2 overflow-auto pr-1">
               {toppings.map((topping) => {
                 const checked = selectedIds.includes(topping.id)
+                const descOpen = expandedDescId === topping.id
+                const hasDesc = Boolean(topping.description)
                 return (
-                  <li key={topping.id}>
-                    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-main-200 bg-white px-4 py-3 transition hover:bg-light-100">
-                      <div className="flex items-center gap-3">
+                  <li key={topping.id} className="rounded-xl border border-main-200 bg-white overflow-hidden transition hover:bg-light-100">
+                    <div
+                      className="flex cursor-pointer items-center justify-between gap-2 px-4 py-3"
+                      onClick={() => toggle(topping.id)}
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
                         <input
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggle(topping.id)}
-                          className="h-4 w-4 accent-main-700"
+                          onClick={(e) => e.stopPropagation()}
+                          className="h-4 w-4 shrink-0 accent-main-700"
                         />
-                        <span className="text-sm font-medium">{topping.name}</span>
+                        <span className="text-sm font-medium truncate">{topping.name}</span>
                       </div>
-                      <span className="shrink-0 text-sm text-main-600">
-                        +{formatMoney(Number(topping.price || 0))}
-                      </span>
-                    </label>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="text-sm text-main-600">
+                          +{formatMoney(Number(topping.price || 0))}
+                        </span>
+                        {hasDesc && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setExpandedDescId(descOpen ? null : topping.id)
+                            }}
+                            aria-label={descOpen ? 'Ocultar descripción' : 'Ver descripción'}
+                            className={`p-2 rounded-lg transition-colors ${descOpen ? 'text-brand bg-brand/10' : 'text-main-400 hover:text-brand hover:bg-brand/10'}`}
+                          >
+                            <Info size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {hasDesc && descOpen && (
+                      <div className="px-4 pb-3 -mt-1">
+                        <p className="text-xs text-main-600 leading-relaxed border-t border-main-100 pt-2">
+                          {topping.description}
+                        </p>
+                      </div>
+                    )}
                   </li>
                 )
               })}

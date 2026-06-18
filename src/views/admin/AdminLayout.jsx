@@ -1,8 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet, NavLink } from 'react-router'
+import { doc, onSnapshot, setDoc } from 'firebase/firestore'
+import { db } from '../../firebase'
 import { useAdminAuth } from '../../hooks/useAdminAuth'
 import { Sidebar } from '../../components/admin/Sidebar'
 import { Topbar } from '../../components/admin/Topbar'
+import { BottomTabBar } from '../../components/admin/BottomTabBar'
+
+const DEFAULT_PIN_GATE_CONFIG = {
+  overview: true, pedidos: false, metricas: true,
+  promociones: true, menu: true, pos: false,
+  clientes: false, caja: false, legacy: true,
+}
 
 export const AdminLayout = () => {
   const {
@@ -16,6 +25,39 @@ export const AdminLayout = () => {
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem('admin_sidebar_collapsed') === 'true'
   })
+
+  const [pinGateConfig, setPinGateConfig] = useState(null)
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    let cancelled = false
+    let alive = true
+    let unsub = null
+    const timer = setTimeout(() => {
+      if (cancelled) return
+      const ref = doc(db, 'settings', 'general')
+      unsub = onSnapshot(
+        ref,
+        snap => {
+          if (!alive) return
+          const data = snap.exists() ? snap.data() : {}
+          if (data.pinGateConfig) {
+            setPinGateConfig(data.pinGateConfig)
+          } else {
+            setPinGateConfig(DEFAULT_PIN_GATE_CONFIG)
+            setDoc(ref, { pinGateConfig: DEFAULT_PIN_GATE_CONFIG }, { merge: true }).catch(() => {})
+          }
+        },
+        () => { if (alive) setPinGateConfig(DEFAULT_PIN_GATE_CONFIG) }
+      )
+    }, 0)
+    return () => {
+      cancelled = true
+      alive = false
+      clearTimeout(timer)
+      if (unsub) try { unsub() } catch {}
+    }
+  }, [isAuthenticated])
 
   if (!isAuthReady) {
     return (
@@ -129,7 +171,7 @@ export const AdminLayout = () => {
         className={`
           flex flex-col flex-1 min-w-0 overflow-hidden
           transition-all duration-300
-          ${isCollapsed ? 'ml-20' : 'ml-60'}
+          ${isCollapsed ? 'md:ml-20' : 'md:ml-60'}
         `}
       >
         {/* Topbar is sticky within this column, not the whole page */}
@@ -139,10 +181,13 @@ export const AdminLayout = () => {
          * Only this <main> scrolls.
          * overflow-y-auto + flex-1 fills remaining height after the topbar.
          */}
-        <main className="flex-1 overflow-y-auto bg-[#2a1208] rounded-tl-3xl border-t border-l border-white/5 p-6 md:p-8">
-          <Outlet />
+        <main className="flex-1 overflow-y-auto bg-main-900 md:rounded-tl-3xl md:border-t md:border-l border-white/5 p-4 md:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
+          <Outlet context={{ pinGateConfig }} />
         </main>
       </div>
+
+      {/* Bottom tab bar — mobile only */}
+      <BottomTabBar />
 
     </div>
   )

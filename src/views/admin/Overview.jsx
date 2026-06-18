@@ -1,4 +1,5 @@
 /* eslint-disable react/prop-types */
+import { useState } from 'react'
 import { useAdminDashboard } from '../../hooks/useAdminDashboard'
 import {
   TrendingUp,
@@ -11,12 +12,44 @@ import {
   Clock,
   Package,
   ShoppingCart,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
 } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router'
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore'
+import { db } from '../../firebase'
+import { PastSessionRow } from './Register'
+
+const todayKey = () => {
+  const d = new Date()
+  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
+}
 
 export const Overview = () => {
   const { stats, recentOrders, loading } = useAdminDashboard()
   const navigate = useNavigate()
+
+  const [histOpen, setHistOpen]       = useState(false)
+  const [histLoaded, setHistLoaded]   = useState(false)
+  const [histLoading, setHistLoading] = useState(false)
+  const [pastSessions, setPastSessions] = useState([])
+
+  const toggleHist = async () => {
+    const next = !histOpen
+    setHistOpen(next)
+    if (next && !histLoaded) {
+      setHistLoading(true)
+      try {
+        const q = query(collection(db, 'register_sessions'), orderBy('date', 'desc'), limit(31))
+        const snap = await getDocs(q)
+        const today = todayKey()
+        setPastSessions(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.date !== today).slice(0, 30))
+        setHistLoaded(true)
+      } catch { /* silently fail */ }
+      finally { setHistLoading(false) }
+    }
+  }
 
   const calculateTrend = (current, previous) => {
     if (previous === 0) return current > 0 ? 100 : 0
@@ -216,6 +249,42 @@ export const Overview = () => {
           )}
         </div>
       </div>
+
+      {/* Register History Dropdown */}
+      <div className="bg-main-900/30 border border-white/5 rounded-3xl overflow-hidden shadow-sm">
+        <button
+          type="button"
+          onClick={toggleHist}
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/2 transition-colors cursor-pointer text-left"
+        >
+          <div className="flex items-center gap-2.5">
+            <Calendar size={16} className="text-light-200/30 shrink-0" />
+            <span className="text-sm font-semibold text-light-200/60">Historial de Caja</span>
+            {histLoaded && pastSessions.length > 0 && (
+              <span className="text-[10px] text-light-200/25 tabular-nums">{pastSessions.length} sesiones</span>
+            )}
+          </div>
+          {histOpen
+            ? <ChevronUp size={15} className="text-light-200/25 shrink-0" />
+            : <ChevronDown size={15} className="text-light-200/25 shrink-0" />
+          }
+        </button>
+
+        {histOpen && (
+          <div className="border-t border-white/5">
+            {histLoading ? (
+              <div className="py-10 text-center text-sm text-light-200/30 animate-pulse">Cargando historial…</div>
+            ) : pastSessions.length === 0 ? (
+              <div className="py-10 text-center text-sm text-light-200/25 italic">Sin sesiones anteriores</div>
+            ) : (
+              <div className="divide-y divide-white/5">
+                {pastSessions.map(s => <PastSessionRow key={s.id} session={s} />)}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
     </div>
   )
 }

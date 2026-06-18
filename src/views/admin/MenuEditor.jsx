@@ -233,9 +233,15 @@ const OptionGroupsEditor = ({ groups = [], onChange }) => {
 const Drawer = ({ isOpen, onClose, title, children }) => {
   useEffect(() => {
     if (!isOpen) return
-    const handleEsc = (e) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', handleEsc)
-    return () => document.removeEventListener('keydown', handleEsc)
+    const handleKey = (e) => {
+      if (e.key === 'Escape') { onClose(); return }
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+        const form = document.activeElement?.closest('form')
+        if (form) { e.preventDefault(); form.requestSubmit() }
+      }
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
   }, [isOpen, onClose])
 
   if (!isOpen) return null
@@ -833,6 +839,7 @@ const ToppingsTab = ({ data }) => {
   const {
     toppingsList, toppingsLoading, toppingsError, toppingsSuccess,
     toppingName, setToppingName, toppingPrice, setToppingPrice,
+    toppingDescription, setToppingDescription,
     handleAddTopping, handleSaveTopping, handleDeleteTopping,
     editingTopping, setEditingTopping,
     deleteToppingTarget, setDeleteToppingTarget,
@@ -844,19 +851,31 @@ const ToppingsTab = ({ data }) => {
       {/* Add form */}
       <div className="rounded-2xl border border-white/8 bg-main-900/20 p-5">
         <h3 className="text-sm font-semibold text-light-100 mb-4">Agregar topping</h3>
-        <form onSubmit={handleAddTopping} className="flex gap-3">
-          <div className="flex-1">
-            <label className={labelCls}>Nombre *</label>
-            <input className={inputCls} value={toppingName} onChange={e => setToppingName(e.target.value)} required />
+        <form onSubmit={handleAddTopping} className="space-y-3">
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className={labelCls}>Nombre *</label>
+              <input className={inputCls} value={toppingName} onChange={e => setToppingName(e.target.value)} required />
+            </div>
+            <div className="w-28">
+              <label className={labelCls}>Precio *</label>
+              <input className={inputCls} type="number" min="0" step="0.01" value={toppingPrice} onChange={e => setToppingPrice(e.target.value)} required />
+            </div>
+            <div className="flex items-end">
+              <button type="submit" disabled={isSubmitting} className="rounded-xl bg-main-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-main-400 transition-colors disabled:opacity-50">
+                <Plus size={16} />
+              </button>
+            </div>
           </div>
-          <div className="w-28">
-            <label className={labelCls}>Precio *</label>
-            <input className={inputCls} type="number" min="0" step="0.01" value={toppingPrice} onChange={e => setToppingPrice(e.target.value)} required />
-          </div>
-          <div className="flex items-end">
-            <button type="submit" disabled={isSubmitting} className="rounded-xl bg-main-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-main-400 transition-colors disabled:opacity-50">
-              <Plus size={16} />
-            </button>
+          <div>
+            <label className={labelCls}>Descripción (opcional)</label>
+            <textarea
+              className={inputCls + ' resize-none'}
+              rows={2}
+              value={toppingDescription}
+              onChange={e => setToppingDescription(e.target.value)}
+              placeholder="Breve descripción del topping…"
+            />
           </div>
         </form>
         {toppingsError && <p className="mt-2 text-xs text-red-400">{toppingsError}</p>}
@@ -874,17 +893,29 @@ const ToppingsTab = ({ data }) => {
             {toppingsList.map(t => (
               <div key={t.docId} className="flex items-center px-4 py-3 hover:bg-white/5 transition-colors group">
                 {editingTopping?.docId === t.docId ? (
-                  <form onSubmit={e => { e.preventDefault(); handleSaveTopping(editingTopping) }} className="flex-1 flex gap-3">
-                    <input className={inputCls + ' flex-1'} value={editingTopping.name} onChange={e => setEditingTopping(prev => ({ ...prev, name: e.target.value }))} autoFocus />
-                    <input className={inputCls + ' w-24'} type="number" min="0" step="0.01" value={editingTopping.price} onChange={e => setEditingTopping(prev => ({ ...prev, price: e.target.value }))} />
-                    <button type="submit" className="p-2 rounded-lg text-emerald-400 hover:bg-emerald-500/10"><Check size={16} /></button>
-                    <button type="button" onClick={() => setEditingTopping(null)} className="p-2 rounded-lg text-light-200/40 hover:bg-white/10"><X size={16} /></button>
+                  <form onSubmit={e => { e.preventDefault(); handleSaveTopping(editingTopping) }} className="flex-1 space-y-2">
+                    <div className="flex gap-3">
+                      <input className={inputCls + ' flex-1'} value={editingTopping.name} onChange={e => setEditingTopping(prev => ({ ...prev, name: e.target.value }))} autoFocus />
+                      <input className={inputCls + ' w-24'} type="number" min="0" step="0.01" value={editingTopping.price} onChange={e => setEditingTopping(prev => ({ ...prev, price: e.target.value }))} />
+                      <button type="submit" className="p-2 rounded-lg text-emerald-400 hover:bg-emerald-500/10"><Check size={16} /></button>
+                      <button type="button" onClick={() => setEditingTopping(null)} className="p-2 rounded-lg text-light-200/40 hover:bg-white/10"><X size={16} /></button>
+                    </div>
+                    <textarea
+                      className={inputCls + ' resize-none text-xs'}
+                      rows={2}
+                      placeholder="Descripción (opcional)"
+                      value={editingTopping.description || ''}
+                      onChange={e => setEditingTopping(prev => ({ ...prev, description: e.target.value }))}
+                    />
                   </form>
                 ) : (
                   <>
                     <div className="flex-1">
                       <span className="text-sm text-light-100">{t.name}</span>
                       <span className="ml-2 text-xs text-light-200/40">+${t.price}</span>
+                      {t.description && (
+                        <p className="text-xs text-light-200/35 mt-0.5 leading-snug">{t.description}</p>
+                      )}
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => setEditingTopping(t)} className="p-1.5 rounded-lg text-light-200/40 hover:text-light-100 hover:bg-white/10 transition-colors"><Pencil size={14} /></button>
