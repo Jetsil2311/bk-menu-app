@@ -18,8 +18,14 @@ const RANGE_OPTIONS = [
   { label: '3 meses', days: 90 },
 ]
 
-// Parse product name from a single item line in the order content.
-// Format: "1 x ProductName (option) [toppings] - $XX"
+// Local YYYY-MM-DD string — avoids UTC timezone shift misattributing evening sales to the next day
+const localDateStr = (d) => [
+  d.getFullYear(),
+  String(d.getMonth() + 1).padStart(2, '0'),
+  String(d.getDate()).padStart(2, '0'),
+].join('-')
+
+// Legacy format parser: "1 x ProductName (option) - $XX"
 const parseItemsFromContent = (content = '') => {
   return content
     .split('\n')
@@ -30,6 +36,16 @@ const parseItemsFromContent = (content = '') => {
       return { qty: Number(match[1] || 1), name: match[2].trim() }
     })
     .filter(Boolean)
+}
+
+// Modern orders store an items array; legacy orders used a content string
+const getOrderItems = (order) => {
+  if (Array.isArray(order.items) && order.items.length > 0) {
+    return order.items
+      .map(it => ({ qty: Number(it.qty || 1), name: it.name }))
+      .filter(it => it.name)
+  }
+  return parseItemsFromContent(order.content)
 }
 
 export const Metrics = () => {
@@ -66,8 +82,11 @@ export const Metrics = () => {
   })
 
   const revenueByDay = dayLabels.map(day => {
-    const dayStr = day.toISOString().split('T')[0]
-    const dayOrders = orders.filter(o => o.createdAt.toISOString().split('T')[0] === dayStr)
+    const dayStr = localDateStr(day)
+    const dayOrders = orders.filter(o =>
+      (o.status || '').toLowerCase() !== 'reembolsado' &&
+      localDateStr(o.createdAt) === dayStr
+    )
     const revenue = dayOrders.reduce((sum, o) => sum + Number(o.total || 0), 0)
     return {
       name: day.toLocaleDateString('es-MX', { weekday: days <= 7 ? 'short' : undefined, day: 'numeric', month: days > 7 ? 'short' : undefined }),
@@ -76,10 +95,11 @@ export const Metrics = () => {
     }
   })
 
-  // Top products — parse from content strings
+  // Top products — reads from modern items array or legacy content string
   const productCounts = {}
   orders.forEach(order => {
-    parseItemsFromContent(order.content).forEach(({ qty, name }) => {
+    if ((order.status || '').toLowerCase() === 'reembolsado') return
+    getOrderItems(order).forEach(({ qty, name }) => {
       productCounts[name] = (productCounts[name] || 0) + qty
     })
   })
@@ -95,8 +115,9 @@ export const Metrics = () => {
   const prevStart = new Date(periodStart)
   prevStart.setDate(prevStart.getDate() - days)
 
-  const periodOrders = orders.filter(o => o.createdAt >= periodStart)
-  const prevOrders = orders.filter(o => o.createdAt >= prevStart && o.createdAt < periodStart)
+  const isNotRefunded = o => (o.status || '').toLowerCase() !== 'reembolsado'
+  const periodOrders = orders.filter(o => isNotRefunded(o) && o.createdAt >= periodStart)
+  const prevOrders = orders.filter(o => isNotRefunded(o) && o.createdAt >= prevStart && o.createdAt < periodStart)
 
   const periodRev = periodOrders.reduce((s, o) => s + Number(o.total || 0), 0)
   const prevRev = prevOrders.reduce((s, o) => s + Number(o.total || 0), 0)

@@ -129,6 +129,30 @@ Reason: Navigating between admin screens randomly then clicking Pedidos triggere
 
 ---
 
+### 2026-06-18 — Metrics view: revenue graph timezone fix + top products items array fix
+
+What changed: Fixed two bugs in the Metrics view. (1) Revenue graph: each data point was filtering orders using `toISOString().split('T')[0]` which returns UTC dates. A sale at 9 PM Mexico time (UTC-6) was being stamped as the next calendar day in UTC, causing sales to appear on the wrong date and evening revenue to vanish from the expected day. Fix: added `localDateStr()` helper that uses `getFullYear/getMonth/getDate` (local time), applied to both the day bucket generation and the order filter. Refunded orders (status "Reembolsado") are now excluded from revenue totals. (2) Top products: `parseItemsFromContent(order.content)` only parsed a legacy text format; all modern orders written by POS.jsx use an `items: [{name, qty, ...}]` array and have no formatted `content` string, so `productCounts` was always empty and the chart showed "Datos insuficientes" permanently. Fix: added `getOrderItems(order)` helper that reads `order.items` array first and falls back to `parseItemsFromContent` for legacy orders. Refunded orders are also excluded from product counts. Summary cards (period totals) also now exclude refunded orders.
+Files affected: src/views/admin/Metrics.jsx
+Reason: Revenue graph was showing wrong day attributions due to UTC/local timezone mismatch. Top products was always empty because modern POS orders don't use the content string format the parser expected.
+
+---
+
+### 2026-06-18 — Edit client button in Clientes view
+
+What changed: Each customer row in the Clientes admin view now has an "Editar" button (pencil icon) in the expanded detail section, alongside the existing "Ajustar saldo" button. Clicking it opens an `EditCustomerModal` pre-filled with the client's current name and phone number. Saving writes the updated fields to Firestore (`customers/{id}`) with `updatedAt: serverTimestamp()`. The list updates in real-time via the existing `onSnapshot` listener — no refresh needed. Escape closes the modal; Enter confirms. Also fixed a Tailwind canonical class warning (`bg-white/[0.02]` → `bg-white/2`).
+Files affected: src/views/admin/Customers.jsx
+Reason: Admins needed a way to correct client names and phone numbers after registration.
+
+---
+
+### 2026-06-18 — Visit history popup + last visit date in Clientes
+
+What changed: (1) Each expanded customer row now shows "Última visita" date alongside "Cliente desde" in the detail info strip. (2) Added a "Ver historial" button (history icon) in the expanded row buttons. Clicking it opens `VisitHistoryModal`, which fetches all orders from Firestore where `customerId == customer.id`, sorts them newest-first client-side (no composite index required), and displays them as a scrollable accordion list. Each row shows date, time, item count, and total. Expanding a row shows the full items list (reads from `order.items` array for modern POS orders, falls back to legacy content string) plus a payment breakdown (efectivo / tarjeta / loyalty). Added `getVisitItems()` helper that mirrors the same dual-format logic used in Metrics.jsx. Imports added: `getDocs`, `where` from firestore; `History`, `Clock` from lucide-react.
+Files affected: src/views/admin/Customers.jsx
+Reason: Admins needed to see when a client last visited and review their purchase history per visit.
+
+---
+
 ## Known Issues / Follow-ups
 
 - Thermal printer features (SettingsChips, printReceipt utilities) are present in the codebase but NOT wired to POS.jsx or Orders.jsx yet (user skipped those connections). Wire up when ready: import useSettings + printReceipt in POS.jsx for auto-print after payment; add reprint button to Orders.jsx pagado cards.
