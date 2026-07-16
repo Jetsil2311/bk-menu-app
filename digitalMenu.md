@@ -2,7 +2,7 @@
 
 Base template: https://github.com/Jetsil2311/menu-demo
 Client: Bubble Kaapeh (BK)
-Last updated: 2026-06-17
+Last updated: 2026-07-16
 
 ---
 
@@ -150,6 +150,30 @@ Reason: Admins needed a way to correct client names and phone numbers after regi
 What changed: (1) Each expanded customer row now shows "Última visita" date alongside "Cliente desde" in the detail info strip. (2) Added a "Ver historial" button (history icon) in the expanded row buttons. Clicking it opens `VisitHistoryModal`, which fetches all orders from Firestore where `customerId == customer.id`, sorts them newest-first client-side (no composite index required), and displays them as a scrollable accordion list. Each row shows date, time, item count, and total. Expanding a row shows the full items list (reads from `order.items` array for modern POS orders, falls back to legacy content string) plus a payment breakdown (efectivo / tarjeta / loyalty). Added `getVisitItems()` helper that mirrors the same dual-format logic used in Metrics.jsx. Imports added: `getDocs`, `where` from firestore; `History`, `Clock` from lucide-react.
 Files affected: src/views/admin/Customers.jsx
 Reason: Admins needed to see when a client last visited and review their purchase history per visit.
+
+---
+
+### 2026-07-01 — PinGate config + Auth system: Firestore-only, no local overrides
+
+What changed: (1) **PinGate**: Removed `DEFAULT_PIN_GATE_CONFIG` const from both `AdminLayout.jsx` and `Topbar.jsx`. `AdminLayout` no longer bootstraps a default config into Firestore on first load — it simply passes `{}` if `pinGateConfig` is absent from the DB. `AdminLayout` shows a "Cargando..." state while `pinGateConfig === null` so `SmartPinGate` always receives a non-null config when it renders. `SmartPinGate` changed lock check from `config[routeKey] !== false` (defaulted to locked for missing keys) to `config[routeKey] === true` (opt-in locking; missing key = unlocked). Added a `useEffect` in `SmartPinGate` that watches `config` and calls `setIsLocked(config[routeKey] === true)` — this makes the lock button take effect in real time without requiring page navigation. Lock icon in `Topbar` updates instantly because `isCurrentScreenLocked` also uses `=== true`. `toggleLock` changed from `updateDoc` with dot-notation to `setDoc` with `merge: true` spreading the full config object — safe even if the settings doc doesn't yet have a `pinGateConfig` field. (2) **Auth**: Removed hardcoded `ALLOWED_EMAILS` array from `useAdminAuth.js`. Added `checkEmailAuthorized(email)` async helper that reads `settings/general.authorizedEmails` from Firestore — if the array exists and is non-empty, uses it; otherwise falls back to `FALLBACK_EMAILS` (the previous hardcoded list). Both `onAuthStateChanged` callback and `handleGoogleSignIn` now await this check. The `EmailsChip` in Overview/Settings (which already wrote to `authorizedEmails`) now actually controls who can log in. Added `active` flag to prevent state updates on unmounted component if auth fires during cleanup.
+Files affected: src/hooks/useAdminAuth.js, src/components/admin/PinGate.jsx, src/views/admin/AdminLayout.jsx, src/components/admin/Topbar.jsx
+Reason: PinGate config was being overridden by local hardcoded defaults — lock changes didn't survive a page refresh. Auth was controlled by code-level constants and ignored the `EmailsChip` UI in Overview that was supposed to manage access.
+
+---
+
+### 2026-07-01 — Lock button fix + auth open-access mode
+
+What changed: (1) **Lock button**: Re-architectured pinGateConfig ownership. AdminLayout now owns the config AND a `toggleRouteKey(key)` function that updates local state IMMEDIATELY (optimistic) before writing to Firestore in background. Topbar receives `pinGateConfig` and `toggleRouteKey` as props — no longer reads from `useSettings()` for the lock. This eliminates the Firestore roundtrip delay; the lock icon and SmartPinGate both react within the same React render cycle. SmartPinGate's `useEffect` now depends on `configLocked` (a boolean primitive) instead of the `config` object reference — this is more reliable since React compares primitives with `Object.is` directly. (2) **Auth open-access mode**: `checkEmailAuthorized` now returns `true` (allow all) when `authorizedEmails` is absent or empty in Firestore. Previously it fell back to a hardcoded `FALLBACK_EMAILS` list. Now: no list = open access; list with entries = restricted to those entries only. Also changed network-error fallback to `return true` (fail open, don't lock admins out on bad connection).
+Files affected: src/views/admin/AdminLayout.jsx, src/components/admin/Topbar.jsx, src/components/admin/PinGate.jsx, src/hooks/useAdminAuth.js
+Reason: Lock button did nothing visible — Firestore roundtrip made the UI response appear broken; auth was falling back to hardcoded list when it should allow open access.
+
+---
+
+### 2026-07-16 — BottomSheet mobile touch hitbox fix
+
+What changed: On phones, tapping buttons inside the product options bottom sheet (option pills, qty +/-, "Agregar") sometimes required tapping in the wrong spot to register. Root cause: the swipe-to-dismiss touch handlers (`onTouchStart/Move/End`) were attached to the entire sheet panel, not just the drag handle. Any tiny finger movement during a tap (natural hand tremor) was read as a drag gesture, which immediately shifted the whole sheet via `translateY` (no transition while dragging) — moving every button out from under the finger mid-tap before the touch ended. Fix: (1) moved the drag handlers off the full panel and onto a dedicated drag-handle strip only, sized to a 44px tap target, with `touchAction: 'none'` so the browser doesn't fight the gesture; (2) added `touchAction: 'manipulation'` to all sheet buttons (option pills, qty +/-, Agregar) to remove ambiguous tap/zoom handling; (3) bumped the qty +/- buttons from 36px (h-9 w-9) to the 44px minimum tap target (h-11 w-11) and gave option pills a 44px minHeight, per the project's mobile tap-target rule.
+Files affected: src/components/BottomSheet.jsx
+Reason: Buttons in the option sheet were effectively broken on touch screens — taps landed on the wrong element because the whole sheet moved under the finger during any tap due to overly broad swipe-to-dismiss listeners.
 
 ---
 

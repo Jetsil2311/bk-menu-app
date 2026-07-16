@@ -1,17 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Outlet, NavLink } from 'react-router'
-import { doc, onSnapshot, setDoc } from 'firebase/firestore'
+import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAdminAuth } from '../../hooks/useAdminAuth'
 import { Sidebar } from '../../components/admin/Sidebar'
 import { Topbar } from '../../components/admin/Topbar'
 import { BottomTabBar } from '../../components/admin/BottomTabBar'
-
-const DEFAULT_PIN_GATE_CONFIG = {
-  overview: true, pedidos: false, metricas: true,
-  promociones: true, menu: true, pos: false,
-  clientes: false, caja: false, legacy: true,
-}
 
 export const AdminLayout = () => {
   const {
@@ -41,14 +35,9 @@ export const AdminLayout = () => {
         snap => {
           if (!alive) return
           const data = snap.exists() ? snap.data() : {}
-          if (data.pinGateConfig) {
-            setPinGateConfig(data.pinGateConfig)
-          } else {
-            setPinGateConfig(DEFAULT_PIN_GATE_CONFIG)
-            setDoc(ref, { pinGateConfig: DEFAULT_PIN_GATE_CONFIG }, { merge: true }).catch(() => {})
-          }
+          setPinGateConfig(data.pinGateConfig ?? {})
         },
-        () => { if (alive) setPinGateConfig(DEFAULT_PIN_GATE_CONFIG) }
+        () => { if (alive) setPinGateConfig(prev => prev ?? {}) }
       )
     }, 0)
     return () => {
@@ -58,6 +47,21 @@ export const AdminLayout = () => {
       if (unsub) try { unsub() } catch {}
     }
   }, [isAuthenticated])
+
+  // Optimistically toggles one route key in local state and persists to Firestore.
+  // UI reacts immediately; Firestore write happens in background.
+  // NOTE: must NOT use the setState(prev =>) updater pattern here — React 18
+  // StrictMode calls updater functions twice, which would double-fire the setDoc
+  // and un-toggle the value before it takes effect.
+  const toggleRouteKey = useCallback((routeKey) => {
+    const prev = pinGateConfig ?? {}
+    const next = { ...prev, [routeKey]: !(prev[routeKey] === true) }
+    setPinGateConfig(next)
+    setDoc(doc(db, 'settings', 'general'), {
+      pinGateConfig: next,
+      updatedAt: serverTimestamp(),
+    }, { merge: true }).catch(err => console.error('pinGateConfig write failed:', err))
+  }, [pinGateConfig])
 
   if (!isAuthReady) {
     return (
@@ -175,14 +179,25 @@ export const AdminLayout = () => {
         `}
       >
         {/* Topbar is sticky within this column, not the whole page */}
-        <Topbar user={user} handleLogout={handleLogout} />
+        <Topbar
+          user={user}
+          handleLogout={handleLogout}
+          pinGateConfig={pinGateConfig ?? {}}
+          toggleRouteKey={toggleRouteKey}
+        />
 
         {/*
          * Only this <main> scrolls.
          * overflow-y-auto + flex-1 fills remaining height after the topbar.
          */}
         <main className="flex-1 overflow-y-auto bg-main-900 md:rounded-tl-3xl md:border-t md:border-l border-white/5 p-4 md:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
-          <Outlet context={{ pinGateConfig }} />
+          {pinGateConfig === null ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-sm text-light-200/30 animate-pulse">Cargando...</p>
+            </div>
+          ) : (
+            <Outlet context={{ pinGateConfig, toggleRouteKey }} />
+          )}
         </main>
       </div>
 

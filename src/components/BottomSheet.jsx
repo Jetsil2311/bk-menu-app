@@ -215,8 +215,8 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
 
   // ── Shared add-button styles ─────────────────────────────────────────────
   const addBtnStyle = isRequiredComplete
-    ? { background: '#7c2d12', cursor: 'pointer' }
-    : { background: '#3a1810', color: '#6b5c52', cursor: 'not-allowed' }
+    ? { background: '#7c2d12', cursor: 'pointer', touchAction: 'manipulation' }
+    : { background: '#3a1810', color: '#6b5c52', cursor: 'not-allowed', touchAction: 'manipulation' }
 
   const addBtnHover = {
     onMouseEnter: (e) => {
@@ -326,8 +326,8 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
                     className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
                     style={
                       isSelected
-                        ? { background: '#7c2d12', border: '1px solid #7c2d12', color: '#ffffff' }
-                        : { background: 'transparent', border: '1px solid rgba(146,84,32,0.5)', color: '#faf6f0' }
+                        ? { background: '#7c2d12', border: '1px solid #7c2d12', color: '#ffffff', touchAction: 'manipulation', minHeight: 44 }
+                        : { background: 'transparent', border: '1px solid rgba(146,84,32,0.5)', color: '#faf6f0', touchAction: 'manipulation', minHeight: 44 }
                     }
                     aria-pressed={isSelected}
                   >
@@ -357,11 +357,11 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
         type="button"
         onClick={() => setQty((q) => Math.max(1, q - 1))}
         disabled={qty <= 1}
-        className="h-9 w-9 flex items-center justify-center rounded-full text-xl font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
+        className="h-11 w-11 flex items-center justify-center rounded-full text-xl font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
         style={
           qty <= 1
-            ? { border: '1px solid rgba(120,60,20,0.2)', color: 'rgba(120,60,20,0.3)', cursor: 'not-allowed' }
-            : { border: '1px solid rgba(146,84,32,0.5)', color: '#faf6f0', cursor: 'pointer' }
+            ? { border: '1px solid rgba(120,60,20,0.2)', color: 'rgba(120,60,20,0.3)', cursor: 'not-allowed', touchAction: 'manipulation' }
+            : { border: '1px solid rgba(146,84,32,0.5)', color: '#faf6f0', cursor: 'pointer', touchAction: 'manipulation' }
         }
         aria-label="Disminuir cantidad"
       >
@@ -376,8 +376,8 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
       <button
         type="button"
         onClick={() => setQty((q) => q + 1)}
-        className="h-9 w-9 flex items-center justify-center rounded-full text-xl font-bold transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
-        style={{ border: '1px solid rgba(146,84,32,0.5)', color: '#faf6f0' }}
+        className="h-11 w-11 flex items-center justify-center rounded-full text-xl font-bold transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
+        style={{ border: '1px solid rgba(146,84,32,0.5)', color: '#faf6f0', touchAction: 'manipulation' }}
         aria-label="Aumentar cantidad"
       >
         +
@@ -406,13 +406,7 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
       />
 
       {/* ── Panel ─────────────────────────────────────────────────────── */}
-      <div
-        ref={sheetRef}
-        style={panelStyle}
-        onTouchStart={!isDesktop ? handleTouchStart : undefined}
-        onTouchMove={!isDesktop ? handleTouchMove : undefined}
-        onTouchEnd={!isDesktop ? handleTouchEnd : undefined}
-      >
+      <div ref={sheetRef} style={panelStyle}>
         {/* ── DESKTOP layout: single scrolling column, no sticky bar ───── */}
         {isDesktop && (
           <div
@@ -451,8 +445,15 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
             className="flex flex-col"
             style={{ background: '#1c0d05', maxHeight: '80vh' }}
           >
-            {/* Drag handle pill */}
-            <div className="flex justify-center pt-3 pb-2 shrink-0">
+            {/* Drag handle pill — owns the swipe-to-dismiss gesture exclusively,
+                so taps on buttons elsewhere in the sheet are never mistaken for a drag */}
+            <div
+              className="flex justify-center items-center shrink-0"
+              style={{ height: 44, touchAction: 'none' }}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               <div
                 className="rounded-full bg-white/20"
                 style={{ width: 40, height: 4 }}

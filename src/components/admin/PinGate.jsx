@@ -294,23 +294,27 @@ PinGate.propTypes = {
 
 export const SmartPinGate = ({ routeKey, children }) => {
   const ctx = useOutletContext() ?? {}
-  const config = ctx.pinGateConfig
+  const config = ctx.pinGateConfig ?? {}
 
+  // Derive a primitive boolean so React detects the change reliably
+  const configLocked = config[routeKey] === true
+
+  const [isLocked, setIsLocked] = useState(configLocked)
   const [activeRouteKey, setActiveRouteKey] = useState(routeKey)
-  const [isLocked, setIsLocked] = useState(() => !config || config[routeKey] !== false)
 
-  // React may reuse this component instance when navigating between routes
-  // (same component type at same Outlet position). Detect the routeKey change
-  // and reset lock state synchronously before the commit so the new route's
-  // PIN gate shows immediately.
+  // Synchronously reset when React reuses this instance for a different route
   if (activeRouteKey !== routeKey) {
     setActiveRouteKey(routeKey)
-    setIsLocked(!config || config[routeKey] !== false)
+    setIsLocked(configLocked)
   }
 
+  // React to real-time config changes (optimistic toggle from AdminLayout or Firestore update)
+  useEffect(() => {
+    setIsLocked(configLocked)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [configLocked, routeKey])
+
   if (!isLocked) return children
-  // key={routeKey} forces PinGate to fully remount on route change, resetting
-  // the unlocked state so a previously-unlocked gate can't bleed into the new route.
   return <PinGate key={routeKey}>{children}</PinGate>
 }
 

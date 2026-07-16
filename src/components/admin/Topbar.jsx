@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { LogOut, User, Bell, Settings, Package, Lock, LockOpen } from 'lucide-react'
-import { collection, query, orderBy, onSnapshot, limit, updateDoc, doc, serverTimestamp } from 'firebase/firestore'
+import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { formatMoney } from '../../utils/cart'
 import { useRegister } from '../../hooks/useRegister'
@@ -24,13 +24,7 @@ const ROUTE_KEYS = {
   '/admin/legacy':      'legacy',
 }
 
-const DEFAULT_PIN_GATE_CONFIG = {
-  overview: true, pedidos: false, metricas: true,
-  promociones: true, menu: true, pos: false,
-  clientes: false, caja: false, legacy: true,
-}
-
-export const Topbar = ({ user, handleLogout }) => {
+export const Topbar = ({ user, handleLogout, pinGateConfig = {}, toggleRouteKey }) => {
   const location = useLocation()
   const navigate  = useNavigate()
   const [dateTime, setDateTime] = useState(new Date())
@@ -38,24 +32,14 @@ export const Topbar = ({ user, handleLogout }) => {
   const { settings } = useSettings()
   const isOverview = location.pathname === '/admin'
 
-  // Lock/unlock for current screen — falls back to defaults while Firestore loads
-  const pinGateConfig = settings?.pinGateConfig ?? DEFAULT_PIN_GATE_CONFIG
   const currentRouteKey = ROUTE_KEYS[location.pathname] ?? null
   const isCurrentScreenLocked = currentRouteKey
-    ? pinGateConfig[currentRouteKey] !== false
+    ? pinGateConfig[currentRouteKey] === true
     : null
 
-  const toggleLock = async () => {
-    if (!currentRouteKey) return
-    const current = pinGateConfig[currentRouteKey] !== false
-    try {
-      await updateDoc(doc(db, 'settings', 'general'), {
-        [`pinGateConfig.${currentRouteKey}`]: !current,
-        updatedAt: serverTimestamp(),
-      })
-    } catch (err) {
-      console.error('Error toggling screen lock:', err)
-    }
+  const handleToggleLock = () => {
+    if (!currentRouteKey || !toggleRouteKey) return
+    toggleRouteKey(currentRouteKey)
   }
 
   // PIN prompt for lock toggle confirmation
@@ -379,7 +363,7 @@ export const Topbar = ({ user, handleLogout }) => {
       {/* PIN confirmation before toggling screen lock */}
       {pinPromptOpen && (
         <PinPrompt
-          onSuccess={() => { setPinPromptOpen(false); toggleLock() }}
+          onSuccess={() => { setPinPromptOpen(false); handleToggleLock() }}
           onCancel={() => setPinPromptOpen(false)}
           prompt={isCurrentScreenLocked
             ? `Quitar protección PIN de ${getPageTitle()}`

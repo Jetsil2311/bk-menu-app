@@ -6,10 +6,26 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth'
+import { getDoc, doc } from 'firebase/firestore'
 import { auth } from '../firebase'
+import { db } from '../firebase'
+
+const checkEmailAuthorized = async (email) => {
+  try {
+    const snap = await getDoc(doc(db, 'settings', 'general'))
+    const list = snap.exists() && Array.isArray(snap.data().authorizedEmails)
+      ? snap.data().authorizedEmails
+      : []
+    // No list configured → open access (allow any email)
+    if (list.length === 0) return true
+    return list.map(e => e.toLowerCase()).includes((email || '').toLowerCase())
+  } catch {
+    // Network error → allow access (fail open; don't lock out admins on bad connection)
+    return true
+  }
+}
 
 export const useAdminAuth = () => {
-  const ALLOWED_EMAILS = ['jethrosiloe26@gmail.com', 'anqnmes@gmail.com', 'jzamnacc@gmail.com', 'asijaroca15@gmail.com']
   const [user, setUser] = useState(null)
   const [isAuthReady, setIsAuthReady] = useState(false)
   const [email, setEmail] = useState('')
@@ -19,31 +35,35 @@ export const useAdminAuth = () => {
 
   const googleProvider = useMemo(() => new GoogleAuthProvider(), [])
 
-  const isAllowedEmail = (email) =>
-    Boolean(email) &&
-    ALLOWED_EMAILS.map((item) => item.toLowerCase()).includes(email.toLowerCase())
-
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser && !isAllowedEmail(currentUser.email)) {
-        setError('Tu cuenta no tiene acceso al panel.')
-        signOut(auth)
-        setUser(null)
-        setIsAuthReady(true)
-        return
+    let active = true
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        const allowed = await checkEmailAuthorized(currentUser.email)
+        if (!active) return
+        if (!allowed) {
+          setError('Tu cuenta no tiene acceso al panel.')
+          await signOut(auth)
+          if (!active) return
+          setUser(null)
+          setIsAuthReady(true)
+          return
+        }
       }
-
+      if (!active) return
       setUser(currentUser)
       setIsAuthReady(true)
     })
-    return () => unsubscribe()
+    return () => {
+      active = false
+      unsubscribe()
+    }
   }, [])
 
   const handleLogin = async (event) => {
     event.preventDefault()
     setIsSubmitting(true)
     setError('')
-
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password)
       setPassword('')
@@ -57,10 +77,10 @@ export const useAdminAuth = () => {
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true)
     setError('')
-
     try {
       const result = await signInWithPopup(auth, googleProvider)
-      if (!isAllowedEmail(result.user?.email)) {
+      const allowed = await checkEmailAuthorized(result.user?.email)
+      if (!allowed) {
         setError('Tu cuenta no tiene acceso al panel.')
         await signOut(auth)
       }
