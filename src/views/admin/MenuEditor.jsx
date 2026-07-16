@@ -248,13 +248,14 @@ const Drawer = ({ isOpen, onClose, title, children }) => {
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — z-[70]: above the mobile BottomTabBar (z-60) and its Más drawer (z-65)
+          so this full-screen drawer actually blocks them instead of rendering underneath */}
       <div
-        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
       {/* Panel */}
-      <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col bg-[#1c0a04] border-l border-white/10 shadow-2xl overflow-y-auto">
+      <div className="fixed inset-y-0 right-0 z-[71] flex w-full max-w-lg flex-col bg-[#1c0a04] border-l border-white/10 shadow-2xl overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 sticky top-0 bg-[#1c0a04] z-10">
           <h2 className="text-base font-semibold text-light-100">{title}</h2>
           <button
@@ -272,7 +273,9 @@ const Drawer = ({ isOpen, onClose, title, children }) => {
 
 // ── Confirm delete dialog ─────────────────────────────────────────────────────
 const DeleteConfirm = ({ label, onConfirm, onCancel, loading }) => (
-  <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+  // z-[72]: "z-60" is not a real Tailwind utility (no matching scale value), so this dialog
+  // previously had no z-index at all and could render underneath the drawer/tab bar/Más drawer.
+  <div className="fixed inset-0 z-[72] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
     <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#1c0a04] p-6 shadow-2xl">
       <h3 className="text-base font-semibold text-light-100">¿Eliminar?</h3>
       <p className="mt-1 text-sm text-light-200/60">{label}</p>

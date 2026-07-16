@@ -155,10 +155,11 @@ export const AdminLayout = () => {
 
   return (
     /*
-     * h-screen overflow-hidden — locks the shell to exactly the viewport.
+     * h-dvh overflow-hidden — locks the shell to exactly the visible viewport
+     * (100dvh tracks mobile browsers' collapsing address bar; 100vh does not).
      * Nothing outside this box can scroll; only the inner <main> can.
      */
-    <div className="h-screen overflow-hidden bg-main-950 flex">
+    <div className="h-dvh overflow-hidden bg-main-950 flex">
 
       {/* Fixed sidebar — never participates in page scroll */}
       <Sidebar

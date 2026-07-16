@@ -152,8 +152,8 @@ export const PinGate = ({ children }) => {
       role="dialog"
       aria-modal="true"
       aria-label="Acceso restringido"
-      className="fixed inset-0 bg-main-950 flex flex-col items-center justify-center p-6 select-none"
-      style={{ zIndex: 9999, animation: 'pinFadeIn 150ms ease-out both' }}
+      className="fixed inset-0 bg-main-950 flex flex-col items-center justify-center overflow-y-auto p-6 select-none"
+      style={{ zIndex: 9999, animation: 'pinFadeIn 150ms ease-out both', paddingBottom: 'max(1.5rem, calc(1.5rem + env(safe-area-inset-bottom, 0px)))' }}
     >
       <style>{`
         @keyframes pinFadeIn {
@@ -390,7 +390,7 @@ export const PinPrompt = ({ onSuccess, onCancel, prompt }) => {
 
   const modal = (
     <div
-      className="fixed inset-0 flex items-center justify-center p-4 select-none"
+      className="fixed inset-0 flex items-center justify-center overflow-y-auto p-4 select-none"
       style={{ zIndex: 9999, animation: 'pinFadeIn 150ms ease-out both' }}
     >
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onCancel} />

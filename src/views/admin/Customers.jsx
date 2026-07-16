@@ -85,7 +85,7 @@ const BalanceModal = ({ customer, onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-main-900 border border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold text-light-100">Ajustar Saldo</h3>
@@ -176,7 +176,7 @@ const EditCustomerModal = ({ customer, onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-main-900 border border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-base font-bold text-light-100">Editar Cliente</h3>
@@ -266,7 +266,7 @@ const VisitHistoryModal = ({ customer, onClose }) => {
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-main-900 border border-white/10 rounded-3xl w-full max-w-lg shadow-2xl max-h-[85vh] flex flex-col">
 
         {/* Header */}

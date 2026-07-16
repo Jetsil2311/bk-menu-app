@@ -1183,7 +1183,10 @@ export const POS = () => {
           className="w-full rounded-xl border border-white/8 bg-main-800/50 px-3 py-2 text-sm text-light-200 placeholder-light-200/25 outline-none focus:border-main-500/40 transition" />
       </div>
 
-      <div className="shrink-0 px-4 pt-3 pb-4 border-t border-white/8 bg-main-950/80 space-y-3">
+      <div
+        className="shrink-0 px-4 pt-3 border-t border-white/8 bg-main-950/80 space-y-3"
+        style={{ paddingBottom: 'max(1rem, calc(1rem + env(safe-area-inset-bottom, 0px)))' }}
+      >
         <div className="flex items-baseline justify-between">
           <span className="text-sm text-light-200/40">{itemCount} {itemCount === 1 ? 'producto' : 'productos'}</span>
           <span className="text-2xl font-bold text-light-100 tabular-nums">{formatMoney(subtotal)}</span>
@@ -1263,15 +1266,20 @@ export const POS = () => {
 
   // ─────────────────────────────────────────────────────────────────────────
   if (registerLoading) return (
-    <div className="flex items-center justify-center h-screen bg-main-950 text-light-200/30 text-sm animate-pulse">
+    <div className="flex items-center justify-center h-full bg-main-950 text-light-200/30 text-sm animate-pulse">
       Verificando estado de caja…
     </div>
   )
 
   return (
     <RegisterOverlay>
-      <div className="flex overflow-hidden -mx-6 md:-mx-8 -mt-6 md:-mt-8 -mb-6 md:-mb-8"
-        style={{ height: 'calc(100vh - 4rem)' }}>
+      {/*
+       * Negative margins exactly cancel <main>'s own p-4/md:p-6/lg:p-8 + pb-24/md:pb-6/lg:pb-8
+       * (AdminLayout.jsx) so this panel fills <main>'s content box exactly — including the
+       * extra pb-24 <main> reserves on mobile for the fixed BottomTabBar. h-full then inherits
+       * that already-correct height instead of recomputing it and drifting out of sync.
+       */}
+      <div className="flex overflow-hidden -mx-4 md:-mx-6 lg:-mx-8 -mt-4 md:-mt-6 lg:-mt-8 -mb-24 md:-mb-6 lg:-mb-8 h-full">
 
         {/* ── Left: Product catalog ──────────────────────────────────────── */}
         <div className="flex flex-col flex-1 min-w-0 bg-main-950 overflow-hidden">
@@ -1402,7 +1410,8 @@ export const POS = () => {
           {!isTicketOpen && (
             <button
               onClick={() => setIsTicketOpen(true)}
-              className="fixed bottom-6 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-2xl bg-main-500 text-white shadow-2xl shadow-main-500/30 font-semibold hover:bg-main-400 cursor-pointer transition-all"
+              className="fixed right-4 z-[65] flex items-center gap-2 px-4 py-3 rounded-2xl bg-main-500 text-white shadow-2xl shadow-main-500/30 font-semibold hover:bg-main-400 cursor-pointer transition-all min-h-[44px]"
+              style={{ bottom: 'calc(64px + env(safe-area-inset-bottom, 0px) + 16px)' }}
             >
               <ShoppingCart size={18} />
               {itemCount > 0

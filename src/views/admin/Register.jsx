@@ -212,7 +212,7 @@ export const Register = () => {
 
   // ── Shared Open Modal ────────────────────────────────────────────────────────
   const openModal = showOpenModal && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
       <div className="absolute inset-0 bg-main-950/80" onClick={() => setShowOpenModal(false)} />
       <div
         className="relative w-full max-w-md scale-100 transform overflow-hidden rounded-3xl border border-white/10 bg-main-900 p-8 shadow-2xl transition-all"
