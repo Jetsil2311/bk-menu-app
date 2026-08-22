@@ -13,6 +13,8 @@ import { Admin } from './views/Admin'
 import { POS } from './views/admin/POS'
 import { Customers } from './views/admin/Customers'
 import { Register } from './views/admin/Register'
+import { Stock } from './views/admin/Stock'
+import { Finance } from './views/admin/Finance'
 import { SmartPinGate } from './components/admin/PinGate'
 import { RegisterProvider } from './context/RegisterContext'
 
@@ -34,6 +36,8 @@ createRoot(document.getElementById('root')).render(
             <Route path="menu" element={<SmartPinGate routeKey="menu"><MenuEditor /></SmartPinGate>} />
             <Route path="pos" element={<SmartPinGate routeKey="pos"><POS /></SmartPinGate>} />
             <Route path="clientes" element={<SmartPinGate routeKey="clientes"><Customers /></SmartPinGate>} />
+            <Route path="stock" element={<SmartPinGate routeKey="stock"><Stock /></SmartPinGate>} />
+            <Route path="finanzas" element={<SmartPinGate routeKey="finanzas"><Finance /></SmartPinGate>} />
             <Route path="caja" element={<SmartPinGate routeKey="caja"><Register /></SmartPinGate>} />
             <Route path="legacy" element={<SmartPinGate routeKey="legacy"><Admin /></SmartPinGate>} />
           </Route>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router'
 import {
   LayoutDashboard, ShoppingCart, ClipboardList, Users, MoreHorizontal,
-  Landmark, BarChart3, Tag, UtensilsCrossed, ExternalLink,
+  Landmark, BarChart3, Tag, UtensilsCrossed, ExternalLink, Package, Wallet,
 } from 'lucide-react'
 
 const PRIMARY_TABS = [
@@ -14,6 +14,8 @@ const PRIMARY_TABS = [
 
 const MAS_ITEMS = [
   { name: 'Caja',        path: '/admin/caja',       icon: Landmark },
+  { name: 'Stock',       path: '/admin/stock',       icon: Package },
+  { name: 'Finanzas',    path: '/admin/finanzas',    icon: Wallet },
   { name: 'Métricas',    path: '/admin/metricas',    icon: BarChart3 },
   { name: 'Promociones', path: '/admin/promociones', icon: Tag },
   { name: 'Menú',        path: '/admin/menu',        icon: UtensilsCrossed },

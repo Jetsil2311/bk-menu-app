@@ -50,26 +50,30 @@ const getOrderItems = (order) => {
 
 export const Metrics = () => {
   const [orders, setOrders] = useState([])
+  const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const [rangeIdx, setRangeIdx] = useState(0)
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchData = async () => {
       try {
-        const snapshot = await getDocs(collection(db, 'orders'))
-        const data = snapshot.docs.map(d => ({
+        const [ordersSnap, sessionsSnap] = await Promise.all([
+          getDocs(collection(db, 'orders')),
+          getDocs(collection(db, 'register_sessions')),
+        ])
+        setOrders(ordersSnap.docs.map(d => ({
           ...d.data(),
           id: d.id,
           createdAt: d.data().createdAt?.toDate() || new Date(),
-        }))
-        setOrders(data)
+        })))
+        setSessions(sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() })))
       } catch (err) {
-        console.error('Error fetching orders:', err)
+        console.error('Error fetching metrics data:', err)
       } finally {
         setLoading(false)
       }
     }
-    fetchOrders()
+    fetchData()
   }, [])
 
   const { days } = RANGE_OPTIONS[rangeIdx]
@@ -81,17 +85,23 @@ export const Metrics = () => {
     return d
   })
 
+  // register_sessions docs are keyed by the same local 'YYYY-MM-DD' string as localDateStr().
+  const sessionsByDate = {}
+  sessions.forEach(s => { sessionsByDate[s.id] = s })
+
+  // Revenue graph reads cashSales + cardSales straight from each day's register session —
+  // the same fields/collection Overview's register history reads — instead of summing
+  // order totals. This is a deliberate change: order totals include loyalty-redeemed
+  // amounts (not real cash/card income) and were bucketed by order.createdAt, which can
+  // land on a different calendar day than the order was actually paid, so the two views
+  // used to disagree. A day with no register session (never opened) correctly shows $0.
   const revenueByDay = dayLabels.map(day => {
     const dayStr = localDateStr(day)
-    const dayOrders = orders.filter(o =>
-      (o.status || '').toLowerCase() !== 'reembolsado' &&
-      localDateStr(o.createdAt) === dayStr
-    )
-    const revenue = dayOrders.reduce((sum, o) => sum + Number(o.total || 0), 0)
+    const session = sessionsByDate[dayStr]
+    const revenue = (session?.cashSales || 0) + (session?.cardSales || 0)
     return {
       name: day.toLocaleDateString('es-MX', { weekday: days <= 7 ? 'short' : undefined, day: 'numeric', month: days > 7 ? 'short' : undefined }),
       revenue,
-      count: dayOrders.length,
     }
   })
 

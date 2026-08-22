@@ -7,6 +7,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { formatMoney } from '../../utils/cart'
+import { computeAndDeductOrderStock } from '../../utils/stockDeduction'
 import { MoneyInput } from '../../components/MoneyInput'
 import { BottomSheet } from '../../components/BottomSheet'
 import { ToppingsOverlay } from '../../components/ToppingsOverlay'
@@ -210,7 +211,9 @@ const PaymentModal = ({
   effectiveTotal, change, canConfirm, isProcessing,
   onConfirm, onClose,
 }) => {
-  const totalPaid  = cashAmount + cardAmount + loyaltyRedeemed
+  // loyaltyRedeemed already reduced effectiveTotal (see the parent's own effectiveTotal
+  // comment) — only cash/card are still outstanding against it, so it's excluded here too.
+  const totalPaid  = cashAmount + cardAmount
   const remaining  = Math.max(0, effectiveTotal - totalPaid)
 
   useEffect(() => {
@@ -696,7 +699,7 @@ export const POS = () => {
     if (availableToppings.length > 0) {
       setPendingToppingItem({ ...product, availableToppings }); return
     }
-    _commit({ id: product.id, name: product.name, price: product.price, imageUrl: product.imageUrl, selectedOptions: [], selectedToppings: [], availableToppings: [], qty: 1 })
+    _commit({ id: product.id, productDocId: product.docId, name: product.name, price: product.price, imageUrl: product.imageUrl, selectedOptions: [], selectedToppings: [], availableToppings: [], qty: 1 })
   }, [toppingsMap])
 
   const _commit = (item) => {
@@ -737,7 +740,7 @@ export const POS = () => {
       setEditingCartItemId(null)
       return
     }
-    _commit({ id: p.id, name: p.name, price: p.price, imageUrl: p.imageUrl, selectedOptions, selectedToppings: [], availableToppings: [], qty })
+    _commit({ id: p.id, productDocId: p.docId, name: p.name, price: p.price, imageUrl: p.imageUrl, selectedOptions, selectedToppings: [], availableToppings: [], qty })
   }, [bottomSheetProduct, editingCartItemId])
 
   const handleToppingConfirm = useCallback((selectedToppings) => {
@@ -751,7 +754,7 @@ export const POS = () => {
         ))
         setEditingCartItemId(null)
       } else {
-        _commit({ id: p.id, name: p.name, price: p.price, imageUrl: p.imageUrl, selectedOptions: p.selectedOptions, selectedToppings, availableToppings: p.availableToppings, qty: p.qty })
+        _commit({ id: p.id, productDocId: p.docId, name: p.name, price: p.price, imageUrl: p.imageUrl, selectedOptions: p.selectedOptions, selectedToppings, availableToppings: p.availableToppings, qty: p.qty })
       }
       setPendingBottomSheetResult(null)
     } else if (pendingToppingItem) {
@@ -764,7 +767,7 @@ export const POS = () => {
         ))
         setEditingCartItemId(null)
       } else {
-        _commit({ id: p.id, name: p.name, price: p.price, imageUrl: p.imageUrl, selectedOptions: [], selectedToppings, availableToppings: p.availableToppings, qty: 1 })
+        _commit({ id: p.id, productDocId: p.docId, name: p.name, price: p.price, imageUrl: p.imageUrl, selectedOptions: [], selectedToppings, availableToppings: p.availableToppings, qty: 1 })
       }
     }
     setPendingToppingItem(null)
@@ -850,9 +853,12 @@ export const POS = () => {
       const autoLabel = label?.trim()
         || `Apartado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`
       const safeItems = orderItems.map(it => ({
-        id: it.id ?? null, name: it.name ?? '', price: Number(it.price || 0),
+        id: it.id ?? null, productDocId: it.productDocId ?? null, name: it.name ?? '', price: Number(it.price || 0),
         imageUrl: it.imageUrl ?? null, qty: it.qty ?? 1, itemNote: it.itemNote || null,
-        selectedOptions: (it.selectedOptions ?? []).map(o => ({ optionName: o.optionName ?? '', priceModifier: Number(o.priceModifier || 0) })),
+        selectedOptions: (it.selectedOptions ?? []).map(o => ({
+          groupId: o.groupId ?? null, optionId: o.optionId ?? null,
+          optionName: o.optionName ?? '', priceModifier: Number(o.priceModifier || 0),
+        })),
         selectedToppings: (it.selectedToppings ?? []).map(t => ({ id: t.id ?? null, name: t.name ?? '', price: Number(t.price || 0) })),
       }))
       const total = calcOrderTotal(safeItems)
@@ -955,7 +961,7 @@ export const POS = () => {
         const noteTxt = it.itemNote ? ` (${it.itemNote})` : ''
         return `${i + 1}. ${it.qty} x ${it.name}${optTxt}${topTxt}${noteTxt} - ${formatMoney(itemLineTotal(it))}`
       }),
-      '', `Total: ${formatMoney(effectiveTotal)}`,
+      '', `Total: ${formatMoney(subtotal)}`,
     ]
     if (loyaltyRedeemed > 0) lines.push(`Loyalty redimido: ${formatMoney(loyaltyRedeemed)}`)
     if (generalNote) lines.push('', `Notas: ${generalNote}`)
@@ -969,31 +975,65 @@ export const POS = () => {
     setIsProcessing(true)
     try {
       const orderId = `POS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`
+      // Earn rate is deliberately based on effectiveTotal (subtotal minus what was just
+      // redeemed), not the full subtotal — customers shouldn't earn loyalty on the portion
+      // of the sale they paid FOR with loyalty. This is unrelated to the order.total fix
+      // below: order.total records the true sale value; this only sets the earning base.
       const loyaltyEarned = customer ? Math.round(effectiveTotal * 0.1 * 100) / 100 : 0
 
       const safeItems = orderItems.map(it => ({
-        id: it.id ?? null, name: it.name ?? '', price: Number(it.price || 0),
+        id: it.id ?? null, productDocId: it.productDocId ?? null, name: it.name ?? '', price: Number(it.price || 0),
         imageUrl: it.imageUrl ?? null, qty: it.qty ?? 1, itemNote: it.itemNote || null,
-        selectedOptions: (it.selectedOptions ?? []).map(o => ({ optionName: o.optionName ?? '', priceModifier: Number(o.priceModifier || 0) })),
+        selectedOptions: (it.selectedOptions ?? []).map(o => ({
+          groupId: o.groupId ?? null, optionId: o.optionId ?? null,
+          optionName: o.optionName ?? '', priceModifier: Number(o.priceModifier || 0),
+        })),
         selectedToppings: (it.selectedToppings ?? []).map(t => ({ id: t.id ?? null, name: t.name ?? '', price: Number(t.price || 0) })),
       }))
+
+      // Attach per-item cost data (from recipes) and deduct consumed raw materials from
+      // stock atomically — this order is being created directly as 'Pagado' (see paths below),
+      // so this is the single point where the sale is final and stock must move.
+      // A failure here (permissions, network, bad recipe data) must NEVER block a payment
+      // the customer already made — the order still gets created, just without cost data.
+      // Revenue for costing/profit purposes is the true sale value (subtotal) — loyalty
+      // redemption is a payment method spending previously-earned value, not a discount,
+      // so it must not shrink the order's recorded revenue (see order.total below).
+      let itemsWithCosts = safeItems
+      let totalCogs = 0, grossProfit = subtotal, profitMargin = subtotal > 0 ? 100 : 0
+      try {
+        const costed = await computeAndDeductOrderStock(safeItems, subtotal, orderId)
+        itemsWithCosts = costed.itemsWithCosts
+        totalCogs = costed.totalCogs
+        grossProfit = costed.grossProfit
+        profitMargin = costed.profitMargin
+      } catch (err) {
+        console.error('Stock deduction failed — completing payment without cost data:', err)
+      }
 
       // PATH 1: direct POS charge (built and paid without saving first) → 'Pagado' immediately
       // PATH 2: apartado retaken and charged from POS → also 'Pagado' immediately, skips Nuevo/Preparando/Listo
       // PATH 3: apartado retaken and sent to kitchen without charging → write status 'Nuevo' in a
       //         separate addDoc (not this function); register is updated only when it reaches 'Pagado'
+      // total is the true sale value (subtotal) — NOT effectiveTotal. Loyalty redemption
+      // spends previously-earned stored value as a payment method, same as cash/card; it
+      // must not shrink the order's own recorded total, which is also what Orders.jsx's
+      // refund flow later reads (cashRefund = total - card - loyalty) — that formula only
+      // works if total is the full pre-redemption value.
       await addDoc(collection(db, 'orders'), {
-        orderId, content: buildContent(), total: effectiveTotal,
+        orderId, content: buildContent(), total: subtotal,
         status: 'Pagado', source: 'pos',
         paymentMethods: { cash: cashAmount, card: cardAmount, loyalty: loyaltyRedeemed },
         customerId: customer?.id ?? null, customerName: customer?.name ?? null,
-        items: safeItems, generalNote: generalNote || null,
+        items: itemsWithCosts, generalNote: generalNote || null,
+        totalCogs, grossProfit, profitMargin, completedAt: serverTimestamp(),
         loyaltyEarned, loyaltyRedeemed, createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
       })
 
-      // cashSaleAmount = cash portion of the order total (effectiveTotal minus what card covered).
-      // Never use cashAmount here — that is the cash received from the customer and may include
-      // change given back. Only the order total flows into the register.
+      // cashSaleAmount = cash portion of the sale (effectiveTotal, i.e. subtotal minus what
+      // loyalty already covered, minus what card covered). Never use cashAmount here — that
+      // is the cash received from the customer and may include change given back. Only the
+      // actual cash-sale value flows into the register.
       const cashSaleAmount = effectiveTotal - cardAmount
       await updateDoc(doc(db, 'register_sessions', todayKey()), {
         cashSales: increment(cashSaleAmount),
@@ -1036,8 +1076,15 @@ export const POS = () => {
 
   const subtotal    = calcOrderTotal(orderItems)
   const loyaltyMax  = customer ? Math.min(customer.loyaltyBalance || 0, subtotal) : 0
+  // effectiveTotal = what's left to collect via cash/card after loyalty redemption already
+  // covered its share. loyaltyRedeemed must NOT also be added into totalPaid below — it has
+  // already reduced the balance owed here, so counting it again would double it, inflating
+  // totalPaid and producing phantom "change" for exactly the loyalty amount whenever cash/card
+  // alone would have covered effectiveTotal exactly (e.g. $65 cash + $65 loyalty on a $130
+  // order used to compute totalPaid=$130 against effectiveTotal=$65, showing $65 of change
+  // that was never actually owed).
   const effectiveTotal = Math.max(0, subtotal - loyaltyRedeemed)
-  const totalPaid   = cashAmount + cardAmount + loyaltyRedeemed
+  const totalPaid   = cashAmount + cardAmount
   const change      = Math.max(0, totalPaid - effectiveTotal)
   const canConfirmPayment = orderItems.length > 0 && totalPaid >= effectiveTotal
   const itemCount   = orderItems.reduce((s, it) => s + it.qty, 0)

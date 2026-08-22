@@ -5,6 +5,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { formatMoney } from '../../utils/cart'
+import { computeAndDeductOrderStock } from '../../utils/stockDeduction'
 import { useSettings } from '../../hooks/useSettings'
 import { printReceipt } from '../../utils/printReceipt'
 import {
@@ -352,13 +353,31 @@ export const Orders = () => {
     }
   }
 
-  const updateStatus = async (orderId, newStatus) => {
-    setUpdatingId(orderId)
+  const updateStatus = async (order, newStatus) => {
+    setUpdatingId(order.id)
     try {
-      await updateDoc(doc(db, 'orders', orderId), {
-        status: newStatus,
-        updatedAt: serverTimestamp(),
-      })
+      const extra = { status: newStatus, updatedAt: serverTimestamp() }
+
+      // This is the second (of two) points where an order becomes 'Pagado' — the other
+      // is POS.jsx's direct-charge path, which creates the order already 'Pagado' and
+      // deducts stock inline. Here an existing Nuevo/Preparando/Listo order reaches
+      // 'Pagado' via the kitchen flow, so cost attachment + stock deduction happens now.
+      // A failure here must never block marking the order paid — see the matching
+      // try/catch in POS.jsx's handlePayment for the same reasoning.
+      if (newStatus === 'Pagado' && order.status !== 'Pagado') {
+        extra.completedAt = serverTimestamp()
+        try {
+          const costed = await computeAndDeductOrderStock(order.items || [], Number(order.total || 0), order.id)
+          extra.items = costed.itemsWithCosts
+          extra.totalCogs = costed.totalCogs
+          extra.grossProfit = costed.grossProfit
+          extra.profitMargin = costed.profitMargin
+        } catch (err) {
+          console.error('Stock deduction failed — marking order paid without cost data:', err)
+        }
+      }
+
+      await updateDoc(doc(db, 'orders', order.id), extra)
     } catch (err) {
       console.error('Error updating order status:', err)
     } finally {
@@ -585,7 +604,7 @@ export const Orders = () => {
                       </span>
                     ) : actionLabel ? (
                       <button
-                        onClick={() => updateStatus(order.id, next)}
+                        onClick={() => updateStatus(order, next)}
                         disabled={isUpdating}
                         className="flex items-center gap-1.5 px-3 py-2 bg-main-500 hover:bg-main-400 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-main-500/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       >

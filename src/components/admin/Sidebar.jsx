@@ -12,6 +12,8 @@ import {
   ShoppingCart,
   Users,
   Landmark,
+  Package,
+  Wallet,
 } from 'lucide-react'
 import PropTypes from 'prop-types'
 
@@ -27,6 +29,8 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
     { name: 'Caja',         path: '/admin/caja',         icon: Landmark },
     { name: 'Pedidos',      path: '/admin/pedidos',      icon: ClipboardList },
     { name: 'Clientes',     path: '/admin/clientes',     icon: Users },
+    { name: 'Stock',        path: '/admin/stock',        icon: Package },
+    { name: 'Finanzas',     path: '/admin/finanzas',     icon: Wallet },
     { name: 'Métricas',     path: '/admin/metricas',     icon: BarChart3 },
     { name: 'Promociones',  path: '/admin/promociones',  icon: Tag },
     { name: 'Menú',         path: '/admin/menu',         icon: UtensilsCrossed },
