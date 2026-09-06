@@ -122,6 +122,8 @@ export const useAdminData = () => {
   const [deleteToppingTarget, setDeleteToppingTarget] = useState(null)
   // Product form: selected topping IDs.
   const [productToppingIds, setProductToppingIds] = useState([])
+  // Product form: selected station tags (kitchen routing).
+  const [productStationTags, setProductStationTags] = useState([])
 
   const googleProvider = useMemo(() => new GoogleAuthProvider(), [])
 
@@ -277,8 +279,12 @@ export const useAdminData = () => {
             : '',
         }))
 
-      // Also ensure toppingIds is always loaded for the editor.
-      setMenuItems(items.map((it) => ({ ...it, toppingIds: Array.isArray(it.toppingIds) ? it.toppingIds : [] })))
+      // Also ensure toppingIds/stationTags are always loaded for the editor.
+      setMenuItems(items.map((it) => ({
+        ...it,
+        toppingIds: Array.isArray(it.toppingIds) ? it.toppingIds : [],
+        stationTags: Array.isArray(it.stationTags) ? it.stationTags : [],
+      })))
     } catch (err) {
       setMenuError('No se pudo cargar el menú.')
     } finally {
@@ -514,6 +520,7 @@ export const useAdminData = () => {
         price: priceValue,
         flavors,
         toppingIds: Array.isArray(item.toppingIds) ? item.toppingIds : [],
+        stationTags: Array.isArray(item.stationTags) ? item.stationTags : [],
         optionGroups: Array.isArray(item.optionGroups) ? item.optionGroups : [],
         image: item.image?.trim?.() ?? '',
         isActive: item.isActive ?? true,
@@ -915,6 +922,7 @@ export const useAdminData = () => {
         price: priceValue,
         flavors,
         toppingIds: productToppingIds,
+        stationTags: productStationTags,
         optionGroups: Array.isArray(productOptionGroups) ? productOptionGroups : [],
         image: productImage.trim(),
         isActive: true,
@@ -946,6 +954,7 @@ export const useAdminData = () => {
           flavors: flavors,
           flavorsText: productFlavors.trim(),
           toppingIds: productToppingIds,
+          stationTags: productStationTags,
           optionGroups: Array.isArray(productOptionGroups) ? productOptionGroups : [],
           image: productImage.trim(),
           imageUrl: imageUrl ?? null,
@@ -962,6 +971,7 @@ export const useAdminData = () => {
       setProductImage('')
       setProductImageFile(null)
       setProductToppingIds([])
+      setProductStationTags([])
       setProductOptionGroups([])
       setProductSuccess('Producto guardado correctamente.')
     } catch (err) {
@@ -1111,6 +1121,7 @@ export const useAdminData = () => {
     productOptionGroups,
     productPrice,
     productSection,
+    productStationTags,
     productSuccess,
     productToppingIds,
     promoError,
@@ -1180,6 +1191,7 @@ export const useAdminData = () => {
     setProductOptionGroups,
     setProductPrice,
     setProductSection,
+    setProductStationTags,
     setProductSuccess,
     setProductToppingIds,
     setPromoError,

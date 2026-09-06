@@ -1,11 +1,14 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState } from 'react'
 import { Outlet, NavLink } from 'react-router'
-import { doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore'
-import { db } from '../../firebase'
 import { useAdminAuth } from '../../hooks/useAdminAuth'
 import { Sidebar } from '../../components/admin/Sidebar'
 import { Topbar } from '../../components/admin/Topbar'
 import { BottomTabBar } from '../../components/admin/BottomTabBar'
+import { StationGate } from '../../components/admin/StationGate'
+import { WhatsAppBanner } from '../../components/admin/WhatsAppBanner'
+import { WhatsAppOrdersProvider } from '../../context/WhatsAppOrdersContext'
+import { useStationContext } from '../../context/StationContext'
+import { KitchenBoard } from './KitchenBoard'
 
 export const AdminLayout = () => {
   const {
@@ -14,54 +17,13 @@ export const AdminLayout = () => {
     error, isSubmitting, handleLogin, handleGoogleSignIn,
   } = useAdminAuth()
 
+  const { selectedStation, role, loading: stationLoading } = useStationContext()
+
   // Collapse state lives here so AdminLayout can mirror the sidebar width
   // as a margin-left offset on the content wrapper — keeping both in sync.
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem('admin_sidebar_collapsed') === 'true'
   })
-
-  const [pinGateConfig, setPinGateConfig] = useState(null)
-
-  useEffect(() => {
-    if (!isAuthenticated) return
-    let cancelled = false
-    let alive = true
-    let unsub = null
-    const timer = setTimeout(() => {
-      if (cancelled) return
-      const ref = doc(db, 'settings', 'general')
-      unsub = onSnapshot(
-        ref,
-        snap => {
-          if (!alive) return
-          const data = snap.exists() ? snap.data() : {}
-          setPinGateConfig(data.pinGateConfig ?? {})
-        },
-        () => { if (alive) setPinGateConfig(prev => prev ?? {}) }
-      )
-    }, 0)
-    return () => {
-      cancelled = true
-      alive = false
-      clearTimeout(timer)
-      if (unsub) try { unsub() } catch {}
-    }
-  }, [isAuthenticated])
-
-  // Optimistically toggles one route key in local state and persists to Firestore.
-  // UI reacts immediately; Firestore write happens in background.
-  // NOTE: must NOT use the setState(prev =>) updater pattern here — React 18
-  // StrictMode calls updater functions twice, which would double-fire the setDoc
-  // and un-toggle the value before it takes effect.
-  const toggleRouteKey = useCallback((routeKey) => {
-    const prev = pinGateConfig ?? {}
-    const next = { ...prev, [routeKey]: !(prev[routeKey] === true) }
-    setPinGateConfig(next)
-    setDoc(doc(db, 'settings', 'general'), {
-      pinGateConfig: next,
-      updatedAt: serverTimestamp(),
-    }, { merge: true }).catch(err => console.error('pinGateConfig write failed:', err))
-  }, [pinGateConfig])
 
   if (!isAuthReady) {
     return (
@@ -153,6 +115,24 @@ export const AdminLayout = () => {
     )
   }
 
+  if (stationLoading) {
+    return (
+      <div className="min-h-screen bg-main-900 text-light-200 flex items-center justify-center">
+        <p className="text-sm uppercase tracking-[0.35em] text-light-200/70 animate-pulse">
+          Cargando acceso
+        </p>
+      </div>
+    )
+  }
+
+  if (!selectedStation) {
+    return <StationGate />
+  }
+
+  if (role === 'kitchen') {
+    return <KitchenBoard />
+  }
+
   return (
     /*
      * h-dvh overflow-hidden — locks the shell to exactly the visible viewport
@@ -179,27 +159,23 @@ export const AdminLayout = () => {
           ${isCollapsed ? 'md:ml-20' : 'md:ml-60'}
         `}
       >
-        {/* Topbar is sticky within this column, not the whole page */}
-        <Topbar
-          user={user}
-          handleLogout={handleLogout}
-          pinGateConfig={pinGateConfig ?? {}}
-          toggleRouteKey={toggleRouteKey}
-        />
+        <WhatsAppOrdersProvider>
+          <WhatsAppBanner />
 
-        {/*
-         * Only this <main> scrolls.
-         * overflow-y-auto + flex-1 fills remaining height after the topbar.
-         */}
-        <main className="flex-1 overflow-y-auto bg-main-900 md:rounded-tl-3xl md:border-t md:border-l border-white/5 p-4 md:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
-          {pinGateConfig === null ? (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-sm text-light-200/30 animate-pulse">Cargando...</p>
-            </div>
-          ) : (
-            <Outlet context={{ pinGateConfig, toggleRouteKey }} />
-          )}
-        </main>
+          {/* Topbar is sticky within this column, not the whole page */}
+          <Topbar
+            user={user}
+            handleLogout={handleLogout}
+          />
+
+          {/*
+           * Only this <main> scrolls.
+           * overflow-y-auto + flex-1 fills remaining height after the topbar.
+           */}
+          <main className="flex-1 overflow-y-auto bg-main-900 md:rounded-tl-3xl md:border-t md:border-l border-white/5 p-4 md:p-6 lg:p-8 pb-24 md:pb-6 lg:pb-8">
+            <Outlet />
+          </main>
+        </WhatsAppOrdersProvider>
       </div>
 
       {/* Bottom tab bar — mobile only */}

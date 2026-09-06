@@ -1,49 +1,26 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import { LogOut, User, Bell, Settings, Package, Lock, LockOpen } from 'lucide-react'
+import { LogOut, User, Bell, Settings, Package, ChefHat, RefreshCw } from 'lucide-react'
+import { ROLE_ICONS } from '../../utils/stations'
 import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { formatMoney } from '../../utils/cart'
 import { useRegister } from '../../hooks/useRegister'
 import { useSettings } from '../../hooks/useSettings'
+import { useStationContext } from '../../context/StationContext'
 import { ADMIN_PIN } from '../../config/adminPin'
 import { PhoneChip, EmailsChip, PinChip, PrinterChip } from './SettingsChips'
 import { MobileSettingsSheet } from './MobileSettingsSheet'
-import { PinPrompt } from './PinGate'
 
-const ROUTE_KEYS = {
-  '/admin':             'overview',
-  '/admin/pedidos':     'pedidos',
-  '/admin/metricas':    'metricas',
-  '/admin/promociones': 'promociones',
-  '/admin/menu':        'menu',
-  '/admin/pos':         'pos',
-  '/admin/clientes':    'clientes',
-  '/admin/caja':        'caja',
-  '/admin/legacy':      'legacy',
-}
-
-export const Topbar = ({ user, handleLogout, pinGateConfig = {}, toggleRouteKey }) => {
+export const Topbar = ({ user, handleLogout }) => {
   const location = useLocation()
   const navigate  = useNavigate()
   const [dateTime, setDateTime] = useState(new Date())
   const { isRegisterOpen, loading } = useRegister()
   const { settings } = useSettings()
+  const { selectedStation, clearStation } = useStationContext()
   const isOverview = location.pathname === '/admin'
-
-  const currentRouteKey = ROUTE_KEYS[location.pathname] ?? null
-  const isCurrentScreenLocked = currentRouteKey
-    ? pinGateConfig[currentRouteKey] === true
-    : null
-
-  const handleToggleLock = () => {
-    if (!currentRouteKey || !toggleRouteKey) return
-    toggleRouteKey(currentRouteKey)
-  }
-
-  // PIN prompt for lock toggle confirmation
-  const [pinPromptOpen, setPinPromptOpen] = useState(false)
 
   // Mobile settings sheet
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false)
@@ -191,21 +168,24 @@ export const Topbar = ({ user, handleLogout, pinGateConfig = {}, toggleRouteKey 
             </button>
           )}
 
-          {/* Screen lock toggle — always visible when on a known route */}
-          {isCurrentScreenLocked !== null && (
-            <button
-              onClick={() => setPinPromptOpen(true)}
-              title={isCurrentScreenLocked ? 'Pantalla protegida con PIN — clic para desbloquear' : 'Pantalla libre — clic para bloquear con PIN'}
-              aria-label={isCurrentScreenLocked ? 'Quitar protección PIN de esta pantalla' : 'Proteger esta pantalla con PIN'}
-              className={`h-9 w-9 flex items-center justify-center rounded-full hover:bg-white/5 transition-colors cursor-pointer ${
-                isCurrentScreenLocked
-                  ? 'text-amber-400 hover:text-amber-300'
-                  : 'text-light-200/30 hover:text-light-200/60'
-              }`}
-            >
-              {isCurrentScreenLocked ? <Lock size={16} /> : <LockOpen size={16} />}
-            </button>
-          )}
+          {/* Station chip — doubles as the "switch station" button, always
+              visible (not desktop-only) so every station has direct access
+              from the top navbar, not just buried in the avatar menu. */}
+          {selectedStation && (() => {
+            const StationIcon = ROLE_ICONS[selectedStation.role] || ChefHat
+            return (
+              <button
+                type="button"
+                onClick={clearStation}
+                title="Cambiar estación"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-main-500/20 bg-main-500/10 hover:bg-main-500/20 text-main-300 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                <StationIcon size={13} />
+                <span className="max-w-[70px] sm:max-w-none truncate">{selectedStation.name}</span>
+                <RefreshCw size={11} className="opacity-60 shrink-0" />
+              </button>
+            )
+          })()}
 
           {/* Bell — always visible */}
           <div className="relative" ref={bellRef}>
@@ -357,18 +337,6 @@ export const Topbar = ({ user, handleLogout, pinGateConfig = {}, toggleRouteKey 
         <MobileSettingsSheet
           settings={settings}
           onClose={() => setMobileSettingsOpen(false)}
-        />
-      )}
-
-      {/* PIN confirmation before toggling screen lock */}
-      {pinPromptOpen && (
-        <PinPrompt
-          onSuccess={() => { setPinPromptOpen(false); handleToggleLock() }}
-          onCancel={() => setPinPromptOpen(false)}
-          prompt={isCurrentScreenLocked
-            ? `Quitar protección PIN de ${getPageTitle()}`
-            : `Proteger ${getPageTitle()} con PIN`
-          }
         />
       )}
     </>

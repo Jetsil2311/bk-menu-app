@@ -21,6 +21,7 @@ import {
 import { usePromotion } from '../hooks/usePromotion'
 import { useSections } from '../hooks/useSections'
 import { flyToCart, formatMoney, getCartKey } from '../utils/cart'
+import { toSafeItems } from '../utils/posCalculations'
 import { db } from '../firebase'
 
 export const Home = () => {
@@ -358,12 +359,16 @@ export const Home = () => {
   const handleWhatsAppOrder = () => {
     if (cart.length === 0) return
     const message = buildOrderMessage()
-    saveOrderSnapshot(message, cartTotal)
+    saveOrderSnapshot(message, cartTotal, cart, orderNotes)
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
-  const saveOrderSnapshot = async (message, total) => {
+  // `items` is stored in the exact same shape POS.jsx's own tickets use
+  // (toSafeItems) so the admin side can load every product straight into the
+  // POS ticket with one click, instead of the cashier re-typing the order
+  // from the WhatsApp text message.
+  const saveOrderSnapshot = async (message, total, items = [], notes = '') => {
     try {
       const orderId = `BK-${Date.now()
         .toString(36)
@@ -372,6 +377,10 @@ export const Home = () => {
         orderId,
         content: message,
         total: Number(total || 0),
+        items: toSafeItems(items),
+        generalNote: notes.trim() || null,
+        source: 'whatsapp',
+        reviewed: false,
         createdAt: serverTimestamp(),
       })
 

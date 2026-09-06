@@ -1,9 +1,20 @@
 /* eslint-disable react/prop-types */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import { writeBatch, doc } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { useAdminData } from '../../hooks/useAdminData'
+import { useStationContext } from '../../context/StationContext'
+import { ConfirmDialog } from '../../components/admin/ConfirmDialog'
+import {
+  addOptionToGroup,
+  createMenuOption,
+  createOptionGroup,
+  removeOptionFromGroup,
+  removeOptionGroup,
+  updateOptionGroup,
+  updateOptionInGroup,
+} from '../../utils/menuOptionGroups'
 import {
   Plus,
   Pencil,
@@ -32,52 +43,27 @@ const labelCls = 'block text-xs font-medium text-light-200/60 mb-1.5'
 // Renders inside ProductDrawer to manage the optionGroups array.
 const OptionGroupsEditor = ({ groups = [], onChange }) => {
   const addGroup = () => {
-    const newGroup = {
-      id: `group_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-      name: '',
-      type: 'single',
-      required: false,
-      options: [],
-    }
-    onChange([...groups, newGroup])
+    onChange([...groups, createOptionGroup()])
   }
 
   const updateGroup = (gIdx, field, value) => {
-    const next = [...groups]
-    next[gIdx] = { ...next[gIdx], [field]: value }
-    onChange(next)
+    onChange(updateOptionGroup(groups, gIdx, field, value))
   }
 
   const removeGroup = (gIdx) => {
-    onChange(groups.filter((_, i) => i !== gIdx))
+    onChange(removeOptionGroup(groups, gIdx))
   }
 
   const addOption = (gIdx) => {
-    const newOption = {
-      id: `opt_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-      name: '',
-      priceModifier: 0,
-    }
-    const next = [...groups]
-    next[gIdx] = { ...next[gIdx], options: [...(next[gIdx].options || []), newOption] }
-    onChange(next)
+    onChange(addOptionToGroup(groups, gIdx, createMenuOption()))
   }
 
   const updateOption = (gIdx, oIdx, field, value) => {
-    const next = [...groups]
-    const opts = [...(next[gIdx].options || [])]
-    opts[oIdx] = { ...opts[oIdx], [field]: value }
-    next[gIdx] = { ...next[gIdx], options: opts }
-    onChange(next)
+    onChange(updateOptionInGroup(groups, gIdx, oIdx, field, value))
   }
 
   const removeOption = (gIdx, oIdx) => {
-    const next = [...groups]
-    next[gIdx] = {
-      ...next[gIdx],
-      options: (next[gIdx].options || []).filter((_, i) => i !== oIdx),
-    }
-    onChange(next)
+    onChange(removeOptionFromGroup(groups, gIdx, oIdx))
   }
 
   return (
@@ -273,29 +259,13 @@ const Drawer = ({ isOpen, onClose, title, children }) => {
 
 // ── Confirm delete dialog ─────────────────────────────────────────────────────
 const DeleteConfirm = ({ label, onConfirm, onCancel, loading }) => (
-  // z-[72]: "z-60" is not a real Tailwind utility (no matching scale value), so this dialog
-  // previously had no z-index at all and could render underneath the drawer/tab bar/Más drawer.
-  <div className="fixed inset-0 z-[72] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-    <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#1c0a04] p-6 shadow-2xl">
-      <h3 className="text-base font-semibold text-light-100">¿Eliminar?</h3>
-      <p className="mt-1 text-sm text-light-200/60">{label}</p>
-      <div className="mt-5 flex gap-3">
-        <button
-          onClick={onCancel}
-          className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-light-200/70 hover:bg-white/10 transition-colors"
-        >
-          Cancelar
-        </button>
-        <button
-          onClick={onConfirm}
-          disabled={loading}
-          className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-500 transition-colors disabled:opacity-50"
-        >
-          {loading ? 'Eliminando...' : 'Eliminar'}
-        </button>
-      </div>
-    </div>
-  </div>
+  <ConfirmDialog
+    message={label}
+    onConfirm={onConfirm}
+    onCancel={onCancel}
+    isPending={loading}
+    panelClassName="bg-[#1c0a04]"
+  />
 )
 
 // ── Product drawer form ───────────────────────────────────────────────────────
@@ -306,6 +276,7 @@ const ProductDrawer = ({
   isSubmitting, error, success,
   menuSections, menuSectionsLoading,
   toppingsList,
+  stationTagOptions = [],
 }) => {
   const BASE_URL = import.meta.env.BASE_URL
   return (
@@ -378,6 +349,23 @@ const ProductDrawer = ({
                   )
                 })}
               </div>
+            </div>
+          )}
+          {stationTagOptions.length > 0 && (
+            <div className="col-span-2">
+              <label className={labelCls}>Estación (cocina)</label>
+              <div className="flex flex-wrap gap-2">
+                {stationTagOptions.map(tag => {
+                  const checked = (item.stationTags || []).includes(tag)
+                  return (
+                    <label key={tag} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors ${checked ? 'border-main-500/50 bg-main-500/10 text-light-100' : 'border-white/10 text-light-200/50 hover:border-white/20'}`}>
+                      <input type="checkbox" className="accent-main-500 h-3 w-3" checked={checked} onChange={() => onChange('stationTags', checked ? (item.stationTags || []).filter(t => t !== tag) : [...(item.stationTags || []), tag])} />
+                      {tag}
+                    </label>
+                  )
+                })}
+              </div>
+              <p className="mt-1.5 text-[11px] text-light-200/30">Sin etiqueta ⇒ se enruta a Cajero.</p>
             </div>
           )}
           {/* Option Groups */}
@@ -465,21 +453,22 @@ const ProductsTab = ({ data }) => {
   const {
     menuItems, menuLoading, menuError, menuSections, menuSectionsLoading,
     menuSectionsError, menuSavingId, toppingsList,
-    handleSaveMenuItem, handleDeleteMenuItem, handleToggleProductActive, handleToggleSectionVisible,
+    handleSaveMenuItem, handleDeleteMenuItem, handleToggleProductActive,
     handleAddProduct, handleAddSection, handleSaveSection, handleDeleteSection,
-    editingItem, setEditingItem, editingImageFile, setEditingImageFile,
+    editingItem, setEditingItem, setEditingImageFile,
     deleteTarget, setDeleteTarget,
     editingSection, setEditingSection,
     deleteSectionTarget, setDeleteSectionTarget,
-    isSubmitting, error, setError,
+    isSubmitting, error,
     productName, setProductName, productSection, setProductSection,
     productDesc, setProductDesc, productLongDesc, setProductLongDesc,
     productPrice, setProductPrice, productFlavors, setProductFlavors,
-    productImage, setProductImage, productImageFile, setProductImageFile,
-    productToppingIds, setProductToppingIds, productOptionGroups, productSuccess,
+    productImage, setProductImage, setProductImageFile,
+    productToppingIds, setProductToppingIds, productStationTags, setProductStationTags,
+    productOptionGroups, productSuccess,
     sectionName, setSectionName, sectionCategory, setSectionCategory,
     sectionDesc, setSectionDesc, sectionOrder, setSectionOrder,
-    sectionSuccess, setSectionSuccess,
+    sectionSuccess,
     loadMenuItems, loadMenuSections,
   } = data
 
@@ -488,6 +477,16 @@ const ProductsTab = ({ data }) => {
   const [addSectionOpen, setAddSectionOpen] = useState(false)
   const [dragOverSection, setDragOverSection] = useState(null)
   const dragSectionRef = useRef(null)
+
+  const { stations } = useStationContext()
+  const stationTagOptions = useMemo(() => {
+    const tags = new Set()
+    stations.forEach((station) => {
+      if (station.role === 'admin') return
+      ;(station.productTags || []).forEach((tag) => tags.add(tag))
+    })
+    return Array.from(tags)
+  }, [stations])
 
   // Open drawer if navigated here with state
   const location = useLocation()
@@ -520,7 +519,7 @@ const ProductsTab = ({ data }) => {
   const newProductObj = {
     name: productName, section: productSection, desc: productDesc,
     long_desc: productLongDesc, price: productPrice, flavorsText: productFlavors,
-    image: productImage, toppingIds: productToppingIds,
+    image: productImage, toppingIds: productToppingIds, stationTags: productStationTags,
     optionGroups: productOptionGroups || [],
     isActive: true,
   }
@@ -529,7 +528,7 @@ const ProductsTab = ({ data }) => {
     const setters = {
       name: setProductName, section: setProductSection, desc: setProductDesc,
       long_desc: setProductLongDesc, price: setProductPrice, flavorsText: setProductFlavors,
-      image: setProductImage, toppingIds: setProductToppingIds,
+      image: setProductImage, toppingIds: setProductToppingIds, stationTags: setProductStationTags,
       optionGroups: data.setProductOptionGroups,
     }
     setters[field]?.(value)
@@ -769,6 +768,7 @@ const ProductsTab = ({ data }) => {
         menuSections={menuSections}
         menuSectionsLoading={menuSectionsLoading}
         toppingsList={toppingsList}
+        stationTagOptions={stationTagOptions}
       />
 
       {/* Edit product drawer */}
@@ -786,6 +786,7 @@ const ProductsTab = ({ data }) => {
         menuSections={menuSections}
         menuSectionsLoading={menuSectionsLoading}
         toppingsList={toppingsList}
+        stationTagOptions={stationTagOptions}
       />
 
       {/* Add section drawer */}
@@ -846,7 +847,7 @@ const ToppingsTab = ({ data }) => {
     handleAddTopping, handleSaveTopping, handleDeleteTopping,
     editingTopping, setEditingTopping,
     deleteToppingTarget, setDeleteToppingTarget,
-    isSubmitting, menuSavingId,
+    isSubmitting,
   } = data
 
   return (
@@ -953,11 +954,11 @@ const CarouselTab = ({ data }) => {
     carouselLinkedId, setCarouselLinkedId,
     carouselOrder, setCarouselOrder,
     carouselActive, setCarouselActive,
-    carouselImageFile, setCarouselImageFile,
+    setCarouselImageFile,
     carouselProducts, carouselCombos, carouselItemsLoading,
     handleAddCarouselSlide, handleSaveCarouselSlide, handleDeleteCarouselSlide,
     handleToggleSlideActive,
-    editingSlide, setEditingSlide, editingSlideImageFile, setEditingSlideImageFile,
+    editingSlide, setEditingSlide, setEditingSlideImageFile,
     deleteSlideTarget, setDeleteSlideTarget,
     isSubmitting,
   } = data

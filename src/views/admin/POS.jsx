@@ -1,132 +1,62 @@
 /* eslint-disable react/prop-types */
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useLocation } from 'react-router'
 import {
-  collection, getDocs, addDoc, updateDoc, doc,
+  collection, getDocs, getDoc, addDoc, updateDoc, doc,
   serverTimestamp, onSnapshot,
-  increment, deleteDoc,
+  increment,
 } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { formatMoney } from '../../utils/cart'
+import {
+  createLocalId,
+  createTodayKey,
+  getItemLineTotal,
+  getOrderTotal,
+  normalizeSearchText,
+  toSafeItems,
+} from '../../utils/posCalculations'
+import { routeOrderToStations } from '../../utils/stations'
 import { computeAndDeductOrderStock } from '../../utils/stockDeduction'
+import { useStationContext } from '../../context/StationContext'
 import { MoneyInput } from '../../components/MoneyInput'
 import { BottomSheet } from '../../components/BottomSheet'
 import { ToppingsOverlay } from '../../components/ToppingsOverlay'
 import { useRegister } from '../../hooks/useRegister'
 import { RegisterOverlay } from '../../components/admin/RegisterOverlay'
+import { TicketItem } from '../../components/admin/pos/TicketItem'
 import {
-  ShoppingCart, Search, X, Plus, Minus, User, UserPlus,
+  ShoppingCart, Search, X, User, UserPlus,
   CreditCard, Banknote, Wallet, Package, CheckCircle2,
-  Receipt, PenLine, Bookmark, RotateCcw, Edit2,
+  Receipt, ChefHat, Plus, MessageCircle,
   Trash2, ChevronDown, ChevronRight, Clock, AlertCircle as AlertCircleIcon, Send,
 } from 'lucide-react'
 
 const BASE_URL = import.meta.env.BASE_URL
 const DRAFT_KEY = 'pos_draft_v1'
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── EnCursoCard ──────────────────────────────────────────────────────────────
+// Replaces the old ParkedOrderCard (apartados). Shows an order that has been
+// sent to one or more kitchen stations and hasn't been charged yet.
 
-const todayKey = () => {
-  const d = new Date()
-  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
+const STATION_PILL_STYLES = {
+  pending: 'bg-white/5 text-light-200/40 border-white/10',
+  preparando: 'bg-amber-500/15 text-amber-400 border-amber-500/25',
+  listo: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
 }
 
-const uid = () => `${Date.now()}-${Math.random().toString(16).slice(2)}`
-
-const normalize = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-
-const itemLineTotal = (item) =>
-  (Number(item.price || 0)
-    + (item.selectedOptions || []).reduce((s, o) => s + Number(o.priceModifier || 0), 0)
-    + (item.selectedToppings || []).reduce((s, t) => s + Number(t.price || 0), 0)
-  ) * (item.qty || 0)
-
-const calcOrderTotal = (items) => items.reduce((s, it) => s + itemLineTotal(it), 0)
-
-// ─── TicketItem ───────────────────────────────────────────────────────────────
-
-const TicketItem = ({ item, onChangeQty, onRemove, onSetNote, onEdit }) => {
-  const [noteOpen, setNoteOpen] = useState(false)
-  const optSummary = item.selectedOptions?.map(o => o.optionName).join(', ') ?? ''
-  const topSummary = item.selectedToppings?.map(t => t.name).join(', ') ?? ''
-  const hasCustomisation = Boolean(optSummary || topSummary)
-
-  return (
-    <div className="border-b border-white/5 last:border-0">
-      <div className="flex items-start gap-2 px-4 py-3">
-        <div className="flex items-center gap-1 shrink-0 mt-0.5">
-          <button onClick={() => onChangeQty(item.cartItemId, -1)}
-            className="h-7 w-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-light-200/60 hover:text-light-100 transition-colors cursor-pointer">
-            <Minus size={12} />
-          </button>
-          <span className="w-5 text-center text-sm font-bold text-light-100 select-none">{item.qty}</span>
-          <button onClick={() => onChangeQty(item.cartItemId, 1)}
-            className="h-7 w-7 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-light-200/60 hover:text-light-100 transition-colors cursor-pointer">
-            <Plus size={12} />
-          </button>
-        </div>
-
-        <button
-          onClick={() => onEdit?.(item)}
-          className={`flex-1 min-w-0 text-left group/item rounded-lg px-1 py-0.5 -mx-1 transition-colors ${onEdit ? 'hover:bg-white/[0.04] cursor-pointer' : ''}`}
-          title={onEdit ? 'Editar opciones' : undefined}
-        >
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-semibold text-light-100 leading-snug">{item.name}</p>
-            {onEdit && hasCustomisation && (
-              <Edit2 size={10} className="text-light-200/20 group-hover/item:text-light-200/50 transition-colors shrink-0" />
-            )}
-          </div>
-          {(optSummary || topSummary) && (
-            <p className="text-xs text-light-200/40 mt-0.5 leading-relaxed truncate">
-              {[optSummary, topSummary].filter(Boolean).join(' · ')}
-            </p>
-          )}
-          {item.itemNote && !noteOpen && (
-            <p className="text-xs text-amber-400/70 mt-0.5 truncate">✎ {item.itemNote}</p>
-          )}
-        </button>
-
-        <div className="flex items-center gap-1 shrink-0 mt-0.5">
-          <span className="text-sm font-semibold text-light-100 min-w-[56px] text-right tabular-nums">
-            {formatMoney(itemLineTotal(item))}
-          </span>
-          <button onClick={() => setNoteOpen(v => !v)} title="Nota del item"
-            className="h-7 w-7 rounded-lg flex items-center justify-center text-light-200/25 hover:text-amber-400 transition-colors cursor-pointer">
-            <PenLine size={13} />
-          </button>
-          <button onClick={() => onRemove(item.cartItemId)}
-            className="h-7 w-7 rounded-lg flex items-center justify-center text-light-200/25 hover:text-rose-400 transition-colors cursor-pointer">
-            <X size={13} />
-          </button>
-        </div>
-      </div>
-
-      {noteOpen && (
-        <div className="px-4 pb-3">
-          <input type="text" placeholder="Nota para este item..."
-            value={item.itemNote || ''} onChange={e => onSetNote(item.cartItemId, e.target.value)}
-            autoFocus
-            className="w-full rounded-xl border border-white/10 bg-main-800/60 px-3 py-1.5 text-xs text-light-200 placeholder-light-200/25 outline-none focus:border-amber-700/40 transition" />
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── ParkedOrderCard ──────────────────────────────────────────────────────────
-
-const ParkedOrderCard = ({ order, onResume, onDelete, onSend, hasActiveItems }) => {
-  const [confirmState, setConfirmState] = useState(null)  // null | 'resume' | 'discard'
-  const items   = order.items || []
-  const total   = order.total ?? calcOrderTotal(items)
-  const count   = items.reduce((s, it) => s + (it.qty || 1), 0)
-  const timeStr = order.parkedAt?.toDate?.()?.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) ?? '—'
-  const label   = order.label || 'Apartado'
+const EnCursoCard = ({ order, stations, onAgregar, onCobrar, onCancel, hasActiveItems }) => {
+  const [confirmAction, setConfirmAction] = useState(null)  // null | 'agregar' | 'cobrar' | 'cancelar'
+  const items    = order.items || []
+  const total    = order.total ?? getOrderTotal(items)
+  const count    = items.reduce((s, it) => s + (it.qty || 1), 0)
+  const timeStr  = order.createdAt?.toDate?.()?.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) ?? '—'
   const custName = order.customer?.name || order.customerName || null
+  const stationEntries = Object.entries(order.stationItems || {})
 
-  const handleResumeClick = () => {
-    if (hasActiveItems) { setConfirmState('resume'); return }
-    onResume(order)
+  const handleClick = (action, fn) => {
+    if (hasActiveItems) { setConfirmAction(action); return }
+    fn(order)
   }
 
   return (
@@ -134,10 +64,12 @@ const ParkedOrderCard = ({ order, onResume, onDelete, onSend, hasActiveItems }) 
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold text-light-100 truncate">{label}</p>
-            <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-              Nuevo
-            </span>
+            <p className="text-sm font-semibold text-light-100 truncate">#{(order.orderId || order.id).slice(-6)}</p>
+            {order.source === 'whatsapp' && (
+              <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                <MessageCircle size={9} /> WhatsApp
+              </span>
+            )}
           </div>
           <p className="text-xs text-light-200/35 flex items-center gap-1 mt-0.5 flex-wrap">
             <Clock size={10} className="shrink-0" />
@@ -146,54 +78,63 @@ const ParkedOrderCard = ({ order, onResume, onDelete, onSend, hasActiveItems }) 
             <span>{count} {count === 1 ? 'producto' : 'productos'}</span>
             {custName && <><span className="opacity-40">·</span><span className="truncate">{custName}</span></>}
           </p>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-sm font-bold text-light-100 tabular-nums">{formatMoney(total)}</span>
-          {onSend && (
-            <button onClick={() => onSend(order)}
-              className="h-7 w-7 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-400 hover:bg-amber-500/25 transition-all cursor-pointer"
-              title="Enviar a Pedidos">
-              <Send size={12} />
-            </button>
+          {stationEntries.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {stationEntries.map(([stationId, group]) => {
+                const station = stations.find((s) => s.id === stationId)
+                return (
+                  <span key={stationId} className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold border ${STATION_PILL_STYLES[group.status] || STATION_PILL_STYLES.pending}`}>
+                    {station?.name || stationId}
+                  </span>
+                )
+              })}
+            </div>
           )}
         </div>
+        <span className="text-sm font-bold text-light-100 tabular-nums shrink-0">{formatMoney(total)}</span>
       </div>
 
-      {confirmState === 'resume' ? (
-        <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-          <p className="flex-1 text-xs text-amber-200/80">¿Reemplazar la orden activa?</p>
-          <button onClick={() => { setConfirmState(null); onResume(order) }}
-            className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-xs font-semibold text-amber-300 transition cursor-pointer min-h-[36px]">
-            Sí, retomar
+      {confirmAction === 'cancelar' ? (
+        <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/5 px-3 py-2">
+          <p className="flex-1 text-xs text-rose-200/80">¿Cancelar esta orden?</p>
+          <button onClick={() => { setConfirmAction(null); onCancel(order) }}
+            className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-xs font-semibold text-rose-300 transition cursor-pointer min-h-[36px]">
+            Sí, cancelar
           </button>
-          <button onClick={() => setConfirmState(null)}
+          <button onClick={() => setConfirmAction(null)}
             className="px-3 py-1.5 rounded-lg hover:bg-white/5 text-xs text-light-200/40 hover:text-light-200/70 transition cursor-pointer min-h-[36px]">
-            Cancelar
+            Volver
           </button>
         </div>
-      ) : confirmState === 'discard' ? (
-        <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/5 px-3 py-2">
-          <p className="flex-1 text-xs text-rose-200/80">¿Eliminar este apartado?</p>
-          <button onClick={() => { setConfirmState(null); onDelete(order.id) }}
-            className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-xs font-semibold text-rose-300 transition cursor-pointer min-h-[36px]">
-            Descartar
+      ) : confirmAction ? (
+        <div className="mt-2.5 flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+          <p className="flex-1 text-xs text-amber-200/80">¿Reemplazar la orden activa?</p>
+          <button onClick={() => { const fn = confirmAction === 'agregar' ? onAgregar : onCobrar; setConfirmAction(null); fn(order) }}
+            className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-xs font-semibold text-amber-300 transition cursor-pointer min-h-[36px]">
+            Sí, continuar
           </button>
-          <button onClick={() => setConfirmState(null)}
+          <button onClick={() => setConfirmAction(null)}
             className="px-3 py-1.5 rounded-lg hover:bg-white/5 text-xs text-light-200/40 hover:text-light-200/70 transition cursor-pointer min-h-[36px]">
-            Cancelar
+            Volver
           </button>
         </div>
       ) : (
-        <div className="flex gap-2 mt-2.5">
-          <button onClick={handleResumeClick}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-main-500/20 border border-main-500/30 text-xs font-semibold text-main-300 hover:bg-main-500/30 transition-all cursor-pointer min-h-[44px]">
-            <RotateCcw size={13} />
-            Retomar
-          </button>
-          <button onClick={() => setConfirmState('discard')}
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/8 text-xs font-medium text-light-200/40 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20 transition-all cursor-pointer min-h-[44px]">
-            <Trash2 size={13} />
-            Descartar
+        <div className="mt-2.5 space-y-1.5">
+          <div className="flex gap-2">
+            <button onClick={() => handleClick('agregar', onAgregar)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/8 text-xs font-semibold text-light-200/60 hover:bg-white/[0.08] transition-all cursor-pointer min-h-[44px]">
+              <Plus size={13} />
+              Agregar
+            </button>
+            <button onClick={() => handleClick('cobrar', onCobrar)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-main-500/20 border border-main-500/30 text-xs font-semibold text-main-300 hover:bg-main-500/30 transition-all cursor-pointer min-h-[44px]">
+              <Receipt size={13} />
+              Cobrar
+            </button>
+          </div>
+          <button onClick={() => setConfirmAction('cancelar')}
+            className="w-full text-center py-1.5 text-xs text-rose-400/50 hover:text-rose-400 transition-colors cursor-pointer">
+            Cancelar orden
           </button>
         </div>
       )}
@@ -333,11 +274,11 @@ const LoyaltyLookupModal = ({ allCustomers, onSelect, onSkip, onClose }) => {
   useEffect(() => {
     const trimmed = searchQuery.trim()
     if (!trimmed) { setResults([]); return }
-    const normInput = normalize(trimmed)
+    const normInput = normalizeSearchText(trimmed)
     setResults(
       allCustomers.filter(c =>
         (c.phone || '').includes(trimmed) ||
-        normalize(c.name).includes(normInput)
+        normalizeSearchText(c.name).includes(normInput)
       ).slice(0, 5)
     )
   }, [searchQuery, allCustomers])
@@ -516,6 +457,8 @@ const LoyaltyLookupModal = ({ allCustomers, onSelect, onSkip, onClose }) => {
 
 export const POS = () => {
   const { loading: registerLoading } = useRegister()
+  const { stations } = useStationContext()
+  const location = useLocation()
 
   // ── Catalog ────────────────────────────────────────────────────────────────
   const [sections, setSections]         = useState([])
@@ -525,13 +468,30 @@ export const POS = () => {
   const [catalogLoading, setCatalogLoading] = useState(true)
   const [productSearch, setProductSearch]   = useState('')
 
+  const productsById = useMemo(
+    () => Object.fromEntries(allProducts.map(p => [p.docId, p])),
+    [allProducts]
+  )
+
   // ── Order ──────────────────────────────────────────────────────────────────
   const [orderItems, setOrderItems]   = useState([])
   const [generalNote, setGeneralNote] = useState('')
+  // Set when the active ticket is editing/charging an existing "en curso"
+  // order (loaded via Agregar/Cobrar) instead of a brand-new one.
+  const [resumingOrderId, setResumingOrderId] = useState(null)
 
-  // ── Parked orders ──────────────────────────────────────────────────────────
-  const [parkedOrders, setParkedOrders] = useState([])
-  const [ticketTab, setTicketTab]       = useState('active')  // 'active' | 'parked'
+  // ── En curso (orders sent to kitchen, not yet charged) ────────────────────
+  const [enCursoOrders, setEnCursoOrders] = useState([])
+  const [ticketTab, setTicketTab]         = useState('active')  // 'active' | 'curso'
+  const [isSendingToKitchen, setIsSendingToKitchen] = useState(false)
+
+  // ── WhatsApp order review ─────────────────────────────────────────────────
+  const [waOrderId, setWaOrderId] = useState(null)
+  const [waContent, setWaContent] = useState('')
+  // Holds a loadWhatsApp id from nav state until the catalog is ready to
+  // resolve each item's productDocId/stationTags — see the two-effect split
+  // below.
+  const [pendingWhatsAppId, setPendingWhatsAppId] = useState(null)
 
   // ── Overlay state (mirrors Home.jsx exactly) ───────────────────────────────
   const [bottomSheetProduct, setBottomSheetProduct]         = useState(null)
@@ -563,15 +523,8 @@ export const POS = () => {
   // ── Draft cache ─────────────────────────────────────────────────────────────
   const [draftRestored, setDraftRestored] = useState(false)
 
-  // ── Send-to-kitchen ─────────────────────────────────────────────────────────
-  const [isSending, setIsSending] = useState(null)  // parked order id being sent
-
   // ── Loyalty lookup (before payment when no customer) ─────────────────────
   const [showLoyaltyLookup, setShowLoyaltyLookup] = useState(false)
-
-  // ── Apartado prompt ────────────────────────────────────────────────────────
-  const [showApartadoPrompt, setShowApartadoPrompt] = useState(false)
-  const [apartadoLabel, setApartadoLabel]           = useState('')
 
   // ── Item editing (overlay pre-population) ─────────────────────────────────
   const [editingCartItemId, setEditingCartItemId]         = useState(null)
@@ -618,7 +571,9 @@ export const POS = () => {
     }).catch(() => {})
   }, [])
 
-  // ── Parked orders (real-time) ─────────────────────────────────────────────
+  // ── En curso orders (real-time) ───────────────────────────────────────────
+  // Orders that have been sent to a kitchen station and haven't been charged
+  // (or refunded) yet. Replaces the old parked_orders listener.
   useEffect(() => {
     let cancelled = false
     let alive = true
@@ -626,16 +581,18 @@ export const POS = () => {
     const timer = setTimeout(() => {
       if (cancelled) return
       unsub = onSnapshot(
-        collection(db, 'parked_orders'),
+        collection(db, 'orders'),
         snap => {
           if (!alive) return
-          const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          const orders = snap.docs
+            .map(d => ({ id: d.id, ...d.data() }))
+            .filter(o => o.sentToKitchen === true && o.status !== 'Pagado' && o.status !== 'Reembolsado' && o.status !== 'Cancelado')
           orders.sort((a, b) => {
-            const ta = a.parkedAt?.toDate?.() ?? new Date(0)
-            const tb = b.parkedAt?.toDate?.() ?? new Date(0)
-            return tb - ta
+            const ta = a.createdAt?.toDate?.() ?? new Date(0)
+            const tb = b.createdAt?.toDate?.() ?? new Date(0)
+            return ta - tb
           })
-          setParkedOrders(orders)
+          setEnCursoOrders(orders)
         },
         () => {},
       )
@@ -644,9 +601,55 @@ export const POS = () => {
       cancelled = true
       alive = false
       clearTimeout(timer)
-      if (unsub) try { unsub() } catch {}
+      if (unsub) try { unsub() } catch { /* Firestore subscription already ended. */ }
     }
   }, [])
+
+  // ── WhatsApp order review — arrives via navigate(state: { loadWhatsApp }) ──
+  // Captures the id immediately (nav state is cleared right away either way);
+  // resolution is deferred to the next effect until the catalog has loaded,
+  // since loading structured items needs productsById to stamp
+  // productDocId/stationTags via _commit.
+  useEffect(() => {
+    const id = location.state?.loadWhatsApp
+    if (!id) return
+    window.history.replaceState({}, '')
+    setPendingWhatsAppId(id)
+  }, [location.state])
+
+  useEffect(() => {
+    if (!pendingWhatsAppId || catalogLoading) return
+    const id = pendingWhatsAppId
+    setPendingWhatsAppId(null)
+    if (orderItems.length > 0) return  // ticket busy — cashier must clear it manually first
+    getDoc(doc(db, 'orders', id)).then(snap => {
+      if (!snap.exists()) return
+      setWaOrderId(id)
+      const data = snap.data()
+      if (Array.isArray(data.items) && data.items.length > 0) {
+        // Structured order (built from the customer's actual cart) — load
+        // every product straight into the ticket, same as tapping each one
+        // on the product grid. Falls back to the raw text below only for
+        // orders saved before this order shape existed.
+        data.items.forEach(item => _commit(item))
+        setGeneralNote(data.generalNote || '')
+      } else {
+        setWaContent(data.content || '')
+      }
+    }).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingWhatsAppId, catalogLoading])
+
+  // ── Charge an en-curso order from Orders.jsx's "Marcar como entregado" ────
+  useEffect(() => {
+    const id = location.state?.chargeOrderId
+    if (!id) return
+    window.history.replaceState({}, '')
+    getDoc(doc(db, 'orders', id)).then(snap => {
+      if (!snap.exists()) return
+      chargeEnCursoOrder({ id: snap.id, ...snap.data() })
+    }).catch(() => {})
+  }, [location.state])
 
   // ── Draft restore on mount ────────────────────────────────────────────────
   useEffect(() => {
@@ -674,16 +677,22 @@ export const POS = () => {
     } catch { /* silently ignore */ }
   }, [orderItems, generalNote, customer])
 
+  // If the cashier manually empties a ticket that was loaded via Agregar,
+  // don't let a later brand-new ticket silently overwrite that stale order.
+  useEffect(() => {
+    if (orderItems.length === 0 && resumingOrderId) setResumingOrderId(null)
+  }, [orderItems.length, resumingOrderId])
+
   // ── Customer search — client-side filter on cached list ──────────────────
   // Matches phone as a plain digit string; matches name accent-insensitively.
   useEffect(() => {
     const trimmed = customerSearch.trim()
     if (!trimmed) { setSearchResults([]); return }
-    const normInput = normalize(trimmed)
+    const normInput = normalizeSearchText(trimmed)
     setSearchResults(
       allCustomers.filter(c =>
         (c.phone || '').includes(trimmed) ||
-        normalize(c.name).includes(normInput)
+        normalizeSearchText(c.name).includes(normInput)
       )
     )
   }, [customerSearch, allCustomers])
@@ -703,6 +712,8 @@ export const POS = () => {
   }, [toppingsMap])
 
   const _commit = (item) => {
+    const product = productsById[item.productDocId] || productsById[item.id]
+    const stationTags = product?.stationTags || []
     setOrderItems(prev => {
       const idx = prev.findIndex(it =>
         it.id === item.id &&
@@ -714,7 +725,7 @@ export const POS = () => {
         next[idx] = { ...next[idx], qty: next[idx].qty + (item.qty || 1) }
         return next
       }
-      return [...prev, { ...item, cartItemId: uid(), itemNote: '' }]
+      return [...prev, { ...item, stationTags, cartItemId: createLocalId(), itemNote: '' }]
     })
   }
 
@@ -843,87 +854,126 @@ export const POS = () => {
     finally { setSavingCust(false) }
   }
 
-  // ── Apartado: save current ticket as a parked order ──────────────────────
-  const [isParking, setIsParking] = useState(false)
-
-  const saveAsApartado = async (label) => {
-    if (orderItems.length === 0 || isParking) return
-    setIsParking(true)
+  // ── Enviar a cocina: routes the active ticket to its kitchen station(s) ───
+  // Fresh ticket → creates a new 'orders' doc; a resumed en-curso order →
+  // updates it in place and re-routes (preserving in-progress item status
+  // via routeOrderToStations' prevStationItems matching).
+  const sendCurrentOrderToKitchen = async () => {
+    if (orderItems.length === 0 || isSendingToKitchen) return
+    setIsSendingToKitchen(true)
     try {
-      const autoLabel = label?.trim()
-        || `Apartado ${new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}`
-      const safeItems = orderItems.map(it => ({
-        id: it.id ?? null, productDocId: it.productDocId ?? null, name: it.name ?? '', price: Number(it.price || 0),
-        imageUrl: it.imageUrl ?? null, qty: it.qty ?? 1, itemNote: it.itemNote || null,
-        selectedOptions: (it.selectedOptions ?? []).map(o => ({
-          groupId: o.groupId ?? null, optionId: o.optionId ?? null,
-          optionName: o.optionName ?? '', priceModifier: Number(o.priceModifier || 0),
-        })),
-        selectedToppings: (it.selectedToppings ?? []).map(t => ({ id: t.id ?? null, name: t.name ?? '', price: Number(t.price || 0) })),
-      }))
-      const total = calcOrderTotal(safeItems)
-      await addDoc(collection(db, 'parked_orders'), {
-        label: autoLabel,
-        items: safeItems,
-        total,
-        status: 'apartado',
+      const safeItems = toSafeItems(orderItems)
+      const total = getOrderTotal(safeItems)
+      const customerFields = {
         customerId: customer?.id ?? null,
         customerName: customer?.name ?? null,
         customer: customer
           ? { id: customer.id, name: customer.name, phone: customer.phone || '', loyaltyBalance: customer.loyaltyBalance || 0 }
           : null,
-        generalNote: generalNote || null,
-        parkedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      })
+      }
+
+      if (resumingOrderId) {
+        await routeOrderToStations(resumingOrderId, { items: safeItems }, stations, {
+          productsById,
+          extraFields: { items: safeItems, total, generalNote: generalNote || null, ...customerFields },
+        })
+      } else {
+        const orderId = `POS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`
+        const ref = await addDoc(collection(db, 'orders'), {
+          orderId, items: safeItems, total, status: 'Nuevo', source: 'pos',
+          generalNote: generalNote || null, ...customerFields,
+          createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
+        })
+        await routeOrderToStations(ref.id, { items: safeItems }, stations, { productsById })
+      }
+
       setOrderItems([]); setGeneralNote(''); setCustomer(null); setLoyaltyRedeemed(0)
-      setShowApartadoPrompt(false); setApartadoLabel('')
+      setResumingOrderId(null)
       setDraftRestored(false)
       localStorage.removeItem(DRAFT_KEY)
-      setTicketTab('parked')
+      setTicketTab('curso')
     } catch (e) {
-      console.error('Error al apartar:', e)
-      alert('No se pudo apartar la orden. Verifica la conexión e inténtalo de nuevo.')
+      console.error('Error al enviar a cocina:', e)
+      alert('No se pudo enviar la orden a cocina. Verifica la conexión e inténtalo de nuevo.')
     } finally {
-      setIsParking(false)
+      setIsSendingToKitchen(false)
     }
   }
 
-  // ── Retomar: load an apartado back into the active ticket ─────────────────
-  const resumeParkedOrder = async (parkedOrder) => {
-    setOrderItems((parkedOrder.items || []).map(it => ({ ...it, cartItemId: uid(), itemNote: it.itemNote || '' })))
-    setGeneralNote(parkedOrder.generalNote || '')
-    setCustomer(parkedOrder.customer || null)
+  // ── Agregar: load an en-curso order into the active ticket to add/edit items ──
+  const loadEnCursoOrder = (order) => {
+    setOrderItems((order.items || []).map(it => ({ ...it, cartItemId: createLocalId(), itemNote: it.itemNote || '' })))
+    setGeneralNote(order.generalNote || '')
+    setCustomer(order.customer || null)
     setLoyaltyRedeemed(0)
-    await deleteDoc(doc(db, 'parked_orders', parkedOrder.id))
+    setResumingOrderId(order.id)
     setTicketTab('active')
+    setIsTicketOpen(true)
   }
 
-  const deleteParkedOrder = async (id) => {
-    await deleteDoc(doc(db, 'parked_orders', id))
+  // ── Cobrar (from En curso): load the order then open the payment modal directly ──
+  const chargeEnCursoOrder = (order) => {
+    setOrderItems((order.items || []).map(it => ({ ...it, cartItemId: createLocalId(), itemNote: it.itemNote || '' })))
+    setGeneralNote(order.generalNote || '')
+    setCustomer(order.customer || null)
+    setLoyaltyRedeemed(0)
+    setResumingOrderId(order.id)
+    setCashAmount(0); setCardAmount(0)
+    setIsTicketOpen(false)
+    setIsPaymentOpen(true)
   }
 
-  const sendToKitchen = async (parkedOrder) => {
-    if (isSending) return
-    setIsSending(parkedOrder.id)
+  // ── Cancelar: closes out an en-curso order that was never charged ────────
+  // No register/stock reversal needed — deduction only ever happens at the
+  // moment an order becomes 'Pagado' (POS handlePayment / Orders.jsx
+  // updateStatus), which a cancelled order never reaches.
+  const cancelEnCursoOrder = async (order) => {
     try {
-      const orderId = `POS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`
-      await addDoc(collection(db, 'orders'), {
-        orderId,
-        items: parkedOrder.items || [],
-        total: parkedOrder.total ?? calcOrderTotal(parkedOrder.items || []),
-        status: 'Nuevo',
-        source: 'pos',
-        customer: parkedOrder.customer ?? null,
-        customerId: parkedOrder.customer?.id ?? null,
-        customerName: parkedOrder.customer?.name ?? null,
-        generalNote: parkedOrder.generalNote || null,
-        createdAt: serverTimestamp(),
+      await updateDoc(doc(db, 'orders', order.id), {
+        status: 'Cancelado',
+        cancelledAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       })
-      await deleteDoc(doc(db, 'parked_orders', parkedOrder.id))
-    } catch (e) { console.error('sendToKitchen error:', e) }
-    finally { setIsSending(null) }
+    } catch (e) {
+      console.error('Error cancelling order:', e)
+      alert('No se pudo cancelar la orden. Verifica la conexión e inténtalo de nuevo.')
+    }
+  }
+
+  // ── WhatsApp review: discard or route the raw order in place ─────────────
+  const discardWhatsAppOrder = async () => {
+    if (!waOrderId) return
+    try {
+      await updateDoc(doc(db, 'orders', waOrderId), { reviewed: true, discarded: true, updatedAt: serverTimestamp() })
+    } catch (e) { console.error('Error discarding WhatsApp order:', e) }
+    setWaOrderId(null); setWaContent('')
+  }
+
+  const sendWhatsAppOrderToKitchen = async () => {
+    if (!waOrderId || orderItems.length === 0 || isSendingToKitchen) return
+    setIsSendingToKitchen(true)
+    try {
+      const safeItems = toSafeItems(orderItems)
+      const total = getOrderTotal(safeItems)
+      await routeOrderToStations(waOrderId, { items: safeItems }, stations, {
+        productsById,
+        extraFields: {
+          items: safeItems, total, status: 'Nuevo', reviewed: true,
+          generalNote: generalNote || null,
+          customerId: customer?.id ?? null, customerName: customer?.name ?? null,
+        },
+      })
+      setOrderItems([]); setGeneralNote(''); setCustomer(null); setLoyaltyRedeemed(0)
+      setWaOrderId(null); setWaContent('')
+      setDraftRestored(false)
+      localStorage.removeItem(DRAFT_KEY)
+      setTicketTab('curso')
+    } catch (e) {
+      console.error('Error al enviar orden de WhatsApp a cocina:', e)
+      alert('No se pudo enviar la orden de WhatsApp a cocina.')
+    } finally {
+      setIsSendingToKitchen(false)
+    }
   }
 
   // ── Loyalty lookup handlers ───────────────────────────────────────────────
@@ -959,7 +1009,7 @@ export const POS = () => {
         const optTxt = it.selectedOptions?.length ? ` [${it.selectedOptions.map(o => o.priceModifier > 0 ? `${o.optionName} (+$${o.priceModifier})` : o.optionName).join(', ')}]` : ''
         const topTxt = it.selectedToppings?.length ? ` [${it.selectedToppings.map(t => t.name).join(', ')}]` : ''
         const noteTxt = it.itemNote ? ` (${it.itemNote})` : ''
-        return `${i + 1}. ${it.qty} x ${it.name}${optTxt}${topTxt}${noteTxt} - ${formatMoney(itemLineTotal(it))}`
+        return `${i + 1}. ${it.qty} x ${it.name}${optTxt}${topTxt}${noteTxt} - ${formatMoney(getItemLineTotal(it))}`
       }),
       '', `Total: ${formatMoney(subtotal)}`,
     ]
@@ -974,26 +1024,25 @@ export const POS = () => {
     if (!canConfirmPayment || isProcessing) return
     setIsProcessing(true)
     try {
-      const orderId = `POS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`
+      // Resuming an en-curso order charges the SAME doc (updateDoc) instead of
+      // creating a new one — reuses its own orderId/source rather than minting
+      // a fresh POS- id, since the order already exists and may be mid-kitchen.
+      const resumingOrder = resumingOrderId ? enCursoOrders.find(o => o.id === resumingOrderId) : null
+      const orderId = resumingOrder?.orderId
+        || `POS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`
+
       // Earn rate is deliberately based on effectiveTotal (subtotal minus what was just
       // redeemed), not the full subtotal — customers shouldn't earn loyalty on the portion
       // of the sale they paid FOR with loyalty. This is unrelated to the order.total fix
       // below: order.total records the true sale value; this only sets the earning base.
       const loyaltyEarned = customer ? Math.round(effectiveTotal * 0.1 * 100) / 100 : 0
 
-      const safeItems = orderItems.map(it => ({
-        id: it.id ?? null, productDocId: it.productDocId ?? null, name: it.name ?? '', price: Number(it.price || 0),
-        imageUrl: it.imageUrl ?? null, qty: it.qty ?? 1, itemNote: it.itemNote || null,
-        selectedOptions: (it.selectedOptions ?? []).map(o => ({
-          groupId: o.groupId ?? null, optionId: o.optionId ?? null,
-          optionName: o.optionName ?? '', priceModifier: Number(o.priceModifier || 0),
-        })),
-        selectedToppings: (it.selectedToppings ?? []).map(t => ({ id: t.id ?? null, name: t.name ?? '', price: Number(t.price || 0) })),
-      }))
+      const safeItems = toSafeItems(orderItems)
 
       // Attach per-item cost data (from recipes) and deduct consumed raw materials from
-      // stock atomically — this order is being created directly as 'Pagado' (see paths below),
-      // so this is the single point where the sale is final and stock must move.
+      // stock atomically — this order is being finalized as 'Pagado' here (whether it's a
+      // fresh direct charge or an en-curso order being charged), so this is the single point
+      // where the sale is final and stock must move.
       // A failure here (permissions, network, bad recipe data) must NEVER block a payment
       // the customer already made — the order still gets created, just without cost data.
       // Revenue for costing/profit purposes is the true sale value (subtotal) — loyalty
@@ -1011,31 +1060,33 @@ export const POS = () => {
         console.error('Stock deduction failed — completing payment without cost data:', err)
       }
 
-      // PATH 1: direct POS charge (built and paid without saving first) → 'Pagado' immediately
-      // PATH 2: apartado retaken and charged from POS → also 'Pagado' immediately, skips Nuevo/Preparando/Listo
-      // PATH 3: apartado retaken and sent to kitchen without charging → write status 'Nuevo' in a
-      //         separate addDoc (not this function); register is updated only when it reaches 'Pagado'
       // total is the true sale value (subtotal) — NOT effectiveTotal. Loyalty redemption
       // spends previously-earned stored value as a payment method, same as cash/card; it
       // must not shrink the order's own recorded total, which is also what Orders.jsx's
       // refund flow later reads (cashRefund = total - card - loyalty) — that formula only
       // works if total is the full pre-redemption value.
-      await addDoc(collection(db, 'orders'), {
+      const payload = {
         orderId, content: buildContent(), total: subtotal,
-        status: 'Pagado', source: 'pos',
+        status: 'Pagado', source: resumingOrder?.source || 'pos',
         paymentMethods: { cash: cashAmount, card: cardAmount, loyalty: loyaltyRedeemed },
         customerId: customer?.id ?? null, customerName: customer?.name ?? null,
         items: itemsWithCosts, generalNote: generalNote || null,
         totalCogs, grossProfit, profitMargin, completedAt: serverTimestamp(),
-        loyaltyEarned, loyaltyRedeemed, createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
-      })
+        loyaltyEarned, loyaltyRedeemed, paidAt: serverTimestamp(), updatedAt: serverTimestamp(),
+      }
+
+      if (resumingOrderId) {
+        await updateDoc(doc(db, 'orders', resumingOrderId), payload)
+      } else {
+        await addDoc(collection(db, 'orders'), { ...payload, createdAt: serverTimestamp() })
+      }
 
       // cashSaleAmount = cash portion of the sale (effectiveTotal, i.e. subtotal minus what
       // loyalty already covered, minus what card covered). Never use cashAmount here — that
       // is the cash received from the customer and may include change given back. Only the
       // actual cash-sale value flows into the register.
       const cashSaleAmount = effectiveTotal - cardAmount
-      await updateDoc(doc(db, 'register_sessions', todayKey()), {
+      await updateDoc(doc(db, 'register_sessions', createTodayKey()), {
         cashSales: increment(cashSaleAmount),
         cardSales: increment(cardAmount),
         loyaltyRedemptions: increment(loyaltyRedeemed),
@@ -1056,6 +1107,7 @@ export const POS = () => {
       setOrderItems([]); setGeneralNote(''); setLoyaltyRedeemed(0)
       setCashAmount(0); setCardAmount(0); setCustomer(null)
       setCustomerSearch(''); setIsPaymentOpen(false)
+      setResumingOrderId(null)
       setDraftRestored(false)
       localStorage.removeItem(DRAFT_KEY)
       setOrderSuccess({ orderId: savedOrderId, change: savedChange })
@@ -1066,15 +1118,15 @@ export const POS = () => {
   // ── Derived ───────────────────────────────────────────────────────────────
   const displayedProducts = productSearch.trim()
     ? allProducts.filter(p => {
-        const norm = normalize(productSearch.trim())
-        if (normalize(p.name).includes(norm)) return true
+        const norm = normalizeSearchText(productSearch.trim())
+        if (normalizeSearchText(p.name).includes(norm)) return true
         return (p.optionGroups || []).some(group =>
-          (group.options || []).some(opt => normalize(opt.name || '').includes(norm))
+          (group.options || []).some(opt => normalizeSearchText(opt.name || '').includes(norm))
         )
       })
     : allProducts.filter(p => p.section === activeSection)
 
-  const subtotal    = calcOrderTotal(orderItems)
+  const subtotal    = getOrderTotal(orderItems)
   const loyaltyMax  = customer ? Math.min(customer.loyaltyBalance || 0, subtotal) : 0
   // effectiveTotal = what's left to collect via cash/card after loyalty redemption already
   // covered its share. loyaltyRedeemed must NOT also be added into totalPaid below — it has
@@ -1098,7 +1150,7 @@ export const POS = () => {
     <div className="flex gap-1 flex-1">
       {[
         { key: 'active', label: 'Orden Activa' },
-        { key: 'parked', label: `Apartadas${parkedOrders.length > 0 ? ` (${parkedOrders.length})` : ''}` },
+        { key: 'curso', label: `En curso${enCursoOrders.length > 0 ? ` (${enCursoOrders.length})` : ''}` },
       ].map(tab => (
         <button key={tab.key} onClick={() => setTicketTab(tab.key)}
           className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
@@ -1209,6 +1261,19 @@ export const POS = () => {
           </button>
         </div>
       )}
+      {waOrderId && (
+        <div className="mx-3 mt-2.5 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2.5 shrink-0">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
+            <MessageCircle size={12} />
+            {waContent ? 'Orden de WhatsApp — arma el ticket manualmente' : 'Orden de WhatsApp — productos cargados'}
+          </p>
+          {waContent ? (
+            <p className="mt-1.5 text-xs text-amber-200/70 whitespace-pre-wrap max-h-24 overflow-y-auto">{waContent}</p>
+          ) : (
+            <p className="mt-1 text-xs text-amber-200/70">Revisa el ticket antes de enviarlo a cocina.</p>
+          )}
+        </div>
+      )}
       {customerSection}
 
       <div className="flex-1 overflow-y-auto">
@@ -1239,46 +1304,34 @@ export const POS = () => {
           <span className="text-2xl font-bold text-light-100 tabular-nums">{formatMoney(subtotal)}</span>
         </div>
 
-        {showApartadoPrompt ? (
-          <div className="space-y-2">
-            <input
-              type="text"
-              placeholder='Nombre del apartado, ej. "Mesa 3" o "Fernanda" (opcional)'
-              value={apartadoLabel}
-              onChange={e => setApartadoLabel(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') saveAsApartado(apartadoLabel)
-                if (e.key === 'Escape') { setShowApartadoPrompt(false); setApartadoLabel('') }
-              }}
-              autoFocus
-              className="w-full rounded-xl border border-amber-500/30 bg-main-800/60 px-3 py-2.5 text-sm text-light-200 placeholder-light-200/25 outline-none focus:border-amber-500/60 transition"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setShowApartadoPrompt(false); setApartadoLabel('') }}
-                className="flex-none px-4 py-3 rounded-2xl border border-white/10 text-sm font-medium text-light-200/50 hover:text-light-100 hover:border-white/20 transition cursor-pointer min-h-[44px]"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => saveAsApartado(apartadoLabel)}
-                disabled={isParking}
-                className="flex-1 rounded-2xl bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed py-3 text-sm font-bold text-white transition-all cursor-pointer shadow-lg shadow-amber-600/25 min-h-[44px]"
-              >
-                {isParking ? 'Apartando…' : 'Confirmar apartado'}
-              </button>
-            </div>
+        {waOrderId ? (
+          <div className="flex gap-2">
+            <button
+              onClick={discardWhatsAppOrder}
+              className="flex-none flex items-center gap-1.5 px-4 py-3.5 rounded-2xl border border-rose-500/25 text-sm font-semibold text-rose-400/80 hover:border-rose-500/50 hover:bg-rose-500/[0.07] hover:text-rose-300 transition-all cursor-pointer min-h-[44px]"
+            >
+              <Trash2 size={15} />
+              Descartar
+            </button>
+            <button
+              onClick={sendWhatsAppOrderToKitchen}
+              disabled={orderItems.length === 0 || isSendingToKitchen}
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl bg-main-500 hover:bg-main-400 disabled:opacity-30 disabled:cursor-not-allowed py-3.5 text-sm font-bold text-white transition-all shadow-lg shadow-main-500/20 cursor-pointer min-h-[44px]"
+            >
+              <Send size={15} />
+              {isSendingToKitchen ? 'Enviando…' : 'Enviar a cocina'}
+            </button>
           </div>
         ) : (
           <div className="flex gap-2">
             <button
-              onClick={() => setShowApartadoPrompt(true)}
-              disabled={orderItems.length === 0}
-              title="Guardar como apartado"
+              onClick={sendCurrentOrderToKitchen}
+              disabled={orderItems.length === 0 || isSendingToKitchen}
+              title="Enviar a cocina"
               className="flex-none flex items-center gap-1.5 px-4 py-3.5 rounded-2xl border border-amber-500/25 text-sm font-semibold text-amber-400/70 hover:border-amber-500/50 hover:bg-amber-500/[0.07] hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer min-h-[44px]"
             >
-              <Bookmark size={15} />
-              Apartar
+              <ChefHat size={15} />
+              {isSendingToKitchen ? 'Enviando…' : 'Enviar a cocina'}
             </button>
             <button
               onClick={handleCobrarClick}
@@ -1293,18 +1346,18 @@ export const POS = () => {
     </>
   )
 
-  // ── Parked orders content ─────────────────────────────────────────────────
-  const parkedTicketContent = (
+  // ── En curso content ───────────────────────────────────────────────────────
+  const enCursoTicketContent = (
     <div className="flex-1 overflow-y-auto">
-      {parkedOrders.length === 0 ? (
+      {enCursoOrders.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-44 text-light-200/20 gap-3">
-          <Bookmark size={32} />
-          <p className="text-sm">Sin órdenes apartadas</p>
+          <ChefHat size={32} />
+          <p className="text-sm">Sin órdenes en curso</p>
         </div>
       ) : (
         <div className="divide-y divide-white/5">
-          {parkedOrders.map(po => (
-            <ParkedOrderCard key={po.id} order={po} onResume={resumeParkedOrder} onDelete={deleteParkedOrder} onSend={sendToKitchen} hasActiveItems={orderItems.length > 0} />
+          {enCursoOrders.map(order => (
+            <EnCursoCard key={order.id} order={order} stations={stations} onAgregar={loadEnCursoOrder} onCobrar={chargeEnCursoOrder} onCancel={cancelEnCursoOrder} hasActiveItems={orderItems.length > 0} />
           ))}
         </div>
       )}
@@ -1448,7 +1501,7 @@ export const POS = () => {
             )}
           </div>
           <div className="flex flex-col flex-1 overflow-hidden">
-            {ticketTab === 'active' ? activeTicketContent : parkedTicketContent}
+            {ticketTab === 'active' ? activeTicketContent : enCursoTicketContent}
           </div>
         </div>
 
@@ -1463,8 +1516,8 @@ export const POS = () => {
               <ShoppingCart size={18} />
               {itemCount > 0
                 ? <><span className="text-sm font-bold">{itemCount}</span><span className="text-sm font-bold tabular-nums">{formatMoney(subtotal)}</span></>
-                : parkedOrders.length > 0
-                ? <span className="text-sm font-bold">{parkedOrders.length} apartada{parkedOrders.length !== 1 ? 's' : ''}</span>
+                : enCursoOrders.length > 0
+                ? <span className="text-sm font-bold">{enCursoOrders.length} en curso</span>
                 : <span className="text-sm font-bold">Ticket</span>
               }
             </button>
@@ -1486,7 +1539,7 @@ export const POS = () => {
                   </button>
                 </div>
                 <div className="flex flex-col flex-1 overflow-hidden">
-                  {ticketTab === 'active' ? activeTicketContent : parkedTicketContent}
+                  {ticketTab === 'active' ? activeTicketContent : enCursoTicketContent}
                 </div>
               </div>
             </div>

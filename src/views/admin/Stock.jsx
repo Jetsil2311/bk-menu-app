@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { useState, useEffect, useRef, useMemo } from 'react'
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, setDoc, deleteField,
@@ -7,129 +8,30 @@ import { db, auth } from '../../firebase'
 import { formatMoney } from '../../utils/cart'
 import { convertUnits, getUnitsInFamily } from '../../utils/unitConversion'
 import {
+  buildOptionGroupsDraft,
+  computeGroupBounds,
+  computeIngredientTotals,
+  formatQuantity,
+  getMarginColor,
+  getRecipeSummary,
+  getUnitLabel,
+  getUnitShortLabel,
+  RECIPE_SORT_OPTIONS,
+  UNIT_OPTIONS,
+  validateIngredientRows,
+} from '../../utils/recipeCalculations'
+import { ConfirmDialog } from '../../components/admin/ConfirmDialog'
+import {
   Package, PackagePlus, Boxes, Search, Plus, Pencil, Trash2, X, Check,
   AlertTriangle, ChevronDown, Loader2, Eye, ChevronsUpDown, BookOpen, Circle, CheckCircle2,
 } from 'lucide-react'
 
-const UNIT_OPTIONS = [
-  { value: 'kg',    label: 'kg' },
-  { value: 'liter', label: 'litro' },
-  { value: 'ml',    label: 'ml' },
-  { value: 'box',   label: 'caja' },
-  { value: 'units', label: 'unidad' },
-  { value: 'grams', label: 'g' },
-]
+const unitLabel = getUnitLabel
+const unitShort = getUnitShortLabel
+const formatQty = formatQuantity
+const marginColor = getMarginColor
+const buildGroupsDraft = buildOptionGroupsDraft
 
-// Short suffix used in the "+12L Leche" style success message, and as a
-// compact unit abbreviation elsewhere (e.g. "$150.00/L").
-const UNIT_SHORT = { kg: 'kg', liter: 'L', ml: 'ml', box: ' caja(s)', units: ' u.', grams: 'g' }
-
-const unitLabel = (value) => UNIT_OPTIONS.find((u) => u.value === value)?.label ?? value
-// Keeps its leading space where present (e.g. ' caja(s)') — callers that need a
-// standalone abbreviation (not appended right after a number) trim it themselves.
-const unitShort = (value) => UNIT_SHORT[value] ?? value
-
-// Compact quantity display: rounds for readability, strips trailing zeros
-// (0.020000 -> "0.02", 20 -> "20").
-const formatQty = (n) => Number((n ?? 0).toFixed(4)).toString()
-
-const RECIPE_SORT_OPTIONS = [
-  { key: null,     label: 'Alfabético' },
-  { key: 'margin', label: 'Menor margen' },
-  { key: 'cogs',   label: 'Mayor COGS' },
-]
-
-// >80% excellent, 60-80% good, <60% watch, <0% losing money.
-const marginColor = (margin) => {
-  if (margin == null) return 'text-light-200/40'
-  if (margin < 0) return 'text-rose-400'
-  if (margin > 80) return 'text-emerald-400'
-  if (margin >= 60) return 'text-amber-400'
-  return 'text-orange-400'
-}
-
-// ─── Recipe cost model ─────────────────────────────────────────────────────────
-// A recipe = fixed ingredients (apply to every unit sold, regardless of which
-// options the customer picks) + per-option extra ingredients, one independent
-// set per option in EVERY option group on the product (not just one designated
-// "variation" group). Selecting Taro adds taro powder; selecting Frappe (in a
-// completely separate group) adds frappe base — both apply simultaneously.
-// Because costs are additive per group, actual COGS for any real combination
-// falls between the sum of each group's cheapest possible option and the sum of
-// each group's priciest, so we only need to store bounds, not enumerate combos.
-
-// `ing.unit` is the unit the recipe line was entered in — may differ from the
-// material's own unit (e.g. material stocked in liters, recipe line entered in
-// ml). Cost and stock deduction always need the quantity in the MATERIAL's own
-// unit, so that conversion happens once here and everything downstream (totals,
-// save payload, stock deduction) just reads quantityInMaterialUnit.
-const computeIngredientTotals = (ingredients, materials) =>
-  ingredients.map((ing) => {
-    const material = materials.find((m) => m.docId === ing.materialId)
-    const materialUnit = material?.unit ?? null
-    const recipeUnit = ing.unit || materialUnit
-    const qty = Number(ing.quantity)
-    const unitCost = material?.costPerUnit ?? 0
-    const quantityInMaterialUnit = Number.isFinite(qty) && qty > 0 && materialUnit && recipeUnit
-      ? convertUnits(qty, recipeUnit, materialUnit)
-      : 0
-    const totalCost = quantityInMaterialUnit > 0 ? quantityInMaterialUnit * unitCost : 0
-    return { ...ing, material, unit: recipeUnit, materialUnit, quantityInMaterialUnit, unitCost, totalCost }
-  })
-
-// A cleaned (blank rows dropped) list is valid only if every remaining row has
-// both a material and a quantity > 0 — a half-filled row is what actually blocks
-// saving, not an empty ingredient list (which just means "nothing extra here").
-const validateIngredientRows = (rows) => {
-  const bad = rows.some((r) => !r.materialId || !(Number(r.quantity) > 0))
-  return bad ? 'Completa material y cantidad válidos en cada ingrediente.' : null
-}
-
-// Best/worst-case additional cost a single option group can contribute.
-// costs = each option's total extra-ingredient cost in that group.
-const computeGroupBounds = (group, costs) => {
-  if (costs.length === 0) return { min: 0, max: 0 }
-  if (group.type === 'multi') return { min: 0, max: costs.reduce((a, b) => a + b, 0) }
-  const max = Math.max(...costs)
-  const min = group.required ? Math.min(...costs) : 0
-  return { min, max }
-}
-
-// In-editor draft state for every option in every option group on the product —
-// keyed by option `id` (stable across renames), initialized from any previously
-// saved recipe.
-const buildGroupsDraft = (optionGroups, existingRecipe) => {
-  const map = {}
-  optionGroups.forEach((g) => {
-    const optionsMap = {}
-    ;(g.options || []).forEach((o) => {
-      const stored = existingRecipe?.optionIngredients?.[g.id]?.options?.[o.id]?.ingredients
-      optionsMap[o.id] = (stored || []).map((i) => ({ materialId: i.materialId, quantity: String(i.quantity), unit: i.unit }))
-    })
-    map[g.id] = { activeOptionId: g.options?.[0]?.id ?? null, options: optionsMap }
-  })
-  return map
-}
-
-// Read-only summary used by RecipesList rows — the min/max/margin bounds are
-// already computed and stored on the recipe document at save time.
-const getRecipeSummary = (product, recipe) => {
-  const optionGroups = Array.isArray(product?.optionGroups) ? product.optionGroups : []
-  const hasRecipe = Boolean(recipe?.fixedIngredients?.length)
-  if (!hasRecipe) {
-    return { hasRecipe: false, hasRange: false, minCogs: null, maxCogs: null, minMargin: null, maxMargin: null }
-  }
-  const minCogs = recipe.minCogs ?? recipe.fixedCogs ?? 0
-  const maxCogs = recipe.maxCogs ?? recipe.fixedCogs ?? 0
-  return {
-    hasRecipe: true,
-    hasRange: optionGroups.length > 0 && maxCogs !== minCogs,
-    minCogs,
-    maxCogs,
-    minMargin: recipe.minMarginPercent ?? 0,
-    maxMargin: recipe.maxMarginPercent ?? 0,
-  }
-}
 
 const inputCls =
   'w-full rounded-xl border border-white/10 bg-main-900/60 px-3 py-2.5 text-sm text-light-100 placeholder-light-200/30 outline-none transition focus:border-main-500/50 focus:ring-1 focus:ring-main-500/20'
@@ -149,29 +51,8 @@ const formatRelative = (date) => {
   return date.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-// ─── Confirm delete dialog ────────────────────────────────────────────────────
 const DeleteConfirm = ({ label, onConfirm, onCancel, loading }) => (
-  <div className="fixed inset-0 z-[72] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-    <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-main-900 p-6 shadow-2xl">
-      <h3 className="text-base font-semibold text-light-100">¿Eliminar?</h3>
-      <p className="mt-1 text-sm text-light-200/60">{label}</p>
-      <div className="mt-5 flex gap-3">
-        <button
-          onClick={onCancel}
-          className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-light-200/70 hover:bg-white/10 transition-colors cursor-pointer"
-        >
-          Cancelar
-        </button>
-        <button
-          onClick={onConfirm}
-          disabled={loading}
-          className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-500 transition-colors disabled:opacity-50 cursor-pointer"
-        >
-          {loading ? 'Eliminando...' : 'Eliminar'}
-        </button>
-      </div>
-    </div>
-  </div>
+  <ConfirmDialog message={label} onConfirm={onConfirm} onCancel={onCancel} isPending={loading} />
 )
 
 // ─── Add / Edit Material Modal ────────────────────────────────────────────────

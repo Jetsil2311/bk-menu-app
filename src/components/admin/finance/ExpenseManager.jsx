@@ -1,8 +1,10 @@
+/* eslint-disable react/prop-types */
 import { useEffect, useMemo, useState } from 'react'
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../../firebase'
 import { formatMoney } from '../../../utils/cart'
 import { MoneyInput } from '../../MoneyInput'
+import { ConfirmDialog } from '../ConfirmDialog'
 import { computeTotals, daysUntilDue } from '../../../utils/expenses'
 import { Wallet, Plus, Pencil, Trash2, CalendarClock } from 'lucide-react'
 
@@ -16,27 +18,7 @@ const MONTH_NAMES = [
 ]
 
 const DeleteConfirm = ({ label, onConfirm, onCancel, loading }) => (
-  <div className="fixed inset-0 z-[72] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-    <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-main-900 p-6 shadow-2xl">
-      <h3 className="text-base font-semibold text-light-100">¿Eliminar gasto?</h3>
-      <p className="mt-1 text-sm text-light-200/60">{label}</p>
-      <div className="mt-5 flex gap-3">
-        <button
-          onClick={onCancel}
-          className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-light-200/70 hover:bg-white/10 transition-colors cursor-pointer"
-        >
-          Cancelar
-        </button>
-        <button
-          onClick={onConfirm}
-          disabled={loading}
-          className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-500 transition-colors disabled:opacity-50 cursor-pointer"
-        >
-          {loading ? 'Eliminando...' : 'Eliminar'}
-        </button>
-      </div>
-    </div>
-  </div>
+  <ConfirmDialog title="¿Eliminar gasto?" message={label} onConfirm={onConfirm} onCancel={onCancel} isPending={loading} />
 )
 
 const PeriodPills = ({ value, onChange }) => (

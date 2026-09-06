@@ -1,39 +1,28 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router'
-import {
-  LayoutDashboard, ShoppingCart, ClipboardList, Users, MoreHorizontal,
-  Landmark, BarChart3, Tag, UtensilsCrossed, ExternalLink, Package, Wallet,
-} from 'lucide-react'
-
-const PRIMARY_TABS = [
-  { name: 'Overview',  path: '/admin',         icon: LayoutDashboard, end: true },
-  { name: 'POS',       path: '/admin/pos',      icon: ShoppingCart },
-  { name: 'Pedidos',   path: '/admin/pedidos',  icon: ClipboardList },
-  { name: 'Clientes',  path: '/admin/clientes', icon: Users },
-]
-
-const MAS_ITEMS = [
-  { name: 'Caja',        path: '/admin/caja',       icon: Landmark },
-  { name: 'Stock',       path: '/admin/stock',       icon: Package },
-  { name: 'Finanzas',    path: '/admin/finanzas',    icon: Wallet },
-  { name: 'Métricas',    path: '/admin/metricas',    icon: BarChart3 },
-  { name: 'Promociones', path: '/admin/promociones', icon: Tag },
-  { name: 'Menú',        path: '/admin/menu',        icon: UtensilsCrossed },
-]
+import { MoreHorizontal, ExternalLink } from 'lucide-react'
+import { BOTTOM_PRIMARY_ORDER, BOTTOM_MORE_ORDER, navItem } from '../../config/adminNav'
+import { useStationContext } from '../../context/StationContext'
 
 export const BottomTabBar = () => {
   const [masOpen, setMasOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
+  const { selectedStation } = useStationContext()
+  const disabledRoutes = selectedStation?.disabledRoutes || []
+
+  const primaryTabs = BOTTOM_PRIMARY_ORDER.map(navItem)
+  const moreItems = BOTTOM_MORE_ORDER.map(navItem)
 
   // Close drawer automatically when route changes
   useEffect(() => { setMasOpen(false) }, [location.pathname])
 
-  const isMasActive = MAS_ITEMS.some(
+  const isMasActive = moreItems.some(
     item => location.pathname === item.path || location.pathname.startsWith(item.path + '/')
   )
 
-  const handleMasNav = (path) => {
+  const handleMasNav = (path, routeKey) => {
+    if (disabledRoutes.includes(routeKey)) return
     setMasOpen(false)
     navigate(path)
   }
@@ -47,31 +36,51 @@ export const BottomTabBar = () => {
       >
         <div className="flex items-stretch h-16">
 
-          {PRIMARY_TABS.map(tab => (
-            <NavLink
-              key={tab.name}
-              to={tab.path}
-              end={tab.end}
-              className={({ isActive }) => `
-                flex-1 flex flex-col items-center justify-center gap-0.5 cursor-pointer
-                transition-colors duration-200 select-none
-                ${isActive ? 'text-main-400' : 'text-light-200/35'}
-              `}
-            >
-              {({ isActive }) => (
-                <>
-                  <div className={`
-                    h-8 w-8 flex items-center justify-center rounded-xl
-                    transition-all duration-200
-                    ${isActive ? 'bg-main-500/25' : ''}
-                  `}>
+          {primaryTabs.map(tab => {
+            const isDisabled = disabledRoutes.includes(tab.routeKey)
+
+            if (isDisabled) {
+              return (
+                <div
+                  key={tab.routeKey}
+                  aria-disabled="true"
+                  title="No disponible para esta estación"
+                  className="flex-1 flex flex-col items-center justify-center gap-0.5 opacity-40 pointer-events-none select-none text-light-200/35"
+                >
+                  <div className="h-8 w-8 flex items-center justify-center rounded-xl">
                     <tab.icon size={21} />
                   </div>
                   <span className="text-[9px] font-medium leading-none tracking-wide">{tab.name}</span>
-                </>
-              )}
-            </NavLink>
-          ))}
+                </div>
+              )
+            }
+
+            return (
+              <NavLink
+                key={tab.routeKey}
+                to={tab.path}
+                end={tab.end}
+                className={({ isActive }) => `
+                  flex-1 flex flex-col items-center justify-center gap-0.5 cursor-pointer
+                  transition-colors duration-200 select-none
+                  ${isActive ? 'text-main-400' : 'text-light-200/35'}
+                `}
+              >
+                {({ isActive }) => (
+                  <>
+                    <div className={`
+                      h-8 w-8 flex items-center justify-center rounded-xl
+                      transition-all duration-200
+                      ${isActive ? 'bg-main-500/25' : ''}
+                    `}>
+                      <tab.icon size={21} />
+                    </div>
+                    <span className="text-[9px] font-medium leading-none tracking-wide">{tab.name}</span>
+                  </>
+                )}
+              </NavLink>
+            )
+          })}
 
           {/* Más tab */}
           <button
@@ -125,20 +134,26 @@ export const BottomTabBar = () => {
 
             {/* 4-col grid of nav items */}
             <div className="px-4 pb-4 grid grid-cols-4 gap-2">
-              {MAS_ITEMS.map(item => {
+              {moreItems.map(item => {
                 const isActive = location.pathname === item.path ||
                   location.pathname.startsWith(item.path + '/')
+                const isDisabled = disabledRoutes.includes(item.routeKey)
                 return (
                   <button
-                    key={item.name}
+                    key={item.routeKey}
                     type="button"
-                    onClick={() => handleMasNav(item.path)}
+                    disabled={isDisabled}
+                    aria-disabled={isDisabled}
+                    title={isDisabled ? 'No disponible para esta estación' : undefined}
+                    onClick={() => handleMasNav(item.path, item.routeKey)}
                     className={`
                       flex flex-col items-center justify-center gap-2.5 py-4 rounded-2xl border
-                      cursor-pointer transition-all duration-200 active:scale-[0.96] select-none
-                      ${isActive
-                        ? 'bg-main-500/20 border-main-500/30 text-main-400'
-                        : 'bg-main-950/70 border-white/5 text-light-200/60 hover:bg-main-800/60 hover:border-white/10 hover:text-light-100'}
+                      transition-all duration-200 select-none
+                      ${isDisabled
+                        ? 'opacity-40 pointer-events-none bg-main-950/70 border-white/5 text-light-200/35'
+                        : `cursor-pointer active:scale-[0.96] ${isActive
+                          ? 'bg-main-500/20 border-main-500/30 text-main-400'
+                          : 'bg-main-950/70 border-white/5 text-light-200/60 hover:bg-main-800/60 hover:border-white/10 hover:text-light-100'}`}
                     `}
                   >
                     <item.icon size={22} />

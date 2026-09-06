@@ -1,21 +1,9 @@
 import { useEffect } from 'react'
 import { NavLink } from 'react-router'
-import {
-  LayoutDashboard,
-  ClipboardList,
-  BarChart3,
-  Tag,
-  UtensilsCrossed,
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
-  ShoppingCart,
-  Users,
-  Landmark,
-  Package,
-  Wallet,
-} from 'lucide-react'
+import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react'
 import PropTypes from 'prop-types'
+import { SIDEBAR_ORDER, navItem } from '../../config/adminNav'
+import { useStationContext } from '../../context/StationContext'
 
 export const Sidebar = ({ isCollapsed, onToggle }) => {
   // Persist collapse preference
@@ -23,18 +11,10 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
     localStorage.setItem('admin_sidebar_collapsed', isCollapsed)
   }, [isCollapsed])
 
-  const navItems = [
-    { name: 'Overview',     path: '/admin',              icon: LayoutDashboard, end: true },
-    { name: 'POS',          path: '/admin/pos',          icon: ShoppingCart },
-    { name: 'Caja',         path: '/admin/caja',         icon: Landmark },
-    { name: 'Pedidos',      path: '/admin/pedidos',      icon: ClipboardList },
-    { name: 'Clientes',     path: '/admin/clientes',     icon: Users },
-    { name: 'Stock',        path: '/admin/stock',        icon: Package },
-    { name: 'Finanzas',     path: '/admin/finanzas',     icon: Wallet },
-    { name: 'Métricas',     path: '/admin/metricas',     icon: BarChart3 },
-    { name: 'Promociones',  path: '/admin/promociones',  icon: Tag },
-    { name: 'Menú',         path: '/admin/menu',         icon: UtensilsCrossed },
-  ]
+  const { selectedStation } = useStationContext()
+  const disabledRoutes = selectedStation?.disabledRoutes || []
+
+  const navItems = SIDEBAR_ORDER.map(navItem)
 
   return (
     /*
@@ -76,37 +56,58 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
 
       {/* ── Nav links — flex-1 + overflow-y-auto in case of many items ── */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.name}
-            to={item.path}
-            end={item.end}
-            className={({ isActive }) => `
-              relative flex items-center gap-3 px-3 py-2.5 rounded-xl
-              transition-all duration-200 group
-              ${isActive
-                ? 'bg-main-500 text-white shadow-lg shadow-main-500/20'
-                : 'text-light-200/60 hover:bg-white/5 hover:text-light-100'}
-            `}
-          >
-            <item.icon size={22} className={`shrink-0 ${isCollapsed ? 'mx-auto' : ''}`} />
-            {!isCollapsed && <span className="font-medium">{item.name}</span>}
+        {navItems.map((item) => {
+          const isDisabled = disabledRoutes.includes(item.routeKey)
 
-            {/* Tooltip shown in icon-only mode */}
-            {isCollapsed && (
-              <span className="
-                absolute left-full ml-3 px-2 py-1
-                bg-main-800 border border-white/10
-                text-xs text-light-200 rounded-lg
-                opacity-0 pointer-events-none
-                group-hover:opacity-100
-                transition-opacity whitespace-nowrap z-[60]
-              ">
-                {item.name}
-              </span>
-            )}
-          </NavLink>
-        ))}
+          if (isDisabled) {
+            return (
+              <div
+                key={item.routeKey}
+                aria-disabled="true"
+                title="No disponible para esta estación"
+                className={`
+                  relative flex items-center gap-3 px-3 py-2.5 rounded-xl
+                  text-light-200/25 opacity-40 pointer-events-none select-none
+                `}
+              >
+                <item.icon size={22} className={`shrink-0 ${isCollapsed ? 'mx-auto' : ''}`} />
+                {!isCollapsed && <span className="font-medium">{item.name}</span>}
+              </div>
+            )
+          }
+
+          return (
+            <NavLink
+              key={item.routeKey}
+              to={item.path}
+              end={item.end}
+              className={({ isActive }) => `
+                relative flex items-center gap-3 px-3 py-2.5 rounded-xl
+                transition-all duration-200 group
+                ${isActive
+                  ? 'bg-main-500 text-white shadow-lg shadow-main-500/20'
+                  : 'text-light-200/60 hover:bg-white/5 hover:text-light-100'}
+              `}
+            >
+              <item.icon size={22} className={`shrink-0 ${isCollapsed ? 'mx-auto' : ''}`} />
+              {!isCollapsed && <span className="font-medium">{item.name}</span>}
+
+              {/* Tooltip shown in icon-only mode */}
+              {isCollapsed && (
+                <span className="
+                  absolute left-full ml-3 px-2 py-1
+                  bg-main-800 border border-white/10
+                  text-xs text-light-200 rounded-lg
+                  opacity-0 pointer-events-none
+                  group-hover:opacity-100
+                  transition-opacity whitespace-nowrap z-[60]
+                ">
+                  {item.name}
+                </span>
+              )}
+            </NavLink>
+          )
+        })}
       </nav>
 
       {/* ── Footer link — flex-shrink-0 keeps it pinned to the bottom ── */}

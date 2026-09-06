@@ -15,33 +15,38 @@ import { Customers } from './views/admin/Customers'
 import { Register } from './views/admin/Register'
 import { Stock } from './views/admin/Stock'
 import { Finance } from './views/admin/Finance'
-import { SmartPinGate } from './components/admin/PinGate'
+import { StationsManager } from './views/admin/StationsManager'
+import { RouteGate } from './components/admin/RouteGate'
 import { RegisterProvider } from './context/RegisterContext'
+import { StationProvider } from './context/StationContext'
 
-// PIN protection per screen is now configurable via the lock icon in the Topbar.
-// Config is stored in Firestore settings/general.pinGateConfig and synced in real-time.
-// Defaults: Overview, Métricas, Promociones, Menú, Legacy = locked; others = unlocked.
+// Per-screen access is now gated by station (see StationContext /
+// RouteGate) instead of a single shared PIN. Each station's disabled
+// routes are configured in /admin/estaciones.
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <RegisterProvider>
-        <Routes>
-          <Route path='/*' element={<Home />} />
-          <Route path='/admin' element={<AdminLayout />}>
-            <Route index element={<SmartPinGate routeKey="overview"><Overview /></SmartPinGate>} />
-            <Route path="pedidos" element={<SmartPinGate routeKey="pedidos"><Orders /></SmartPinGate>} />
-            <Route path="metricas" element={<SmartPinGate routeKey="metricas"><Metrics /></SmartPinGate>} />
-            <Route path="promociones" element={<SmartPinGate routeKey="promociones"><Promos /></SmartPinGate>} />
-            <Route path="menu" element={<SmartPinGate routeKey="menu"><MenuEditor /></SmartPinGate>} />
-            <Route path="pos" element={<SmartPinGate routeKey="pos"><POS /></SmartPinGate>} />
-            <Route path="clientes" element={<SmartPinGate routeKey="clientes"><Customers /></SmartPinGate>} />
-            <Route path="stock" element={<SmartPinGate routeKey="stock"><Stock /></SmartPinGate>} />
-            <Route path="finanzas" element={<SmartPinGate routeKey="finanzas"><Finance /></SmartPinGate>} />
-            <Route path="caja" element={<SmartPinGate routeKey="caja"><Register /></SmartPinGate>} />
-            <Route path="legacy" element={<SmartPinGate routeKey="legacy"><Admin /></SmartPinGate>} />
-          </Route>
-        </Routes>
+        <StationProvider>
+          <Routes>
+            <Route path='/*' element={<Home />} />
+            <Route path='/admin' element={<AdminLayout />}>
+              <Route index element={<RouteGate routeKey="overview"><Overview /></RouteGate>} />
+              <Route path="pedidos" element={<RouteGate routeKey="pedidos"><Orders /></RouteGate>} />
+              <Route path="metricas" element={<RouteGate routeKey="metricas"><Metrics /></RouteGate>} />
+              <Route path="promociones" element={<RouteGate routeKey="promociones"><Promos /></RouteGate>} />
+              <Route path="menu" element={<RouteGate routeKey="menu"><MenuEditor /></RouteGate>} />
+              <Route path="pos" element={<RouteGate routeKey="pos"><POS /></RouteGate>} />
+              <Route path="clientes" element={<RouteGate routeKey="clientes"><Customers /></RouteGate>} />
+              <Route path="stock" element={<RouteGate routeKey="stock"><Stock /></RouteGate>} />
+              <Route path="finanzas" element={<RouteGate routeKey="finanzas"><Finance /></RouteGate>} />
+              <Route path="caja" element={<RouteGate routeKey="caja"><Register /></RouteGate>} />
+              <Route path="legacy" element={<RouteGate routeKey="legacy"><Admin /></RouteGate>} />
+              <Route path="estaciones" element={<RouteGate routeKey="estaciones"><StationsManager /></RouteGate>} />
+            </Route>
+          </Routes>
+        </StationProvider>
       </RegisterProvider>
     </BrowserRouter>
   </StrictMode>,

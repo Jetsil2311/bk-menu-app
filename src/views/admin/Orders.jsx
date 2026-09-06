@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router'
 import {
   collection, query, orderBy, onSnapshot,
   doc, updateDoc, serverTimestamp, increment,
@@ -7,11 +8,19 @@ import { db } from '../../firebase'
 import { formatMoney } from '../../utils/cart'
 import { computeAndDeductOrderStock } from '../../utils/stockDeduction'
 import { useSettings } from '../../hooks/useSettings'
+import { useStationContext } from '../../context/StationContext'
 import { printReceipt } from '../../utils/printReceipt'
 import {
   Clock, CheckCircle2, Package, RefreshCcw,
   Search, ChevronDown, X, ArrowRight, ArrowUpDown, Printer, Undo2,
+  MessageCircle, ShoppingCart,
 } from 'lucide-react'
+
+const STATION_PILL_STYLES = {
+  pending: 'bg-white/5 text-light-200/40 border-white/10',
+  preparando: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  listo: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+}
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -35,6 +44,7 @@ const STATUS_COLORS = {
   pagado:           'bg-light-200/5 text-light-200/30 border-light-200/10',
   entregado:        'bg-light-200/5 text-light-200/30 border-light-200/10',
   reembolsado:      'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  cancelado:        'bg-light-200/5 text-light-200/30 border-light-200/10',
 }
 
 const ACTION_LABELS = {
@@ -276,6 +286,8 @@ export const Orders = () => {
   const [refundTarget, setRefundTarget] = useState(null)
   const [isRefunding, setIsRefunding]   = useState(false)
   const { settings } = useSettings()
+  const { stations } = useStationContext()
+  const navigate = useNavigate()
 
   // Persistent real-time listener — closes on unmount
   useEffect(() => {
@@ -396,9 +408,10 @@ export const Orders = () => {
   ).length
 
   const filtered = orders.filter(o => {
+    if (o.discarded) return false
     const statusMatch =
       filterStatus === 'Activos'
-        ? !['pagado', 'reembolsado'].includes(o.status.toLowerCase())
+        ? !['pagado', 'reembolsado', 'cancelado'].includes(o.status.toLowerCase())
         : o.status.toLowerCase() === filterStatus.toLowerCase()
     const searchMatch =
       !search ||
@@ -461,7 +474,7 @@ export const Orders = () => {
             className="flex items-center gap-1 p-1 rounded-xl bg-main-900/30 border border-white/5 overflow-x-auto"
             style={{ scrollbarWidth: 'none' }}
           >
-            {['Activos', ...STATUSES, 'Reembolsado'].map(s => (
+            {['Activos', ...STATUSES, 'Reembolsado', 'Cancelado'].map(s => (
               <button
                 key={s}
                 onClick={() => setFilterStatus(s)}
@@ -550,6 +563,11 @@ export const Orders = () => {
             const currentIdx  = STATUSES.findIndex(s => s.toLowerCase() === order.status.toLowerCase())
 
             const isReembolsado = order.status.toLowerCase() === 'reembolsado'
+            const isCancelado = order.status.toLowerCase() === 'cancelado'
+
+            const stationEntries = Object.entries(order.stationItems || {})
+            const hasStations = stationEntries.length > 0
+            const allStationsDone = hasStations && stationEntries.every(([, group]) => group.status === 'listo')
 
             return (
               <div
@@ -557,7 +575,7 @@ export const Orders = () => {
                 className={`border rounded-2xl overflow-hidden transition-all duration-200 ${
                   isReembolsado
                     ? 'bg-rose-950/10 border-rose-500/10 opacity-70 hover:opacity-90 hover:border-rose-500/20'
-                    : isPagado
+                    : isCancelado || isPagado
                     ? 'bg-main-950/20 border-white/3 opacity-70 hover:opacity-90 hover:border-white/5'
                     : 'bg-main-900/30 border-white/5 hover:border-white/10'
                 }`}
@@ -588,6 +606,28 @@ export const Orders = () => {
                     <p className="text-xs text-light-200/40 mt-0.5 truncate max-w-[280px]">
                       {itemPreview}
                     </p>
+                    {hasStations && (
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                        {order.source === 'whatsapp' && (
+                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            <MessageCircle size={9} /> WhatsApp
+                          </span>
+                        )}
+                        {order.source === 'pos' && (
+                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-light-200/40 border border-white/10">
+                            <ShoppingCart size={9} /> POS
+                          </span>
+                        )}
+                        {stationEntries.map(([stationId, group]) => {
+                          const station = stations.find(s => s.id === stationId)
+                          return (
+                            <span key={stationId} className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold border ${STATION_PILL_STYLES[group.status] || STATION_PILL_STYLES.pending}`}>
+                              {station?.name || stationId}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   {/* Total */}
@@ -602,6 +642,23 @@ export const Orders = () => {
                         <Undo2 size={13} />
                         Reembolsado
                       </span>
+                    ) : isCancelado ? (
+                      <span className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-light-200/35">
+                        <X size={13} />
+                        Cancelada
+                      </span>
+                    ) : hasStations && !isPagado ? (
+                      allStationsDone ? (
+                        <button
+                          onClick={() => navigate('/admin/pos', { state: { chargeOrderId: order.id } })}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-main-500 hover:bg-main-400 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-main-500/10 cursor-pointer"
+                        >
+                          <CheckCircle2 size={14} />
+                          Marcar como entregado
+                        </button>
+                      ) : (
+                        <span className="px-3 py-2 text-xs font-medium text-light-200/35">En preparación…</span>
+                      )
                     ) : actionLabel ? (
                       <button
                         onClick={() => updateStatus(order, next)}
@@ -683,6 +740,11 @@ export const Orders = () => {
                       <div className="flex items-center gap-2 rounded-xl border border-rose-500/15 bg-rose-500/5 px-3 py-2.5 text-xs text-rose-300/70">
                         <Undo2 size={13} className="shrink-0" />
                         Esta orden fue reembolsada y descontada de caja
+                      </div>
+                    ) : isCancelado ? (
+                      <div className="flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 text-xs text-light-200/40">
+                        <X size={13} className="shrink-0" />
+                        Esta orden fue cancelada antes de cobrarse — no afectó la caja
                       </div>
                     ) : (
                       <div>
