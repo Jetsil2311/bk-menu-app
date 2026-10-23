@@ -195,3 +195,20 @@ export const buildCartItem = (config, selections, customName = '') => {
     ),
   }
 }
+
+// Reverse of buildCartItem, for editing a ticket/cart line: its selections
+// (skipping choices that no longer exist) and its custom name.
+export const selectionsFromItem = (config, item) => {
+  const out = {}
+  for (const so of item?.selectedOptions || []) {
+    const step = config.steps.find((s) => s.id === so.groupId)
+    if (!step?.options.some((o) => o.id === so.optionId)) continue
+    out[step.id] = [...(out[step.id] || []), so.optionId]
+  }
+  return out
+}
+
+export const nameFromItem = (config, item) => {
+  const prefix = `${config.title}: `
+  return item?.name?.startsWith(prefix) ? item.name.slice(prefix.length) : ''
+}

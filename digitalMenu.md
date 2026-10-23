@@ -2,7 +2,7 @@
 
 Base template: https://github.com/Jetsil2311/menu-demo
 Client: Bubble Kaapeh (BK)
-Last updated: 2026-10-23 (Arma tu bebida — admin editor + stock)
+Last updated: 2026-10-23 (Arma tu bebida — cashier builder)
 
 ---
 
@@ -598,13 +598,23 @@ What changed: The owner now sets up the whole builder from **Admin → Menú →
 Files affected: src/components/admin/drinkBuilder/{DrinkBuilderEditor,InventoryRows}.jsx (new), src/utils/drinkBuilderAdmin.js (new), src/utils/drinkBuilderAdmin.test.js (new), src/views/admin/MenuEditor.jsx, src/utils/drinkBuilder.js, src/utils/stockDeduction.js, src/utils/recipeCalculations.js (import extension only), src/views/Home.jsx, src/views/admin/POS.jsx, src/components/admin/finance/{ProductProfitability,StockVariance}.jsx, src/components/drinkBuilder/DrinkBuilder.jsx, scripts/test-env/seed.mjs, scripts/test-env/{raw-materials-sample,drink-builder-recipe-sample}.json (new)
 Reason: Owner asked for the admin editor, with a price and a raw-material consumption for every ingredient.
 
+### 2026-10-23 — "Arma tu bebida" for the cashier (Cobrar / POS)
+What changed: Cashiers can build a customer's drink right in **Cobrar**, for walk-in customers and phone orders.
+- **Where:** a highlighted "Arma tu bebida" chip first in the section bar. It also shows up in product search ("bebida", "arma"…) as a tile with "Desde $55".
+- **Cashier version, made for speed:** one panel with every step on one screen as large tappable chips (color dot, "+$5" extras, a check when chosen). It also has a small live cup with the running price, an optional drink name ("La de Ana"), the quantity, and a plain-text recap to read back to the customer. The button says what's missing ("Falta: Base") and scrolls to it.
+- **Editing:** tapping a custom drink on the ticket reopens it with all its choices, name and quantity, and "Guardar cambios" updates that line in place.
+- Same config, prices and stock recipe as the customer builder. The line carries `productDocId: 'arma-tu-bebida'`, so charging it deducts the raw materials and records its cost exactly like web orders. It only shows when the builder is set up and enabled in Menú → Arma tu bebida.
+- Verified locally: building, adding ($80 = 55 + Taro 5 + Frappé 5 + Cloud Top 15), editing (swap flavor, ×2 → $160, same line), and search.
+Files affected: src/components/admin/pos/PosDrinkBuilder.jsx (new), src/views/admin/POS.jsx, src/utils/drinkBuilder.js (selectionsFromItem, nameFromItem), src/utils/drinkBuilder.test.js
+Reason: Owner asked for a way for the cashier to build the customer's drink.
+
 ---
 
 ## Known Issues / Follow-ups
 
 - **NEW (2026-10-23): "Arma tu bebida" can't be saved on the live site until the `recipes` Firestore rule is published.** The editor saves the menu document and the inventory recipe in one atomic write. Production has no rule for `recipes` (known gap, see the 2026-08-04 note below), so the save fails with a clear message. `firestore.rules` in the repo already has the rule; it needs `firebase deploy --only firestore:rules` (review the whole file first, because it replaces the live rules).
 - **NEW (2026-10-23): builder ingredient costs are a snapshot from the moment of saving** — same behavior as product recipes in Inventario. If a raw material's price changes, open Arma tu bebida and save again to refresh costs. Stock *quantities* are always correct.
-- **NEW (2026-10-23): the POS can't ring up an "Arma tu bebida" for walk-in customers yet** — it only arrives through web/WhatsApp orders loaded into the POS. Natural next step: an "Arma tu bebida" tile in Cobrar that opens the same builder.
+- **RESOLVED 2026-10-23 (cashier builder added — see change entry)** ~~the POS can't ring up an "Arma tu bebida" for walk-in customers yet~~
 - **NEW (2026-10-23): web orders for regular products still arrive without `productDocId`** (pre-existing: the customer cart never set it), so stock is only deducted for them when charged from the POS product grid. Builder drinks do carry it.
 
 - **RESOLVED 2026-10-23 (admin editor added — see change entry)** ~~"Arma tu bebida" has no admin editor yet~~

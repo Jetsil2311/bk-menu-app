@@ -4,8 +4,10 @@ import {
   computeTotal,
   deriveCupVisual,
   firstIncompleteStep,
+  nameFromItem,
   normalizeBuilderConfig,
   randomSelections,
+  selectionsFromItem,
   suggestName,
   toggleSelection,
 } from './drinkBuilder'
@@ -104,5 +106,19 @@ describe('cup visual, random drink, names and cart item', () => {
       ['base', 'a', 0], ['flavor', 'x', 0], ['pearls', 'p', 10],
     ])
     expect(buildCartItem(c, s).name).toBe('Arma tu bebida')
+  })
+})
+
+describe('editing a line', () => {
+  const c = normalizeBuilderConfig(RAW)
+
+  it('rebuilds selections and name from a cart item, skipping removed choices', () => {
+    const s = { base: ['b'], flavor: ['x', 'z'], pearls: ['p'] }
+    const item = buildCartItem(c, s, 'La de Ana')
+    expect(selectionsFromItem(c, item)).toEqual(s)
+    expect(nameFromItem(c, item)).toBe('La de Ana')
+    expect(nameFromItem(c, buildCartItem(c, s))).toBe('')
+    const stale = { ...item, selectedOptions: [...item.selectedOptions, { groupId: 'flavor', optionId: 'gone' }] }
+    expect(selectionsFromItem(c, stale)).toEqual(s)
   })
 })

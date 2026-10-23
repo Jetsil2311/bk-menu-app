@@ -25,11 +25,14 @@ import { ToppingsOverlay } from '../../components/ToppingsOverlay'
 import { useRegister } from '../../hooks/useRegister'
 import { RegisterOverlay } from '../../components/admin/RegisterOverlay'
 import { TicketItem } from '../../components/admin/pos/TicketItem'
+import { PosDrinkBuilder } from '../../components/admin/pos/PosDrinkBuilder'
+import { useDrinkBuilder } from '../../hooks/useDrinkBuilder'
+import { DRINK_BUILDER_ITEM_ID } from '../../utils/drinkBuilder'
 import {
   ShoppingCart, Search, X, User, UserPlus,
   CreditCard, Banknote, Wallet, Package, CheckCircle2,
   Receipt, ChefHat, Plus, MessageCircle,
-  Trash2, ChevronDown, ChevronRight, Clock, AlertCircle as AlertCircleIcon, Send,
+  Trash2, ChevronDown, ChevronRight, Clock, AlertCircle as AlertCircleIcon, Send, Sparkles,
 } from 'lucide-react'
 
 const BASE_URL = import.meta.env.BASE_URL
@@ -473,6 +476,12 @@ export const POS = () => {
     [allProducts]
   )
 
+  // ── "Arma tu bebida" (cashier version) ────────────────────────────────────
+  // null = closed; { initialItem } = open (initialItem set when editing a
+  // ticket line). Hidden while the builder isn't set up/enabled.
+  const { config: builderConfig } = useDrinkBuilder()
+  const [drinkBuilder, setDrinkBuilder] = useState(null)
+
   // ── Order ──────────────────────────────────────────────────────────────────
   const [orderItems, setOrderItems]   = useState([])
   const [generalNote, setGeneralNote] = useState('')
@@ -801,6 +810,10 @@ export const POS = () => {
 
   // ── Edit existing ticket item ─────────────────────────────────────────────
   const openItemEdit = useCallback((item) => {
+    if (item.id === DRINK_BUILDER_ITEM_ID) {
+      if (builderConfig) setDrinkBuilder({ initialItem: item })
+      return
+    }
     const product = allProducts.find(p => p.id === item.id || p.docId === item.id)
     if (!product) return
     const optionGroups     = Array.isArray(product.optionGroups) ? product.optionGroups : []
@@ -828,7 +841,19 @@ export const POS = () => {
     } else {
       setPendingToppingItem(fullProduct)
     }
-  }, [allProducts, toppingsMap])
+  }, [allProducts, toppingsMap, builderConfig])
+
+  const handleDrinkBuilderConfirm = ({ item, qty }) => {
+    const editing = drinkBuilder?.initialItem
+    setDrinkBuilder(null)
+    if (editing) {
+      setOrderItems(prev => prev.map(it =>
+        it.cartItemId === editing.cartItemId ? { ...it, ...item, qty } : it
+      ))
+      return
+    }
+    _commit({ ...item, qty, selectedToppings: [], availableToppings: [] })
+  }
 
   // ── Customer helpers ──────────────────────────────────────────────────────
   const selectCustomer = (c) => {
@@ -1125,6 +1150,9 @@ export const POS = () => {
         )
       })
     : allProducts.filter(p => p.section === activeSection)
+  // The builder shows up in search too (e.g. "arma", "bebida").
+  const builderMatchesSearch = Boolean(builderConfig) && Boolean(productSearch.trim()) &&
+    normalizeSearchText(builderConfig.title).includes(normalizeSearchText(productSearch.trim()))
 
   const subtotal    = getOrderTotal(orderItems)
   const loyaltyMax  = customer ? Math.min(customer.loyaltyBalance || 0, subtotal) : 0
@@ -1407,6 +1435,13 @@ export const POS = () => {
           {/* Section tabs — hidden while searching */}
           {!productSearch.trim() && (
             <div className="shrink-0 flex items-center gap-1.5 px-4 pb-3 border-b border-white/10 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+              {!catalogLoading && builderConfig && (
+                <button type="button" onClick={() => setDrinkBuilder({ initialItem: null })}
+                  className="shrink-0 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap cursor-pointer transition-colors bg-amber-500/15 text-amber-400 hover:bg-amber-500/25">
+                  <Sparkles size={14} />
+                  {builderConfig.title}
+                </button>
+              )}
               {catalogLoading
                 ? [1, 2, 3, 4].map(i => <div key={i} className="h-7 w-20 rounded-full bg-white/5 animate-pulse shrink-0" />)
                 : sections.map(sec => (
@@ -1427,7 +1462,7 @@ export const POS = () => {
           {productSearch.trim() && !catalogLoading && (
             <div className="shrink-0 px-4 pb-2 border-b border-white/10">
               <p className="text-xs text-light-200/55">
-                {displayedProducts.length} resultado{displayedProducts.length !== 1 ? 's' : ''} para &ldquo;{productSearch}&rdquo;
+                {displayedProducts.length + (builderMatchesSearch ? 1 : 0)} resultado{displayedProducts.length + (builderMatchesSearch ? 1 : 0) !== 1 ? 's' : ''} para &ldquo;{productSearch}&rdquo;
               </p>
             </div>
           )}
@@ -1446,13 +1481,25 @@ export const POS = () => {
                   </div>
                 ))}
               </div>
-            ) : displayedProducts.length === 0 ? (
+            ) : displayedProducts.length === 0 && !builderMatchesSearch ? (
               <div className="flex flex-col items-center justify-center h-48 text-light-200/45 text-sm gap-2">
                 <Package size={28} />
                 {productSearch.trim() ? 'Sin resultados.' : 'Sin productos en esta sección.'}
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                {builderMatchesSearch && (
+                  <button type="button" onClick={() => setDrinkBuilder({ initialItem: null })}
+                    className="text-left rounded-2xl bg-main-900 border border-amber-500/30 hover:border-amber-500/60 transition-all duration-200 overflow-hidden cursor-pointer active:scale-[0.97]">
+                    <div className="aspect-[4/3] bg-amber-500/10 flex items-center justify-center">
+                      <Sparkles size={28} className="text-amber-400" />
+                    </div>
+                    <div className="p-3">
+                      <p className="text-sm font-semibold text-light-100 leading-snug truncate">{builderConfig.title}</p>
+                      <p className="text-sm font-bold text-main-300 mt-0.5 tabular-nums">Desde {formatMoney(builderConfig.basePrice)}</p>
+                    </div>
+                  </button>
+                )}
                 {displayedProducts.map(product => {
                   const hasOpts = Array.isArray(product.optionGroups) && product.optionGroups.length > 0
                   const hasTop  = Array.isArray(product.toppingIds) && product.toppingIds.length > 0
@@ -1607,6 +1654,17 @@ export const POS = () => {
           initialSelections={bsInitialSelections}
           initialQty={bsInitialQty}
         />
+
+        {/* ── Arma tu bebida (cashier) ─────────────────────────────────── */}
+        {builderConfig && (
+          <PosDrinkBuilder
+            isOpen={Boolean(drinkBuilder)}
+            config={builderConfig}
+            initialItem={drinkBuilder?.initialItem ?? null}
+            onClose={() => setDrinkBuilder(null)}
+            onConfirm={handleDrinkBuilderConfirm}
+          />
+        )}
 
         {/* ── ToppingsOverlay ────────────────────────────────────────────── */}
         <ToppingsOverlay
