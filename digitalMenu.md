@@ -540,6 +540,17 @@ How it's built (Tailwind v4):
 Files affected: src/index.css, src/hooks/useAdminTheme.js (new), index.html, src/views/admin/AdminLayout.jsx, src/components/admin/Topbar.jsx, src/views/admin/MenuEditor.jsx, src/views/admin/Overview.jsx, src/components/admin/{ui,MobileSettingsSheet,Sidebar,StationGate,BottomTabBar}.jsx
 Reason: Owner asked for a light/dark switch in the admin only, implemented with Tailwind.
 
+### 2026-10-23 — Fixed: promo carousel images "teleported" instead of sliding
+What changed: Changing promos in the carousel now always slides smoothly (0.45 s ease-out), on both desktop and the mobile popup.
+- Bug: the desktop coverflow had 7 fixed slots that never moved; changing promos only swapped which image each slot showed, so frames jumped into place. The mobile popup was a single image whose picture changed.
+- Fix: each frame is now keyed by its position on an endless strip and positioned with `transform` (translate + scale). Moving the strip makes the frames themselves glide to their new slots. Going from the last promo to the first keeps sliding in the same direction instead of rewinding.
+- Frames enter and leave through an invisible slot at the edge, so nothing pops in. Dots take the shortest way around, and clicking a side frame slides it to the center.
+- Desktop: the product name/price overlay fades in on the new center frame.
+- Mobile: the popup slides sideways inside its frame (old promo out, new one in), and now also responds to a left/right swipe (40 px threshold).
+- Reduced-motion users still get instant changes.
+Files affected: src/components/PromoCarousel.jsx
+Reason: Owner reported the carousel had no sliding animation.
+
 ---
 
 ## Known Issues / Follow-ups

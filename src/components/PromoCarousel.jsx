@@ -4,41 +4,79 @@ import { collection, getDocs, orderBy, query } from 'firebase/firestore'
 import { db } from '../firebase'
 import { storyImageUrl } from '../utils/cloudinary'
 
-// Desktop coverflow slot config: [offset, scale, opacity, zIndex, className]
+// Desktop coverflow geometry by distance from the center frame.
 // Every frame is locked to 9:16 (Instagram story size — all carousel images
 // are stories), so images fill the frame edge-to-edge with no letterboxing.
-// `scale` multiplies the center frame height (--story-h); ±3 only on xl.
-const D_SLOTS = [
-  [-3, 0.34, 0.25, 0, 'hidden xl:block'],
-  [-2, 0.5, 0.4, 1, ''],
-  [-1, 0.72, 0.7, 2, ''],
-  [0, 1, 1, 3, ''],
-  [+1, 0.72, 0.7, 2, ''],
-  [+2, 0.5, 0.4, 1, ''],
-  [+3, 0.34, 0.25, 0, 'hidden xl:block'],
+// Frames are full center size and shrink with `scale`; `x` is the frame
+// center's distance from the track center in center-frame widths, plus
+// `gaps` slot gaps. ±3 only shows on xl. ±4 is an invisible parking spot
+// frames slide in from and out to, so nothing ever pops into place.
+const D_LAYOUT = [
+  { x: 0, gaps: 0, scale: 1, opacity: 1, z: 4 },
+  { x: 0.86, gaps: 1, scale: 0.72, opacity: 0.7, z: 3 },
+  { x: 1.47, gaps: 2, scale: 0.5, opacity: 0.4, z: 2 },
+  { x: 1.89, gaps: 3, scale: 0.34, opacity: 0.25, z: 1 },
+  { x: 2.16, gaps: 4, scale: 0.2, opacity: 0, z: 0 },
 ]
+const D_REACH = D_LAYOUT.length - 1
 
 // Center frame height: fits the viewport under the 104px navbar with room
 // for the dots, never taller than 600px or shorter than 360px.
 const STORY_H = 'clamp(360px, calc(100vh - 104px - 130px), 600px)'
 
+const SLIDE_EASE = 'cubic-bezier(0.25,0.46,0.45,0.94)'
+
 const prefersReducedMotion =
   typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
+// Signed shortest step from slide `from` to slide `to` on a ring of n slides.
+const ringDelta = (from, to, n) => {
+  const d = (((to - from) % n) + n) % n
+  return d > n / 2 ? d - n : d
+}
 
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
+
+// Absolute strip positions to render around `pos`: the visible reach plus
+// half the ring, so any jump (dots, side-frame clicks) already has its
+// frames mounted in a parking spot and can slide them in.
+const stripAround = (pos, reach, n) => {
+  const extra = Math.ceil(n / 2)
+  const out = []
+  for (let p = pos - reach - extra; p <= pos + reach + extra; p++) out.push(p)
+  return out
+}
+
+const useMediaQuery = (q) => {
+  const [matches, setMatches] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(q).matches
+  )
+  useEffect(() => {
+    const mql = window.matchMedia(q)
+    const onChange = () => setMatches(mql.matches)
+    mql.addEventListener('change', onChange)
+    return () => mql.removeEventListener('change', onChange)
+  }, [q])
+  return matches
+}
 
 export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
   const [slides, setSlides] = useState([])
   const [productMap, setProductMap] = useState({})
   const [loading, setLoading] = useState(true)
-  const [dCurrent, setDCurrent] = useState(0)
-  const [mCurrent, setMCurrent] = useState(0)
+  // Positions on an endless strip (not wrapped), so every move is a real
+  // slide in one direction — including from the last promo to the first.
+  const [dPos, setDPos] = useState(0)
+  // Mobile also remembers where it came from, to tell which frames slide.
+  const [mNav, setMNav] = useState({ pos: 0, from: 0 })
   const [toast, setToast] = useState('')
   const [showModal, setShowModal] = useState(false)
   const toastTimer = useRef(null)
   const dCenterImg = useRef(null)
   const mCenterImg = useRef(null)
+  const touchX = useRef(null)
+  const isXl = useMediaQuery('(min-width: 1280px)')
 
   useEffect(() => {
     setShowModal(true)
@@ -116,7 +154,13 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
 
   const n = slides.length
   const wrap = (idx) => ((idx % n) + n) % n
-  const getSlide = (base, offset) => slides[wrap(base + offset)]
+  const dCurrent = wrap(dPos)
+  const mCurrent = wrap(mNav.pos)
+  const moveMBy = (delta) => {
+    if (delta) setMNav(cur => ({ pos: cur.pos + delta, from: cur.pos }))
+  }
+  const slideTransition = (cssProps) =>
+    prefersReducedMotion ? 'none' : cssProps.map(prop => `${prop} 0.45s ${SLIDE_EASE}`).join(', ')
 
   return (
     <>
@@ -131,35 +175,45 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
           {toast || '\u00A0'}
         </div>
 
-        {/* Track */}
+        {/* Track — frames are keyed by strip position and glide between slots */}
         <div
-          className="flex items-center justify-center gap-4 lg:gap-5 pt-8 pb-6"
+          className="relative [--slot-gap:16px] lg:[--slot-gap:20px]"
           style={{ '--story-h': STORY_H, height: `calc(${STORY_H} + 56px)` }}
         >
-          {D_SLOTS.map(([offset, scale, opacity, zIndex, slotClass]) => {
-            const slide = getSlide(dCurrent, offset)
-            const isCenter = offset === 0
+          {stripAround(dPos, D_REACH, n).map((p) => {
+            const rel = p - dPos
+            const offset = clamp(rel, -D_REACH, D_REACH)
+            const slot = D_LAYOUT[Math.abs(offset)]
+            const visible = slot.opacity > 0 && (Math.abs(offset) < 3 || isXl)
+            const slide = slides[wrap(p)]
+            const isCenter = rel === 0
             const product = productMap[slide?.linkedId]
             return (
               <div
-                key={offset}
-                className={slotClass}
-                aria-label={isCenter ? undefined : 'Ver esta promoción'}
+                key={p}
+                aria-hidden={visible ? undefined : true}
+                aria-label={isCenter || !visible ? undefined : 'Ver esta promoción'}
                 onClick={() => {
                   if (isCenter) triggerAdd(slide, dCenterImg.current)
-                  else setDCurrent(wrap(dCurrent + offset))
+                  else setDPos(p)
                 }}
                 style={{
-                  height: `calc(var(--story-h) * ${scale})`,
+                  position: 'absolute',
+                  top: 32,
+                  left: '50%',
+                  height: 'var(--story-h)',
                   aspectRatio: '9 / 16',
-                  opacity, zIndex,
-                  flexShrink: 0,
+                  marginLeft: 'calc(var(--story-h) * -9 / 32)',
+                  transform: `translateX(calc(${Math.sign(offset)} * (var(--story-h) * 9 / 16 * ${slot.x} + var(--slot-gap) * ${slot.gaps}))) scale(${slot.scale})`,
+                  opacity: visible ? slot.opacity : 0,
+                  zIndex: slot.z,
+                  pointerEvents: visible ? 'auto' : 'none',
                   cursor: 'pointer',
-                  borderRadius: isCenter ? 28 : 22,
-                  boxShadow: isCenter ? '0 30px 60px -25px var(--color-dark-900)' : 'none',
+                  borderRadius: 28,
+                  boxShadow: isCenter ? '0 30px 60px -25px var(--color-dark-900)' : '0 0 0 0 transparent',
                   overflow: 'hidden',
-                  position: 'relative',
-                  transition: prefersReducedMotion ? 'none' : 'all 0.4s cubic-bezier(0.25,0.46,0.45,0.94)',
+                  transition: slideTransition(['transform', 'opacity', 'box-shadow']),
+                  willChange: 'transform',
                   background: 'var(--color-dark-900)',
                 }}
               >
@@ -176,52 +230,53 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
                     pointerEvents: 'none',
                   }}
                 />
-                {/* Gradient + content — center only; side frames show the story as-is */}
-                {isCenter && (
-                  <>
+                {/* Gradient + content — fades in on the center frame only */}
+                <div style={{
+                  opacity: isCenter ? 1 : 0,
+                  transition: slideTransition(['opacity']),
+                }}>
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                    height: '28%',
+                    background: 'linear-gradient(to top, rgba(38,16,11,0.95) 0%, transparent 100%)',
+                  }} />
+                  {product && (
                     <div style={{
                       position: 'absolute', bottom: 0, left: 0, right: 0,
-                      height: '28%',
-                      background: 'linear-gradient(to top, rgba(38,16,11,0.95) 0%, transparent 100%)',
-                    }} />
-                    {product && (
-                      <div style={{
-                        position: 'absolute', bottom: 0, left: 0, right: 0,
-                        padding: '16px 16px 16px 20px',
-                        zIndex: 2,
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                      }}>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{
-                            color: 'var(--color-light-200)',
-                            fontFamily: 'var(--font-display)',
-                            fontWeight: 600,
-                            fontSize: 19,
-                            lineHeight: 1.15,
-                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                          }}>
-                            {product.name}
-                          </div>
-                          <div style={{ color: 'var(--color-accent)', fontWeight: 700, fontSize: 15, marginTop: 2 }}>
-                            ${product.price}
-                          </div>
+                      padding: '16px 16px 16px 20px',
+                      zIndex: 2,
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                    }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{
+                          color: 'var(--color-light-200)',
+                          fontFamily: 'var(--font-display)',
+                          fontWeight: 600,
+                          fontSize: 19,
+                          lineHeight: 1.15,
+                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        }}>
+                          {product.name}
                         </div>
-                        <span
-                          aria-hidden="true"
-                          style={{
-                            background: 'var(--color-light-200)', color: 'var(--color-primary)',
-                            borderRadius: '50%', width: 46, height: 46,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 26, fontWeight: 600, lineHeight: 1,
-                            flexShrink: 0,
-                          }}
-                        >
-                          +
-                        </span>
+                        <div style={{ color: 'var(--color-accent)', fontWeight: 700, fontSize: 15, marginTop: 2 }}>
+                          ${product.price}
+                        </div>
                       </div>
-                    )}
-                  </>
-                )}
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          background: 'var(--color-light-200)', color: 'var(--color-primary)',
+                          borderRadius: '50%', width: 46, height: 46,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 26, fontWeight: 600, lineHeight: 1,
+                          flexShrink: 0,
+                        }}
+                      >
+                        +
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             )
           })}
@@ -235,7 +290,7 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
                 key={i}
                 type="button"
                 aria-label={`Ir a promoción ${i + 1}`}
-                onClick={() => setDCurrent(i)}
+                onClick={() => setDPos(dPos + ringDelta(dCurrent, i, n))}
                 style={{
                   border: 'none', padding: 0, cursor: 'pointer',
                   borderRadius: 9999,
@@ -261,8 +316,7 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
 
       {/* ── Mobile floating overlay (below md) — no container, center image only ── */}
       {showModal && (() => {
-        const mSlide = getSlide(mCurrent, 0)
-        const mProduct = productMap[mSlide?.linkedId]
+        const mSlide = slides[mCurrent]
         return (
           <div
             className="md:hidden fixed inset-0 z-200 flex flex-col items-center justify-center"
@@ -286,7 +340,7 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
               <button
                 type="button"
                 aria-label="Anterior"
-                onClick={() => setMCurrent(wrap(mCurrent - 1))}
+                onClick={() => moveMBy(-1)}
                 className="flex items-center justify-center w-11 h-11 rounded-full bg-white/15 text-light-200 backdrop-blur-sm shrink-0"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -294,8 +348,15 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
                 </svg>
               </button>
 
+              {/* Frame — slides are keyed by strip position and slide sideways */}
               <div
-                ref={mCenterImg}
+                onTouchStart={(e) => { touchX.current = e.touches[0].clientX }}
+                onTouchEnd={(e) => {
+                  if (touchX.current == null) return
+                  const dx = e.changedTouches[0].clientX - touchX.current
+                  touchX.current = null
+                  if (Math.abs(dx) > 40) moveMBy(dx < 0 ? 1 : -1)
+                }}
                 style={{
                   width: 'min(78vw, calc(100vw - 124px))',
                   maxWidth: 380,
@@ -305,37 +366,63 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
                   position: 'relative',
                   background: 'var(--color-dark-900)',
                   boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+                  touchAction: 'pan-y',
                 }}
               >
-                <img
-                  src={storyImageUrl(mSlide?.imageUrl)}
-                  alt={mSlide?.altText || ''}
-                  draggable={false}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
-                {/* Gradient + product info */}
-                <div style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0,
-                  height: '32%',
-                  background: 'linear-gradient(to top, rgba(38,16,11,0.95) 0%, transparent 100%)',
-                }} />
-                {mProduct && (
-                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '18px 18px', zIndex: 2 }}>
-                    <div style={{ color: 'var(--color-light-200)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 8 }}>{mProduct.name}</div>
-                    <span style={{
-                      background: 'var(--color-light-200)', color: 'var(--color-primary)',
-                      fontSize: 15, fontWeight: 600, padding: '5px 14px', borderRadius: 20, display: 'inline-block',
-                    }}>
-                      ${mProduct.price}
-                    </span>
-                  </div>
-                )}
+                {stripAround(mNav.pos, 1, n).map((p) => {
+                  const rel = p - mNav.pos
+                  const fromRel = p - mNav.from
+                  const offset = clamp(rel, -1, 1)
+                  // A parked slide switching sides (e.g. on a dot jump) moves
+                  // instantly while off-frame instead of sweeping across it.
+                  const crossesOffFrame = Math.sign(rel) * Math.sign(fromRel) === -1
+                  const slide = slides[wrap(p)]
+                  const product = productMap[slide?.linkedId]
+                  return (
+                    <div
+                      key={p}
+                      aria-hidden={rel === 0 ? undefined : true}
+                      style={{
+                        position: 'absolute', inset: 0,
+                        transform: `translateX(${offset * 100}%)`,
+                        transition: crossesOffFrame ? 'none' : slideTransition(['transform']),
+                        zIndex: rel === 0 ? 2 : 1,
+                        willChange: 'transform',
+                      }}
+                    >
+                      <img
+                        ref={rel === 0 ? mCenterImg : undefined}
+                        src={storyImageUrl(slide?.imageUrl)}
+                        alt={slide?.altText || ''}
+                        draggable={false}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      />
+                      {/* Gradient + product info */}
+                      <div style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        height: '32%',
+                        background: 'linear-gradient(to top, rgba(38,16,11,0.95) 0%, transparent 100%)',
+                      }} />
+                      {product && (
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '18px 18px', zIndex: 2 }}>
+                          <div style={{ color: 'var(--color-light-200)', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, marginBottom: 8 }}>{product.name}</div>
+                          <span style={{
+                            background: 'var(--color-light-200)', color: 'var(--color-primary)',
+                            fontSize: 15, fontWeight: 600, padding: '5px 14px', borderRadius: 20, display: 'inline-block',
+                          }}>
+                            ${product.price}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
 
               <button
                 type="button"
                 aria-label="Siguiente"
-                onClick={() => setMCurrent(wrap(mCurrent + 1))}
+                onClick={() => moveMBy(1)}
                 className="flex items-center justify-center w-11 h-11 rounded-full bg-white/15 text-light-200 backdrop-blur-sm shrink-0"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -351,7 +438,7 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
                   <button
                     key={i}
                     type="button"
-                    onClick={() => setMCurrent(i)}
+                    onClick={() => moveMBy(ringDelta(mCurrent, i, n))}
                     style={{
                       border: 'none', padding: 0, cursor: 'pointer',
                       borderRadius: 9999,
@@ -370,8 +457,7 @@ export const PromoCarousel = ({ onAddToCart, toppingsMap = {} }) => {
               <button
                 type="button"
                 onClick={() => {
-                  const imgEl = mCenterImg.current?.querySelector('img') ?? null
-                  triggerAdd(mSlide, imgEl)
+                  triggerAdd(mSlide, mCenterImg.current)
                   dismissModal()
                 }}
                 className="flex-1 rounded-full bg-primary text-surface font-display text-base font-medium py-3 min-h-[48px] cursor-pointer transition hover:bg-main-700"
