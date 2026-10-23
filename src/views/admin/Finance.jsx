@@ -72,14 +72,14 @@ const getRangeBounds = (rangeKey, customStart, customEnd) => {
 }
 
 const MetricCard = ({ icon: Icon, label, value, subtext, colorCls }) => (
-  <div className="bg-main-900/30 border border-white/5 rounded-3xl p-5 sm:p-6 shadow-sm flex items-center gap-4 sm:gap-5">
+  <div className="bg-main-900 border border-white/10 rounded-3xl p-5 sm:p-6 shadow-sm flex items-center gap-4 sm:gap-5">
     <div className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center shrink-0 ${colorCls}`}>
       <Icon size={22} />
     </div>
     <div className="min-w-0">
-      <p className="text-xs font-medium text-light-200/40 uppercase tracking-wider truncate">{label}</p>
+      <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider truncate">{label}</p>
       <h4 className="text-xl sm:text-2xl font-bold text-light-100 mt-1 tabular-nums truncate">{value}</h4>
-      {subtext && <p className="text-[10px] text-light-200/30 mt-0.5 truncate">{subtext}</p>}
+      {subtext && <p className="text-[10px] text-light-200/55 mt-0.5 truncate">{subtext}</p>}
     </div>
   </div>
 )
@@ -239,14 +239,14 @@ export const Finance = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <Calendar size={16} className="text-light-200/40 shrink-0" />
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-main-900/30 border border-white/5 flex-wrap">
+          <Calendar size={16} className="text-light-200/65 shrink-0" />
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-main-900 border border-white/10 flex-wrap">
             {RANGE_OPTIONS.map((opt) => (
               <button
                 key={opt.key}
                 onClick={() => setRangeKey(opt.key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                  rangeKey === opt.key ? 'bg-main-500 text-white' : 'text-light-200/50 hover:text-light-100'
+                  rangeKey === opt.key ? 'bg-main-500 text-snow' : 'text-light-200/70 hover:text-light-100'
                 }`}
               >
                 {opt.label}
@@ -256,14 +256,14 @@ export const Finance = () => {
         </div>
 
         {rangeKey === 'custom' && (
-          <div className="flex flex-wrap items-end gap-3 bg-main-900/30 border border-white/5 rounded-2xl p-4">
+          <div className="flex flex-wrap items-end gap-3 bg-main-900 border border-white/10 rounded-2xl p-4">
             <div>
               <label className="block text-xs font-medium text-light-200/60 mb-1.5">Desde</label>
               <input
                 type="date"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="rounded-xl border border-white/10 bg-main-900/60 px-3 py-2 text-sm text-light-100 outline-none focus:border-main-500/50 transition-colors"
+                className="rounded-xl border border-white/10 bg-main-900 px-3 py-2 text-sm text-light-100 outline-none focus:border-main-500/50 transition-colors"
               />
             </div>
             <div>
@@ -272,12 +272,12 @@ export const Finance = () => {
                 type="date"
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="rounded-xl border border-white/10 bg-main-900/60 px-3 py-2 text-sm text-light-100 outline-none focus:border-main-500/50 transition-colors"
+                className="rounded-xl border border-white/10 bg-main-900 px-3 py-2 text-sm text-light-100 outline-none focus:border-main-500/50 transition-colors"
               />
             </div>
             <button
               onClick={handleApplyCustom}
-              className="px-4 py-2 rounded-xl bg-main-500 hover:bg-main-400 text-white text-sm font-semibold transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-xl bg-main-500 hover:bg-main-400 text-snow text-sm font-semibold transition-colors cursor-pointer"
             >
               Aplicar
             </button>
@@ -285,13 +285,13 @@ export const Finance = () => {
         )}
       </div>
 
-      <div className="flex items-center gap-1 p-1 rounded-xl bg-main-900/30 border border-white/5 flex-wrap w-fit">
+      <div className="flex items-center gap-1 p-1 rounded-xl bg-main-900 border border-white/10 flex-wrap w-fit">
         {TAB_OPTIONS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-              activeTab === tab.key ? 'bg-main-500 text-white' : 'text-light-200/50 hover:text-light-100'
+              activeTab === tab.key ? 'bg-main-500 text-snow' : 'text-light-200/70 hover:text-light-100'
             }`}
           >
             {tab.label}
@@ -300,7 +300,7 @@ export const Finance = () => {
       </div>
 
       {activeTab === 'equilibrio' && (
-        <p className="text-xs text-light-200/40 -mt-2">
+        <p className="text-xs text-light-200/65 -mt-2">
           Basado en las órdenes de hoy — no usa el rango de fechas seleccionado arriba.
         </p>
       )}
@@ -314,12 +314,12 @@ export const Finance = () => {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-main-900/30 border border-white/5 rounded-3xl p-6 h-24 animate-pulse" />
+            <div key={i} className="bg-main-900 border border-white/10 rounded-3xl p-6 h-24 animate-pulse" />
           ))}
         </div>
       ) : activeTab === 'resumen' ? (
         metrics.orderCount === 0 ? (
-          <div className="bg-main-900/30 border border-white/5 rounded-3xl py-16 flex flex-col items-center gap-3 text-light-200/30">
+          <div className="bg-main-900 border border-white/10 rounded-3xl py-16 flex flex-col items-center gap-3 text-light-200/55">
             <Receipt size={40} />
             <p className="text-sm italic text-center max-w-sm px-4">
               No hay pedidos completados en este período.<br />Completa algunos pedidos para ver tus métricas.
@@ -379,7 +379,7 @@ export const Finance = () => {
               </div>
             )}
             {hasAnyRecipe && anyEstimated && (
-              <p className="text-xs text-light-200/40 px-1">
+              <p className="text-xs text-light-200/65 px-1">
                 Algunos pedidos de este período son de antes de que se registrara el costo por venta — su ganancia se estima con las recetas actuales, no con el costo real de ese día.
               </p>
             )}

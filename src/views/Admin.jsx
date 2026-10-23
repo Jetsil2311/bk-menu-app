@@ -1028,7 +1028,7 @@ export const Admin = () => {
                   autoComplete="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   required
                 />
               </label>
@@ -1039,7 +1039,7 @@ export const Admin = () => {
                   autoComplete="current-password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   required
                 />
               </label>
@@ -1053,12 +1053,12 @@ export const Admin = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-2xl border border-white/20 bg-main-900/70 px-4 py-3 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-2xl border border-white/20 bg-main-900 px-4 py-3 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting ? 'Entrando...' : 'Entrar'}
               </button>
 
-              <div className="flex items-center gap-3 text-xs text-light-200/50">
+              <div className="flex items-center gap-3 text-xs text-light-200/70">
                 <span className="h-px flex-1 bg-white/10" />
                 o
                 <span className="h-px flex-1 bg-white/10" />
@@ -1139,7 +1139,7 @@ export const Admin = () => {
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 p-4"
+                  className="rounded-2xl border border-white/10 bg-main-900 p-4"
                 >
                   <p className="text-xs uppercase tracking-widest text-light-200/60">
                     {stat.label}
@@ -1189,7 +1189,7 @@ export const Admin = () => {
                       setIsToppingsOpen(false)
                     }
                   }}
-                  className="rounded-2xl border border-white/15 bg-main-900/60 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
+                  className="rounded-2xl border border-white/15 bg-main-900 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
                 >
                   {action}
                 </button>
@@ -1205,7 +1205,7 @@ export const Admin = () => {
                   setIsCarouselOpen(false)
                   setIsToppingsOpen(false)
                 }}
-                className="w-full rounded-2xl border border-white/15 bg-main-900/60 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
+                className="w-full rounded-2xl border border-white/15 bg-main-900 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
               >
                 {isSectionFormOpen ? 'Ocultar sección' : 'Agregar sección'}
               </button>
@@ -1219,7 +1219,7 @@ export const Admin = () => {
                   setIsPromoFormOpen(false)
                   setIsToppingsOpen(false)
                 }}
-                className="w-full rounded-2xl border border-white/15 bg-main-900/60 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
+                className="w-full rounded-2xl border border-white/15 bg-main-900 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
               >
                 {isCarouselOpen ? 'Ocultar carrusel' : 'Gestionar carrusel'}
               </button>
@@ -1233,7 +1233,7 @@ export const Admin = () => {
                   setIsPromoFormOpen(false)
                   setIsCarouselOpen(false)
                 }}
-                className="w-full rounded-2xl border border-white/15 bg-main-900/60 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
+                className="w-full rounded-2xl border border-white/15 bg-main-900 px-4 py-3 text-left text-sm font-semibold transition hover:border-white/35 hover:text-light-400"
               >
                 {isToppingsOpen ? 'Ocultar toppings' : 'Gestionar toppings'}
               </button>
@@ -1255,19 +1255,19 @@ export const Admin = () => {
                   type="text"
                   value={productName}
                   onChange={(event) => setProductName(event.target.value)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   required
                 />
               </label>
               <label className="grid gap-2 text-sm">
                 Sección
                 {menuSectionsLoading ? (
-                  <div className="h-12 rounded-2xl bg-main-900/50 animate-pulse" />
+                  <div className="h-12 rounded-2xl bg-main-900 animate-pulse" />
                 ) : (
                   <select
                     value={productSection}
                     onChange={(event) => setProductSection(event.target.value)}
-                    className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                     required
                   >
                     <option value="" disabled>
@@ -1287,7 +1287,7 @@ export const Admin = () => {
                   type="text"
                   value={productDesc}
                   onChange={(event) => setProductDesc(event.target.value)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                 />
               </label>
               <label className="grid gap-2 text-sm">
@@ -1296,7 +1296,7 @@ export const Admin = () => {
                   type="text"
                   value={productLongDesc}
                   onChange={(event) => setProductLongDesc(event.target.value)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                 />
               </label>
               <label className="grid gap-2 text-sm">
@@ -1307,7 +1307,7 @@ export const Admin = () => {
                   step="0.01"
                   value={productPrice}
                   onChange={(event) => setProductPrice(event.target.value)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   required
                 />
               </label>
@@ -1317,7 +1317,7 @@ export const Admin = () => {
                 type="file"
                 accept="image/*"
                 onChange={(event) => setProductImageFile(event.target.files?.[0] ?? null)}
-                className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
               />
               {productImageFile && (
                 <img
@@ -1333,7 +1333,7 @@ export const Admin = () => {
                   type="text"
                   value={productFlavors}
                   onChange={(event) => setProductFlavors(event.target.value)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   placeholder="Taro, Mango, Matcha"
                 />
               </label>
@@ -1347,7 +1347,7 @@ export const Admin = () => {
                       return (
                         <label
                           key={t.docId}
-                          className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-xs transition ${checked ? 'border-main-400 bg-main-700/40 text-light-200' : 'border-white/10 bg-main-900/50 text-light-200/70 hover:border-white/30'}`}
+                          className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-xs transition ${checked ? 'border-main-400 bg-main-700/40 text-light-200' : 'border-white/10 bg-main-900 text-light-200/70 hover:border-white/30'}`}
                         >
                           <input
                             type="checkbox"
@@ -1384,7 +1384,7 @@ export const Admin = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-2xl border border-white/20 bg-main-900/70 px-6 py-3 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-2xl border border-white/20 bg-main-900 px-6 py-3 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? 'Guardando...' : 'Guardar producto'}
                 </button>
@@ -1407,7 +1407,7 @@ export const Admin = () => {
                   type="text"
                   value={sectionName}
                   onChange={(event) => setSectionName(event.target.value)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   required
                 />
               </label>
@@ -1417,7 +1417,7 @@ export const Admin = () => {
                   type="text"
                   value={sectionCategory}
                   onChange={(event) => setSectionCategory(event.target.value)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   required
                 />
               </label>
@@ -1427,7 +1427,7 @@ export const Admin = () => {
                   type="text"
                   value={sectionDesc}
                   onChange={(event) => setSectionDesc(event.target.value)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                 />
               </label>
               <label className="grid gap-2 text-sm">
@@ -1438,7 +1438,7 @@ export const Admin = () => {
                   step="1"
                   value={sectionOrder}
                   onChange={(event) => setSectionOrder(event.target.value)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                 />
               </label>
               <label className="grid gap-2 text-sm">
@@ -1447,7 +1447,7 @@ export const Admin = () => {
                   type="text"
                   value={sectionImage}
                   onChange={(event) => setSectionImage(event.target.value)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                 />
               </label>
 
@@ -1461,7 +1461,7 @@ export const Admin = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-2xl border border-white/20 bg-main-900/70 px-6 py-3 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-2xl border border-white/20 bg-main-900 px-6 py-3 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? 'Guardando...' : 'Guardar sección'}
                 </button>
@@ -1484,7 +1484,7 @@ export const Admin = () => {
                   type="text"
                   value={promoTitle}
                   onChange={(event) => setPromoTitle(event.target.value)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   required
                 />
               </label>
@@ -1494,7 +1494,7 @@ export const Admin = () => {
                   value={promoMessage}
                   onChange={(event) => setPromoMessage(event.target.value)}
                   rows={3}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                 />
               </label>
 
@@ -1513,7 +1513,7 @@ export const Admin = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-2xl border border-white/20 bg-main-900/70 px-6 py-3 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-2xl border border-white/20 bg-main-900 px-6 py-3 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? 'Guardando...' : 'Activar promoción'}
                 </button>
@@ -1530,13 +1530,13 @@ export const Admin = () => {
                 </p>
               )}
               {promoListLoading ? (
-                <div className="mt-3 h-12 rounded-2xl bg-main-900/50 animate-pulse" />
+                <div className="mt-3 h-12 rounded-2xl bg-main-900 animate-pulse" />
               ) : activePromos.length ? (
                 <div className="mt-3 grid gap-2">
                   {activePromos.map((promo) => (
                     <div
                       key={promo.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3"
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-main-900 px-4 py-3"
                     >
                       <div>
                         <p className="text-sm font-semibold text-light-200">
@@ -1557,7 +1557,7 @@ export const Admin = () => {
                   ))}
                 </div>
               ) : (
-                <div className="mt-3 rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3 text-sm text-light-200/70">
+                <div className="mt-3 rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-sm text-light-200/70">
                   No hay promociones activas.
                 </div>
               )}
@@ -1585,7 +1585,7 @@ export const Admin = () => {
 
             {/* ── Add slide form ─────────────────────────────────────── */}
             <form
-              className="mt-6 rounded-2xl border border-white/10 bg-main-900/50 p-5 grid gap-4 lg:grid-cols-2"
+              className="mt-6 rounded-2xl border border-white/10 bg-main-900 p-5 grid gap-4 lg:grid-cols-2"
               onSubmit={handleAddCarouselSlide}
             >
               <h3 className="text-sm font-semibold text-light-200/80 lg:col-span-2">Nueva diapositiva</h3>
@@ -1597,7 +1597,7 @@ export const Admin = () => {
                   type="file"
                   accept="image/*"
                   onChange={(e) => setCarouselImageFile(e.target.files?.[0] ?? null)}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   required
                 />
               </label>
@@ -1610,7 +1610,7 @@ export const Admin = () => {
                   value={carouselAltText}
                   onChange={(e) => setCarouselAltText(e.target.value)}
                   placeholder="Ej: Combo brunch de verano"
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                 />
               </label>
 
@@ -1620,7 +1620,7 @@ export const Admin = () => {
                 <select
                   value={carouselLinkType}
                   onChange={(e) => { setCarouselLinkType(e.target.value); setCarouselLinkedId('') }}
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                 >
                   <option value="product">Producto</option>
                   <option value="combo">Combo</option>
@@ -1631,13 +1631,13 @@ export const Admin = () => {
               <label className="grid gap-2 text-sm lg:col-span-2">
                 {carouselLinkType === 'product' ? 'Producto vinculado' : 'Combo vinculado'}
                 {carouselItemsLoading ? (
-                  <div className="h-12 rounded-2xl bg-main-900/50 animate-pulse" />
+                  <div className="h-12 rounded-2xl bg-main-900 animate-pulse" />
                 ) : (
                   <select
                     value={carouselLinkedId}
                     onChange={(e) => setCarouselLinkedId(e.target.value)}
                     required
-                    className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   >
                     <option value="">— Selecciona —</option>
                     {(carouselLinkType === 'product' ? carouselProducts : carouselCombos).map((item) => (
@@ -1657,7 +1657,7 @@ export const Admin = () => {
                   value={carouselOrder}
                   onChange={(e) => setCarouselOrder(e.target.value)}
                   placeholder="0"
-                  className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                  className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                 />
               </label>
 
@@ -1670,7 +1670,7 @@ export const Admin = () => {
                   onClick={() => setCarouselActive((v) => !v)}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${carouselActive ? 'bg-main-500' : 'bg-white/20'}`}
                 >
-                  <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${carouselActive ? 'translate-x-6' : 'translate-x-1'}`} />
+                  <span className={`inline-block h-4 w-4 rounded-full bg-snow shadow transition-transform ${carouselActive ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
               </label>
 
@@ -1689,7 +1689,7 @@ export const Admin = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-2xl border border-white/20 bg-main-900/70 px-6 py-3 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-2xl border border-white/20 bg-main-900 px-6 py-3 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? 'Subiendo…' : 'Agregar diapositiva'}
                 </button>
@@ -1701,13 +1701,13 @@ export const Admin = () => {
               <h3 className="text-sm font-semibold text-light-200/80">
                 Diapositivas ({carouselSlides.length})
                 {carouselSlides.length > 1 && (
-                  <span className="ml-2 font-normal text-light-200/50 text-xs">arrastra para reordenar</span>
+                  <span className="ml-2 font-normal text-light-200/70 text-xs">arrastra para reordenar</span>
                 )}
               </h3>
               {carouselLoading ? (
                 <div className="mt-3 grid gap-3">
                   {Array.from({ length: 2 }).map((_, i) => (
-                    <div key={i} className="h-20 rounded-2xl bg-main-900/50 animate-pulse" />
+                    <div key={i} className="h-20 rounded-2xl bg-main-900 animate-pulse" />
                   ))}
                 </div>
               ) : carouselSlides.length ? (
@@ -1723,14 +1723,14 @@ export const Admin = () => {
                     >
                       {editingSlide?.id === slide.id ? (
                         /* ── Edit form ── */
-                        <div className="rounded-2xl border border-white/15 bg-main-900/60 p-4 grid gap-3 lg:grid-cols-2">
+                        <div className="rounded-2xl border border-white/15 bg-main-900 p-4 grid gap-3 lg:grid-cols-2">
                           <label className="grid gap-1 text-xs lg:col-span-2">
                             Nueva imagen (opcional)
                             <input
                               type="file"
                               accept="image/*"
                               onChange={(e) => setEditingSlideImageFile(e.target.files?.[0] ?? null)}
-                              className="rounded-xl border border-white/10 bg-main-900/70 px-3 py-2 text-light-200 outline-none"
+                              className="rounded-xl border border-white/10 bg-main-900 px-3 py-2 text-light-200 outline-none"
                             />
                           </label>
                           <label className="grid gap-1 text-xs">
@@ -1739,7 +1739,7 @@ export const Admin = () => {
                               type="text"
                               value={editingSlide.altText ?? ''}
                               onChange={(e) => setEditingSlide((p) => ({ ...p, altText: e.target.value }))}
-                              className="rounded-xl border border-white/10 bg-main-900/70 px-3 py-2 text-light-200 outline-none"
+                              className="rounded-xl border border-white/10 bg-main-900 px-3 py-2 text-light-200 outline-none"
                             />
                           </label>
                           <label className="grid gap-1 text-xs">
@@ -1747,7 +1747,7 @@ export const Admin = () => {
                             <select
                               value={editingSlide.linkType ?? 'product'}
                               onChange={(e) => setEditingSlide((p) => ({ ...p, linkType: e.target.value, linkedId: '' }))}
-                              className="rounded-xl border border-white/10 bg-main-900/70 px-3 py-2 text-light-200 outline-none"
+                              className="rounded-xl border border-white/10 bg-main-900 px-3 py-2 text-light-200 outline-none"
                             >
                               <option value="product">Producto</option>
                               <option value="combo">Combo</option>
@@ -1758,7 +1758,7 @@ export const Admin = () => {
                             <select
                               value={editingSlide.linkedId ?? ''}
                               onChange={(e) => setEditingSlide((p) => ({ ...p, linkedId: e.target.value }))}
-                              className="rounded-xl border border-white/10 bg-main-900/70 px-3 py-2 text-light-200 outline-none"
+                              className="rounded-xl border border-white/10 bg-main-900 px-3 py-2 text-light-200 outline-none"
                             >
                               <option value="">— Selecciona —</option>
                               {(editingSlide.linkType === 'combo' ? carouselCombos : carouselProducts).map((item) => (
@@ -1774,7 +1774,7 @@ export const Admin = () => {
                               step="1"
                               value={editingSlide.order ?? 0}
                               onChange={(e) => setEditingSlide((p) => ({ ...p, order: e.target.value }))}
-                              className="rounded-xl border border-white/10 bg-main-900/70 px-3 py-2 text-light-200 outline-none"
+                              className="rounded-xl border border-white/10 bg-main-900 px-3 py-2 text-light-200 outline-none"
                             />
                           </label>
                           <label className="flex items-center gap-3 text-xs cursor-pointer self-end pb-1">
@@ -1786,7 +1786,7 @@ export const Admin = () => {
                               onClick={() => setEditingSlide((p) => ({ ...p, active: !(p.active ?? true) }))}
                               className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${(editingSlide.active ?? true) ? 'bg-main-500' : 'bg-white/20'}`}
                             >
-                              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${(editingSlide.active ?? true) ? 'translate-x-[18px]' : 'translate-x-1'}`} />
+                              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-snow shadow transition-transform ${(editingSlide.active ?? true) ? 'translate-x-[18px]' : 'translate-x-1'}`} />
                             </button>
                           </label>
                           <div className="lg:col-span-2 flex items-center gap-2">
@@ -1809,9 +1809,9 @@ export const Admin = () => {
                         </div>
                       ) : (
                         /* ── Row view ── */
-                        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3">
+                        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-main-900 px-4 py-3">
                           {/* Drag handle */}
-                          <span className="text-light-200/30 text-lg select-none flex-shrink-0">⠿</span>
+                          <span className="text-light-200/55 text-lg select-none flex-shrink-0">⠿</span>
 
                           {slide.imageUrl && (
                             <img
@@ -1823,7 +1823,7 @@ export const Admin = () => {
 
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-light-200 truncate">
-                              {slide.altText || <span className="text-light-200/50 italic">Sin descripción</span>}
+                              {slide.altText || <span className="text-light-200/70 italic">Sin descripción</span>}
                             </p>
                             <p className="text-xs text-light-200/60">
                               {slide.linkType === 'combo' ? 'Combo' : 'Producto'} · ID: {slide.linkedId || '—'} · orden {slide.order ?? 0}
@@ -1839,7 +1839,7 @@ export const Admin = () => {
                             onClick={() => handleToggleSlideActive(slide)}
                             className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition ${(slide.active ?? true) ? 'bg-main-500' : 'bg-white/20'}`}
                           >
-                            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${(slide.active ?? true) ? 'translate-x-[18px]' : 'translate-x-1'}`} />
+                            <span className={`inline-block h-3.5 w-3.5 rounded-full bg-snow shadow transition-transform ${(slide.active ?? true) ? 'translate-x-[18px]' : 'translate-x-1'}`} />
                           </button>
 
                           <div className="flex items-center gap-2 flex-shrink-0">
@@ -1864,7 +1864,7 @@ export const Admin = () => {
                   ))}
                 </div>
               ) : (
-                <div className="mt-3 rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3 text-sm text-light-200/70">
+                <div className="mt-3 rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-sm text-light-200/70">
                   No hay diapositivas. Agrega una arriba.
                 </div>
               )}
@@ -1880,25 +1880,25 @@ export const Admin = () => {
           >
             <div className="absolute inset-0 bg-black/60" />
             <div
-              className="relative w-full max-w-sm rounded-2xl bg-light-200 p-6 text-main-800 shadow-2xl"
+              className="relative w-full max-w-sm rounded-2xl bg-main-900 p-6 text-light-100 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="text-lg font-semibold">¿Eliminar diapositiva?</div>
-              <p className="mt-2 text-sm text-main-600">
+              <p className="mt-2 text-sm text-light-200/70">
                 Se eliminará del carrusel permanentemente. La imagen en Cloudinary deberá eliminarse manualmente si ya no se necesita.
               </p>
               <div className="mt-5 flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setDeleteSlideTarget(null)}
-                  className="rounded-lg border border-main-300 px-3 py-2 text-sm text-main-700 hover:bg-main-100"
+                  className="rounded-lg border border-white/15 px-3 py-2 text-sm text-light-200 hover:bg-white/5"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDeleteCarouselSlide(deleteSlideTarget)}
-                  className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                  className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-snow hover:bg-red-700"
                 >
                   Sí, eliminar
                 </button>
@@ -1927,7 +1927,7 @@ export const Admin = () => {
 
             {/* Add topping form */}
             <form
-              className="mt-6 rounded-2xl border border-white/10 bg-main-900/50 p-5 grid gap-4 sm:grid-cols-[1fr_auto_auto]"
+              className="mt-6 rounded-2xl border border-white/10 bg-main-900 p-5 grid gap-4 sm:grid-cols-[1fr_auto_auto]"
               onSubmit={handleAddTopping}
             >
               <input
@@ -1935,7 +1935,7 @@ export const Admin = () => {
                 value={toppingName}
                 onChange={(e) => setToppingName(e.target.value)}
                 placeholder="Nombre del topping (ej. Queso extra)"
-                className="rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                 required
               />
               <input
@@ -1945,13 +1945,13 @@ export const Admin = () => {
                 value={toppingPrice}
                 onChange={(e) => setToppingPrice(e.target.value)}
                 placeholder="Precio"
-                className="w-32 rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                className="w-32 rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                 required
               />
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-2xl border border-white/20 bg-main-900/70 px-5 py-3 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:opacity-60"
+                className="rounded-2xl border border-white/20 bg-main-900 px-5 py-3 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:opacity-60"
               >
                 {isSubmitting ? 'Guardando...' : 'Agregar'}
               </button>
@@ -1973,11 +1973,11 @@ export const Admin = () => {
               {toppingsLoading ? (
                 <div className="grid gap-3">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="h-14 rounded-2xl bg-main-900/50 animate-pulse" />
+                    <div key={i} className="h-14 rounded-2xl bg-main-900 animate-pulse" />
                   ))}
                 </div>
               ) : toppingsList.length === 0 ? (
-                <div className="rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3 text-sm text-light-200/70">
+                <div className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-sm text-light-200/70">
                   No hay toppings creados aún.
                 </div>
               ) : (
@@ -1985,7 +1985,7 @@ export const Admin = () => {
                   {toppingsList.map((topping) => (
                     <div
                       key={topping.docId}
-                      className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3"
+                      className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-main-900 px-4 py-3"
                     >
                       {editingTopping?.docId === topping.docId ? (
                         <>
@@ -1995,7 +1995,7 @@ export const Admin = () => {
                             onChange={(e) =>
                               setEditingTopping((prev) => ({ ...prev, name: e.target.value }))
                             }
-                            className="flex-1 rounded-xl border border-white/10 bg-main-900/70 px-3 py-2 text-sm text-light-200 outline-none focus:border-white/40"
+                            className="flex-1 rounded-xl border border-white/10 bg-main-900 px-3 py-2 text-sm text-light-200 outline-none focus:border-white/40"
                           />
                           <input
                             type="number"
@@ -2005,7 +2005,7 @@ export const Admin = () => {
                             onChange={(e) =>
                               setEditingTopping((prev) => ({ ...prev, price: e.target.value }))
                             }
-                            className="w-28 rounded-xl border border-white/10 bg-main-900/70 px-3 py-2 text-sm text-light-200 outline-none focus:border-white/40"
+                            className="w-28 rounded-xl border border-white/10 bg-main-900 px-3 py-2 text-sm text-light-200 outline-none focus:border-white/40"
                           />
                           <button
                             type="button"
@@ -2064,11 +2064,11 @@ export const Admin = () => {
           >
             <div className="absolute inset-0 bg-black/60" />
             <div
-              className="relative w-full max-w-sm rounded-2xl bg-light-200 p-6 text-main-800 shadow-2xl"
+              className="relative w-full max-w-sm rounded-2xl bg-main-900 p-6 text-light-100 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <p className="text-lg font-semibold">¿Eliminar topping?</p>
-              <p className="mt-2 text-sm text-main-600">
+              <p className="mt-2 text-sm text-light-200/70">
                 Se eliminará <strong>{deleteToppingTarget.name}</strong>. Los productos que lo tenían
                 asignado dejarán de mostrarlo.
               </p>
@@ -2076,14 +2076,14 @@ export const Admin = () => {
                 <button
                   type="button"
                   onClick={() => setDeleteToppingTarget(null)}
-                  className="rounded-lg border border-main-300 px-3 py-2 text-sm text-main-700 hover:bg-main-100"
+                  className="rounded-lg border border-white/15 px-3 py-2 text-sm text-light-200 hover:bg-white/5"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDeleteTopping(deleteToppingTarget)}
-                  className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                  className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-snow hover:bg-red-700"
                 >
                   Sí, eliminar
                 </button>
@@ -2126,7 +2126,7 @@ export const Admin = () => {
                 {Array.from({ length: 5 }).map((_, idx) => (
                   <div
                     key={`menu-skeleton-${idx}`}
-                    className="h-16 rounded-2xl bg-main-900/50 animate-pulse"
+                    className="h-16 rounded-2xl bg-main-900 animate-pulse"
                   />
                 ))}
               </div>
@@ -2140,7 +2140,7 @@ export const Admin = () => {
                   return (
                     <div
                       key={section.docId ?? section.name}
-                      className="rounded-3xl border border-white/10 bg-main-900/40 p-4"
+                      className="rounded-3xl border border-white/10 bg-main-900 p-4"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
@@ -2163,7 +2163,7 @@ export const Admin = () => {
                               onClick={() => handleToggleSectionVisible(section)}
                               className={`relative inline-flex h-5 w-9 items-center rounded-full transition disabled:opacity-50 ${section.visible === false ? 'bg-white/20' : 'bg-main-500'}`}
                             >
-                              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${section.visible === false ? 'translate-x-1' : 'translate-x-[18px]'}`} />
+                              <span className={`inline-block h-3.5 w-3.5 rounded-full bg-snow shadow transition-transform ${section.visible === false ? 'translate-x-1' : 'translate-x-[18px]'}`} />
                             </button>
                             {section.visible === false ? 'Oculta' : 'Visible'}
                           </label>
@@ -2196,7 +2196,7 @@ export const Admin = () => {
                         {sectionProducts.map((item, idx) => (
                           <div
                             key={item.docId ?? `${item.name}-${idx}`}
-                            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3"
+                            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-main-900 px-4 py-3"
                           >
                             <div className="min-w-0">
                               <p className="text-sm font-semibold text-light-200">
@@ -2214,7 +2214,7 @@ export const Admin = () => {
                                 disabled={menuSavingId === item.docId}
                                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition disabled:opacity-50 ${item.isActive === false ? 'bg-white/20' : 'bg-main-500'}`}
                               >
-                                <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${item.isActive === false ? 'translate-x-1' : 'translate-x-[18px]'}`} />
+                                <span className={`inline-block h-3.5 w-3.5 rounded-full bg-snow shadow transition-transform ${item.isActive === false ? 'translate-x-1' : 'translate-x-[18px]'}`} />
                               </button>
                               <button
                                 type="button"
@@ -2246,7 +2246,7 @@ export const Admin = () => {
                           </div>
                         ))}
                         {sectionProducts.length === 0 && (
-                          <div className="rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3 text-xs text-light-200/60">
+                          <div className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-xs text-light-200/60">
                             No hay productos en esta sección.
                           </div>
                         )}
@@ -2263,7 +2263,7 @@ export const Admin = () => {
                   .map((item, idx) => (
                     <div
                       key={`orphan-${item.docId ?? idx}`}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3"
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-main-900 px-4 py-3"
                     >
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-light-200">{item.name}</p>
@@ -2281,7 +2281,7 @@ export const Admin = () => {
                           disabled={menuSavingId === item.docId}
                           className={`relative inline-flex h-5 w-9 items-center rounded-full transition disabled:opacity-50 ${item.isActive === false ? 'bg-white/20' : 'bg-main-500'}`}
                         >
-                          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${item.isActive === false ? 'translate-x-1' : 'translate-x-[18px]'}`} />
+                          <span className={`inline-block h-3.5 w-3.5 rounded-full bg-snow shadow transition-transform ${item.isActive === false ? 'translate-x-1' : 'translate-x-[18px]'}`} />
                         </button>
                         <button
                           type="button"
@@ -2353,7 +2353,7 @@ export const Admin = () => {
                     onChange={(event) =>
                       setEditingItem((prev) => ({ ...prev, name: event.target.value }))
                     }
-                    className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    className="w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   />
                 </label>
                 <label className="grid gap-2 text-sm">
@@ -2363,7 +2363,7 @@ export const Admin = () => {
                     onChange={(event) =>
                       setEditingItem((prev) => ({ ...prev, section: event.target.value }))
                     }
-                    className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    className="w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   >
                     {!menuSections.some(
                       (section) => section.name === (editingItem.section ?? '')
@@ -2392,7 +2392,7 @@ export const Admin = () => {
                     onChange={(event) =>
                       setEditingItem((prev) => ({ ...prev, price: event.target.value }))
                     }
-                    className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    className="w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   />
                 </label>
                 <label className="grid gap-2 text-sm md:col-span-2">
@@ -2411,7 +2411,7 @@ export const Admin = () => {
                     onChange={(event) =>
                       setEditingImageFile(event.target.files?.[0] ?? null)
                     }
-                    className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    className="w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   />
                   <span className="text-xs text-light-200/60">
                     Selecciona un archivo para reemplazar la imagen actual.
@@ -2425,7 +2425,7 @@ export const Admin = () => {
                     onChange={(event) =>
                       setEditingItem((prev) => ({ ...prev, desc: event.target.value }))
                     }
-                    className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    className="w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   />
                 </label>
                 <label className="grid gap-2 text-sm md:col-span-2">
@@ -2439,7 +2439,7 @@ export const Admin = () => {
                         long_desc: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    className="w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   />
                 </label>
                 <label className="grid gap-2 text-sm md:col-span-2">
@@ -2453,7 +2453,7 @@ export const Admin = () => {
                         flavorsText: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    className="w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                     placeholder="Taro, Mango, Matcha"
                   />
                 </label>
@@ -2467,7 +2467,7 @@ export const Admin = () => {
                         return (
                           <label
                             key={t.docId}
-                            className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-xs transition ${checked ? 'border-main-400 bg-main-700/40 text-light-200' : 'border-white/10 bg-main-900/50 text-light-200/70 hover:border-white/30'}`}
+                            className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-xs transition ${checked ? 'border-main-400 bg-main-700/40 text-light-200' : 'border-white/10 bg-main-900 text-light-200/70 hover:border-white/30'}`}
                           >
                             <input
                               type="checkbox"
@@ -2503,7 +2503,7 @@ export const Admin = () => {
                   type="button"
                   onClick={() => handleSaveMenuItem(editingItem)}
                   disabled={menuSavingId === editingItem.docId}
-                  className="rounded-2xl border border-white/20 bg-main-900/70 px-4 py-2 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-2xl border border-white/20 bg-main-900 px-4 py-2 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {menuSavingId === editingItem.docId ? 'Guardando...' : 'Guardar cambios'}
                 </button>
@@ -2553,7 +2553,7 @@ export const Admin = () => {
                         name: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    className="w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   />
                 </label>
                 <label className="grid gap-2 text-sm">
@@ -2567,7 +2567,7 @@ export const Admin = () => {
                         category: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    className="w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   />
                 </label>
                 <label className="grid gap-2 text-sm">
@@ -2583,7 +2583,7 @@ export const Admin = () => {
                         order: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    className="w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   />
                 </label>
                 <label className="grid gap-2 text-sm">
@@ -2597,7 +2597,7 @@ export const Admin = () => {
                         image: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    className="w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   />
                 </label>
                 <label className="grid gap-2 text-sm md:col-span-2">
@@ -2611,7 +2611,7 @@ export const Admin = () => {
                         desc: event.target.value,
                       }))
                     }
-                    className="w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
+                    className="w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-200 outline-none transition focus:border-white/40"
                   />
                 </label>
               </div>
@@ -2628,7 +2628,7 @@ export const Admin = () => {
                   type="button"
                   onClick={() => handleSaveSection(editingSection)}
                   disabled={menuSavingId === editingSection.docId}
-                  className="rounded-2xl border border-white/20 bg-main-900/70 px-4 py-2 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-2xl border border-white/20 bg-main-900 px-4 py-2 text-sm font-semibold text-light-200 transition hover:border-white/40 hover:text-light-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {menuSavingId === editingSection.docId ? 'Guardando...' : 'Guardar cambios'}
                 </button>
@@ -2647,11 +2647,11 @@ export const Admin = () => {
           >
             <div className="absolute inset-0 bg-black/60" />
             <div
-              className="relative w-full max-w-sm rounded-2xl bg-light-200 p-6 text-main-800 shadow-2xl"
+              className="relative w-full max-w-sm rounded-2xl bg-main-900 p-6 text-light-100 shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="text-lg font-semibold">¿Eliminar sección?</div>
-              <p className="mt-2 text-sm text-main-600">
+              <p className="mt-2 text-sm text-light-200/70">
                 Se eliminará <strong>{deleteSectionTarget.name}</strong> y todos sus
                 productos.
               </p>
@@ -2660,7 +2660,7 @@ export const Admin = () => {
                 <button
                   type="button"
                   onClick={() => setDeleteSectionTarget(null)}
-                  className="rounded-lg border border-main-300 px-3 py-2 text-sm text-main-700 hover:bg-main-100"
+                  className="rounded-lg border border-white/15 px-3 py-2 text-sm text-light-200 hover:bg-white/5"
                 >
                   Cancelar
                 </button>
@@ -2671,7 +2671,7 @@ export const Admin = () => {
                     setDeleteSectionTarget(null)
                     handleDeleteSection(target)
                   }}
-                  className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                  className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-snow hover:bg-red-700"
                 >
                   Sí, eliminar
                 </button>
@@ -2690,11 +2690,11 @@ export const Admin = () => {
           >
             <div className="absolute inset-0 bg-black/60" />
             <div
-              className="relative w-full max-w-sm rounded-2xl bg-light-200 p-6 text-main-800 shadow-2xl"
+              className="relative w-full max-w-sm rounded-2xl bg-main-900 p-6 text-light-100 shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="text-lg font-semibold">¿Eliminar producto?</div>
-              <p className="mt-2 text-sm text-main-600">
+              <p className="mt-2 text-sm text-light-200/70">
                 Se eliminará <strong>{deleteTarget.name}</strong> del menú.
               </p>
 
@@ -2702,7 +2702,7 @@ export const Admin = () => {
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(null)}
-                  className="rounded-lg border border-main-300 px-3 py-2 text-sm text-main-700 hover:bg-main-100"
+                  className="rounded-lg border border-white/15 px-3 py-2 text-sm text-light-200 hover:bg-white/5"
                 >
                   Cancelar
                 </button>
@@ -2713,7 +2713,7 @@ export const Admin = () => {
                     setDeleteTarget(null)
                     handleDeleteMenuItem(target)
                   }}
-                  className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700"
+                  className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-snow hover:bg-red-700"
                 >
                   Sí, eliminar
                 </button>
@@ -2743,14 +2743,14 @@ export const Admin = () => {
               Array.from({ length: 3 }).map((_, idx) => (
                 <div
                   key={`recent-skeleton-${idx}`}
-                  className="h-16 rounded-2xl bg-main-900/50 animate-pulse"
+                  className="h-16 rounded-2xl bg-main-900 animate-pulse"
                 />
               ))
             ) : recentOrders.length ? (
               (showAllOrders ? recentOrders : recentOrders.slice(0, 5)).map((order) => (
                 <div
                   key={order.id ?? order.orderId}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-main-900 px-4 py-3"
                 >
                   <div>
                     <p className="text-sm font-semibold text-light-200">
@@ -2792,14 +2792,14 @@ export const Admin = () => {
                     </button>
                   </div>
                   {expandedOrders.has(order.id ?? order.orderId) && (
-                    <div className="mt-3 w-full rounded-2xl border border-white/10 bg-main-900/70 px-4 py-3 text-xs text-light-200/80 whitespace-pre-line">
+                    <div className="mt-3 w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-xs text-light-200/80 whitespace-pre-line">
                       {order.content || 'Sin contenido'}
                     </div>
                   )}
                 </div>
               ))
             ) : (
-              <div className="rounded-2xl border border-white/10 bg-main-900/60 px-4 py-3 text-sm text-light-200/70">
+              <div className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-sm text-light-200/70">
                 No hay pedidos recientes.
               </div>
             )}

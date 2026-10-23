@@ -47,7 +47,7 @@ export const MoneyInput = ({ value = 0, onChange, max, className = '', inputClas
 
   return (
     <div className={`relative ${className}`}>
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-light-200/40 pointer-events-none select-none font-medium">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-light-200/65 pointer-events-none select-none font-medium">
         $
       </span>
       <input

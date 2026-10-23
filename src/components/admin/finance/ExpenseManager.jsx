@@ -9,7 +9,7 @@ import { computeTotals, daysUntilDue } from '../../../utils/expenses'
 import { Wallet, Plus, Pencil, Trash2, CalendarClock } from 'lucide-react'
 
 const inputCls =
-  'w-full rounded-xl border border-white/10 bg-main-900/60 px-3 py-2.5 text-sm text-light-100 placeholder-light-200/30 outline-none transition focus:border-main-500/50 focus:ring-1 focus:ring-main-500/20'
+  'w-full rounded-xl border border-white/10 bg-main-900 px-3 py-2.5 text-sm text-light-100 placeholder-light-200/55 outline-none transition focus:border-main-500/50 focus:ring-1 focus:ring-main-500/20'
 const labelCls = 'block text-xs font-medium text-light-200/60 mb-1.5'
 
 const MONTH_NAMES = [
@@ -22,14 +22,14 @@ const DeleteConfirm = ({ label, onConfirm, onCancel, loading }) => (
 )
 
 const PeriodPills = ({ value, onChange }) => (
-  <div className="flex items-center gap-1 p-1 rounded-xl bg-main-900/60 border border-white/10 w-fit">
+  <div className="flex items-center gap-1 p-1 rounded-xl bg-main-900 border border-white/10 w-fit">
     {[{ key: 'monthly', label: 'Mensual' }, { key: 'annual', label: 'Anual' }].map((opt) => (
       <button
         key={opt.key}
         type="button"
         onClick={() => onChange(opt.key)}
         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-          value === opt.key ? 'bg-main-500 text-white' : 'text-light-200/50 hover:text-light-100'
+          value === opt.key ? 'bg-main-500 text-snow' : 'text-light-200/70 hover:text-light-100'
         }`}
       >
         {opt.label}
@@ -144,7 +144,7 @@ const ExpenseForm = ({ expense, onSaved, onCancel }) => {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex-1 rounded-xl bg-main-500 hover:bg-main-400 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-50 cursor-pointer"
+          className="flex-1 rounded-xl bg-main-500 hover:bg-main-400 py-2.5 text-sm font-semibold text-snow transition-colors disabled:opacity-50 cursor-pointer"
         >
           {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Agregar gasto'}
         </button>
@@ -156,14 +156,14 @@ const ExpenseForm = ({ expense, onSaved, onCancel }) => {
 const ExpenseRow = ({ expense, onEdit, onDelete }) => {
   const due = daysUntilDue(expense)
   const dueLabel = due === 0 ? 'Vence hoy' : due === 1 ? 'Vence mañana' : due > 0 ? `Vence en ${due}d` : `Venció hace ${Math.abs(due)}d`
-  const dueColorCls = due <= 0 ? 'text-rose-400' : due <= 7 ? 'text-amber-400' : 'text-light-200/40'
+  const dueColorCls = due <= 0 ? 'text-rose-400' : due <= 7 ? 'text-amber-400' : 'text-light-200/65'
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-3.5">
+    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3.5">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm font-semibold text-light-100 truncate">{expense.name}</p>
-          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-white/5 text-light-200/50 border border-white/10 shrink-0">
+          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-white/5 text-light-200/70 border border-white/10 shrink-0">
             {expense.period === 'annual' ? 'Anual' : 'Mensual'}
           </span>
         </div>
@@ -178,14 +178,14 @@ const ExpenseRow = ({ expense, onEdit, onDelete }) => {
         <button
           onClick={onEdit}
           aria-label={`Editar ${expense.name}`}
-          className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-white/5 text-light-200/50 hover:text-light-100 transition-colors cursor-pointer"
+          className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-white/5 text-light-200/70 hover:text-light-100 transition-colors cursor-pointer"
         >
           <Pencil size={14} />
         </button>
         <button
           onClick={onDelete}
           aria-label={`Eliminar ${expense.name}`}
-          className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-light-200/50 hover:text-red-400 transition-colors cursor-pointer"
+          className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-light-200/70 hover:text-red-400 transition-colors cursor-pointer"
         >
           <Trash2 size={14} />
         </button>
@@ -258,7 +258,7 @@ export const ExpenseManager = ({ onTotalsChange }) => {
   }
 
   return (
-    <div className="bg-main-900/30 border border-white/5 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+    <div className="bg-main-900 border border-white/10 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2.5">
           <div className="h-9 w-9 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
@@ -266,13 +266,13 @@ export const ExpenseManager = ({ onTotalsChange }) => {
           </div>
           <div>
             <h3 className="text-sm font-bold text-light-100">Gastos Fijos</h3>
-            <p className="text-xs text-light-200/40">Renta, servicios, nómina y otros gastos recurrentes</p>
+            <p className="text-xs text-light-200/65">Renta, servicios, nómina y otros gastos recurrentes</p>
           </div>
         </div>
         {!showForm && !editing && (
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-main-500 hover:bg-main-400 text-white text-xs font-semibold transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-main-500 hover:bg-main-400 text-snow text-xs font-semibold transition-colors cursor-pointer"
           >
             <Plus size={14} /> Agregar gasto
           </button>
@@ -291,7 +291,7 @@ export const ExpenseManager = ({ onTotalsChange }) => {
         </div>
       ) : sorted.length === 0 ? (
         !showForm && (
-          <div className="py-8 flex flex-col items-center gap-2 text-light-200/30 text-center">
+          <div className="py-8 flex flex-col items-center gap-2 text-light-200/55 text-center">
             <Wallet size={28} />
             <p className="text-xs italic max-w-xs">
               Aún no has agregado gastos fijos. Agrega renta, servicios, nómina, etc. para calcular tu punto de equilibrio real.
@@ -311,17 +311,17 @@ export const ExpenseManager = ({ onTotalsChange }) => {
       )}
 
       {expenses.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-white/5">
+        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-white/10">
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-light-200/40 truncate">Total mensual</p>
+            <p className="text-[10px] uppercase tracking-wider text-light-200/65 truncate">Total mensual</p>
             <p className="text-sm font-bold text-light-100 tabular-nums truncate">{formatMoney(totals.monthlyTotal)}</p>
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-light-200/40 truncate">Total anual</p>
+            <p className="text-[10px] uppercase tracking-wider text-light-200/65 truncate">Total anual</p>
             <p className="text-sm font-bold text-light-100 tabular-nums truncate">{formatMoney(totals.annualTotal)}</p>
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-light-200/40 truncate">Equivalente diario</p>
+            <p className="text-[10px] uppercase tracking-wider text-light-200/65 truncate">Equivalente diario</p>
             <p className="text-sm font-bold text-amber-400 tabular-nums truncate">{formatMoney(totals.dailyFixedCosts)}</p>
           </div>
         </div>

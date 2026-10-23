@@ -17,10 +17,10 @@ export const SectionsList = ({
           {Array.from({ length: 3 }).map((_, index) => (
             <div
               key={`section-skeleton-${index}`}
-              className="rounded-3xl border border-white/10 bg-main-800/60 p-6 shadow-[0_28px_60px_rgba(0,0,0,0.45)]"
+              className="rounded-[1.75rem] bg-surface p-6 shadow-[0_10px_30px_-18px_var(--color-ink)]"
             >
-              <div className="h-5 w-40 rounded-full bg-white/10 animate-pulse" />
-              <div className="mt-3 h-4 w-72 rounded-full bg-white/10 animate-pulse" />
+              <div className="h-5 w-40 rounded-full bg-primary/10 animate-pulse" />
+              <div className="mt-3 h-4 w-72 max-w-full rounded-full bg-primary/5 animate-pulse" />
             </div>
           ))}
         </div>
@@ -32,7 +32,7 @@ export const SectionsList = ({
   if (error) {
     return (
       <div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8 pb-10">
-        <div className="rounded-3xl border border-red-300/20 bg-red-500/10 p-6 text-sm text-red-100">
+        <div className="rounded-3xl bg-fresa p-6 text-sm font-semibold text-fresa-ink">
           {error}
         </div>
       </div>
@@ -42,7 +42,7 @@ export const SectionsList = ({
   if (!sections.length) {
     return (
       <div className="mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8 pb-10">
-        <div className="rounded-3xl border border-white/10 bg-main-800/60 p-6 text-sm text-light-200/70">
+        <div className="rounded-3xl bg-surface p-6 text-sm text-ink-soft">
           No hay secciones disponibles todavía.
         </div>
       </div>
@@ -61,7 +61,7 @@ export const SectionsList = ({
             style={{ transitionDelay: `${Math.min(idx * 60, 240)}ms` }}
             className="opacity-0 translate-y-6 transition-all duration-700 ease-out will-change-transform"
           >
-            <MenuSection desc={section.desc} onAddToCart={onAddToCart} toppingsMap={toppingsMap}>
+            <MenuSection desc={section.desc} onAddToCart={onAddToCart} toppingsMap={toppingsMap} index={idx}>
               {section.name}
             </MenuSection>
           </div>

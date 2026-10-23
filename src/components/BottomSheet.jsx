@@ -187,8 +187,8 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
         width: '420px',
         maxWidth: 'calc(100vw - 32px)',
         maxHeight: '85vh',
-        borderRadius: '16px',
-        boxShadow: '0 25px 60px rgba(0,0,0,0.65)',
+        borderRadius: '28px',
+        boxShadow: '0 25px 60px rgba(0,0,0,0.45)',
         overflow: 'hidden',
         transform: isOpen
           ? 'translate(-50%, -50%) scale(1)'
@@ -204,7 +204,7 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
         bottom: 0,
         left: 0,
         right: 0,
-        borderRadius: '24px 24px 0 0',
+        borderRadius: '28px 28px 0 0',
         overflow: 'hidden',
         transform: isOpen ? `translateY(${dragDeltaY}px)` : 'translateY(100%)',
         transition: isDragging
@@ -215,15 +215,15 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
 
   // ── Shared add-button styles ─────────────────────────────────────────────
   const addBtnStyle = isRequiredComplete
-    ? { background: '#7c2d12', cursor: 'pointer', touchAction: 'manipulation' }
-    : { background: '#3a1810', color: '#6b5c52', cursor: 'not-allowed', touchAction: 'manipulation' }
+    ? { background: 'var(--color-primary)', color: 'var(--color-surface)', cursor: 'pointer', touchAction: 'manipulation', fontFamily: 'var(--font-display)', boxShadow: '0 10px 20px -10px var(--color-primary)' }
+    : { background: 'color-mix(in srgb, var(--color-primary) 15%, transparent)', color: 'var(--color-ink-soft)', cursor: 'not-allowed', touchAction: 'manipulation', fontFamily: 'var(--font-display)' }
 
   const addBtnHover = {
     onMouseEnter: (e) => {
-      if (isRequiredComplete) e.currentTarget.style.background = '#9a3a17'
+      if (isRequiredComplete) e.currentTarget.style.background = 'var(--color-secondary)'
     },
     onMouseLeave: (e) => {
-      if (isRequiredComplete) e.currentTarget.style.background = '#7c2d12'
+      if (isRequiredComplete) e.currentTarget.style.background = 'var(--color-primary)'
     },
   }
 
@@ -247,7 +247,7 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
           className="absolute inset-x-0 bottom-0 pointer-events-none"
           style={{
             height: '50%',
-            background: 'linear-gradient(to top, #1c0d05, transparent)',
+            background: 'linear-gradient(to top, var(--color-surface), transparent)',
           }}
         />
       </div>
@@ -256,22 +256,22 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
   const ProductInfo = () => (
     <div className={isDesktop ? 'px-6 pt-5 pb-3' : 'px-5 pt-4 pb-2'}>
       <h3
-        className="font-bold leading-tight"
-        style={{ fontSize: isDesktop ? 18 : 20, color: '#faf6f0' }}
+        className="leading-tight"
+        style={{ fontSize: isDesktop ? 24 : 26, color: 'var(--color-ink)', fontFamily: 'var(--font-display)', fontWeight: 600 }}
       >
         {localProduct.name}
       </h3>
       {localProduct.desc && (
         <p
-          className="mt-1 text-sm italic leading-relaxed line-clamp-2"
-          style={{ color: '#b09080' }}
+          className="mt-1 text-sm leading-relaxed line-clamp-2"
+          style={{ color: 'var(--color-ink-soft)' }}
         >
           {localProduct.desc}
         </p>
       )}
       <p
         className="mt-2 font-semibold"
-        style={{ fontSize: isDesktop ? 15 : 18, color: '#c84b2f' }}
+        style={{ fontSize: isDesktop ? 18 : 20, color: 'var(--color-primary)', fontFamily: 'var(--font-display)' }}
       >
         ${Number(localProduct.price).toLocaleString('es-MX')}
       </p>
@@ -286,19 +286,19 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
           <div
             key={group.id}
             className={isDesktop ? 'px-6 py-4' : 'px-5 py-4'}
-            style={{ borderTop: '1px solid rgba(120,60,20,0.25)' }}
+            style={{ borderTop: '1.5px dashed color-mix(in srgb, var(--color-primary) 15%, transparent)' }}
           >
             <div className="flex items-center gap-2 mb-3 flex-wrap">
               <span
                 className="text-xs font-semibold uppercase tracking-wider"
-                style={{ color: '#b09080' }}
+                style={{ color: 'var(--color-ink-soft)' }}
               >
                 {group.name}
               </span>
               {group.required && (
                 <span
                   className="text-sm font-bold"
-                  style={{ color: '#ef4444' }}
+                  style={{ color: 'var(--color-fresa-ink)' }}
                   aria-label="requerido"
                 >
                   *
@@ -307,8 +307,9 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
               <span
                 className="rounded-full px-2 py-0.5 text-[10px]"
                 style={{
-                  border: '1px solid rgba(146,84,32,0.4)',
-                  color: '#b09080',
+                  background: 'var(--color-mango)',
+                  color: 'var(--color-mango-ink)',
+                  fontWeight: 700,
                 }}
               >
                 {group.type === 'single' ? 'Elige 1' : 'Elige varios'}
@@ -323,11 +324,11 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
                     key={opt.id}
                     type="button"
                     onClick={() => toggleOption(group, opt.id)}
-                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
+                    className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-semibold active:scale-95 transition-all duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                     style={
                       isSelected
-                        ? { background: '#7c2d12', border: '1px solid #7c2d12', color: '#ffffff', touchAction: 'manipulation', minHeight: 44 }
-                        : { background: 'transparent', border: '1px solid rgba(146,84,32,0.5)', color: '#faf6f0', touchAction: 'manipulation', minHeight: 44 }
+                        ? { background: 'var(--color-primary)', border: '1.5px solid var(--color-primary)', color: 'var(--color-surface)', touchAction: 'manipulation', minHeight: 44, boxShadow: '0 6px 14px -8px var(--color-primary)' }
+                        : { background: 'var(--color-bg)', border: '1.5px solid color-mix(in srgb, var(--color-primary) 15%, transparent)', color: 'var(--color-ink)', touchAction: 'manipulation', minHeight: 44 }
                     }
                     aria-pressed={isSelected}
                   >
@@ -351,17 +352,17 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
   const QtySelector = () => (
     <div
       className={`flex items-center justify-center gap-6 ${isDesktop ? 'px-6 py-4 mt-2' : 'px-5 py-4'}`}
-      style={{ borderTop: '1px solid rgba(120,60,20,0.25)' }}
+      style={{ borderTop: '1.5px dashed color-mix(in srgb, var(--color-primary) 15%, transparent)' }}
     >
       <button
         type="button"
         onClick={() => setQty((q) => Math.max(1, q - 1))}
         disabled={qty <= 1}
-        className="h-11 w-11 flex items-center justify-center rounded-full text-xl font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
+        className="h-11 w-11 flex items-center justify-center rounded-full text-xl font-bold transition-all active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
         style={
           qty <= 1
-            ? { border: '1px solid rgba(120,60,20,0.2)', color: 'rgba(120,60,20,0.3)', cursor: 'not-allowed', touchAction: 'manipulation' }
-            : { border: '1px solid rgba(146,84,32,0.5)', color: '#faf6f0', cursor: 'pointer', touchAction: 'manipulation' }
+            ? { background: 'var(--color-bg)', color: 'color-mix(in srgb, var(--color-primary) 30%, transparent)', cursor: 'not-allowed', touchAction: 'manipulation' }
+            : { background: 'var(--color-bg)', color: 'var(--color-primary)', cursor: 'pointer', touchAction: 'manipulation' }
         }
         aria-label="Disminuir cantidad"
       >
@@ -369,15 +370,15 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
       </button>
       <span
         className="font-semibold text-lg min-w-[24px] text-center select-none"
-        style={{ color: '#faf6f0' }}
+        style={{ color: 'var(--color-ink)', fontFamily: 'var(--font-display)', fontSize: 22 }}
       >
         {qty}
       </span>
       <button
         type="button"
         onClick={() => setQty((q) => q + 1)}
-        className="h-11 w-11 flex items-center justify-center rounded-full text-xl font-bold transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
-        style={{ border: '1px solid rgba(146,84,32,0.5)', color: '#faf6f0', touchAction: 'manipulation' }}
+        className="h-11 w-11 flex items-center justify-center rounded-full text-xl font-bold transition-all active:scale-90 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+        style={{ background: 'var(--color-primary)', color: 'var(--color-surface)', touchAction: 'manipulation' }}
         aria-label="Aumentar cantidad"
       >
         +
@@ -388,7 +389,7 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
   // ── Render ───────────────────────────────────────────────────────────────
   return ReactDOM.createPortal(
     <div
-      className="fixed inset-0"
+      className="fixed inset-0 font-body"
       style={{ zIndex: 9000 }}
       aria-modal={isOpen ? 'true' : 'false'}
       role="dialog"
@@ -411,7 +412,7 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
         {isDesktop && (
           <div
             className="flex flex-col overflow-y-auto"
-            style={{ background: '#1c0d05', maxHeight: '85vh' }}
+            style={{ background: 'var(--color-surface)', maxHeight: '85vh' }}
           >
             <ProductImage />
             <ProductInfo />
@@ -423,13 +424,13 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
             {/* Inline add button — not sticky on desktop */}
             <div
               className="px-6 py-5"
-              style={{ borderTop: '1px solid rgba(120,60,20,0.3)' }}
+              style={{ borderTop: '1.5px dashed color-mix(in srgb, var(--color-primary) 15%, transparent)' }}
             >
               <button
                 type="button"
                 onClick={handleConfirm}
                 disabled={!isRequiredComplete}
-                className="w-full rounded-xl py-3 text-base font-bold text-white transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
+                className="w-full rounded-full py-3.5 text-lg font-semibold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 style={addBtnStyle}
                 {...addBtnHover}
               >
@@ -443,7 +444,7 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
         {!isDesktop && (
           <div
             className="flex flex-col"
-            style={{ background: '#1c0d05', maxHeight: '80vh' }}
+            style={{ background: 'var(--color-surface)', maxHeight: '80vh' }}
           >
             {/* Drag handle pill — owns the swipe-to-dismiss gesture exclusively,
                 so taps on buttons elsewhere in the sheet are never mistaken for a drag */}
@@ -455,7 +456,7 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
               onTouchEnd={handleTouchEnd}
             >
               <div
-                className="rounded-full bg-white/20"
+                className="rounded-full bg-primary/20"
                 style={{ width: 40, height: 4 }}
               />
             </div>
@@ -474,8 +475,8 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
             <div
               className="shrink-0 px-5 py-4"
               style={{
-                borderTop: '1px solid rgba(120,60,20,0.3)',
-                background: '#0f0602',
+                borderTop: '1px solid color-mix(in srgb, var(--color-primary) 10%, transparent)',
+                background: 'var(--color-bg)',
                 paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))',
               }}
             >
@@ -483,7 +484,7 @@ export const BottomSheet = ({ isOpen, onClose, product, onConfirm, initialSelect
                 type="button"
                 onClick={handleConfirm}
                 disabled={!isRequiredComplete}
-                className="w-full rounded-2xl py-4 text-base font-bold text-white transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-700/50"
+                className="w-full rounded-full py-4 text-lg font-semibold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                 style={addBtnStyle}
                 {...addBtnHover}
               >

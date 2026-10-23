@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+/* `dark:` utilities follow a `.dark` class on <html> (toggled by the admin
+   theme switch) instead of the OS setting. Only the admin ever sets it. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Create new colors for the theme, main with shades, secondary with shades and dark I will type the 500 and you will create every other shade*/
 @theme {
   --color-main-50: #f9f4f3;
@@ -24,7 +28,47 @@
   --color-dark-600: #0e0706;
   --color-dark-700: #0a0504;
   --color-dark-800: #070302;
-  --color-dark-900: #040201;  
+  --color-dark-900: #040201;
+
+  /* ── Semantic design tokens (customer menu) ───────────────────────── */
+  --color-primary: #743121;     /* = main-500, terracotta brown */
+  --color-secondary: #a34d3b;   /* = main-400, warm cinnamon */
+  --color-accent: #fbe594;      /* = light-400, honey cream */
+  --color-bg: #fef8e1;          /* = light-200, cream page */
+  --color-surface: #fffdf5;     /* = light-50, card surface */
+  --color-ink: #26100b;         /* = main-900, primary text */
+  --color-ink-soft: #6b4a3f;    /* secondary text (≥4.5:1 on surface) */
+
+  /* Playful "boba flavor" tones — one per menu section, cycled */
+  --color-taro: #e4d6f5;
+  --color-taro-ink: #5b3f86;
+  --color-matcha: #dcebc4;
+  --color-matcha-ink: #3f5a1f;
+  --color-mango: #ffe3a3;
+  --color-mango-ink: #7a4b00;
+  --color-fresa: #ffd6d2;
+  --color-fresa-ink: #8a2c26;
+  --color-latte: #f0dcc4;
+  --color-latte-ink: #6b3a1c;
+
+  /* Always-white text on solid colored buttons (not remapped by admin theme) */
+  --color-snow: #ffffff;
+
+  /* Chart tokens (dark-surface defaults; admin light theme overrides) */
+  --color-chart-grid: rgba(255, 255, 255, 0.06);
+  --color-chart-tick: rgba(254, 248, 225, 0.45);
+  --color-chart-cursor: rgba(255, 255, 255, 0.08);
+  --color-chart-tooltip-bg: #26100b;
+  --color-chart-tooltip-ink: #fef8e1;
+  --color-chart-brand: #a34d3b;
+  --color-chart-revenue: #10b981;
+  --color-chart-profit: #3b82f6;
+  --color-chart-good: #10b981;
+  --color-chart-mid: #f59e0b;
+  --color-chart-bad: #f43f5e;
+
+  --font-display: 'Fredoka', 'Nunito', ui-rounded, system-ui, sans-serif;
+  --font-body: 'Nunito', ui-rounded, system-ui, sans-serif;
 }
 
 body {
@@ -45,11 +89,11 @@ body {
 
 /* Scroll-margin for sticky category tab nav */
 [data-section-anchor] {
-  scroll-margin-top: 52px; /* mobile: tab bar height */
+  scroll-margin-top: 72px; /* mobile: tab bar height (44px chips + padding) */
 }
 @media (min-width: 640px) {
   [data-section-anchor] {
-    scroll-margin-top: 148px; /* desktop: navbar (104px) + tab bar (44px) */
+    scroll-margin-top: 176px; /* desktop: navbar (104px) + tab bar (~64px) */
   }
 }
 
@@ -68,4 +112,191 @@ body {
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* ── Customer menu: playful café theme ────────────────────────────────── */
+
+/* Soft "boba pearl" dot texture behind the menu */
+.menu-bg {
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(color-mix(in srgb, var(--color-primary) 7%, transparent) 2px, transparent 2.5px),
+    radial-gradient(color-mix(in srgb, var(--color-secondary) 5%, transparent) 1.5px, transparent 2px);
+  background-size: 34px 34px, 34px 34px;
+  background-position: 0 0, 17px 17px;
+}
+
+/* Floating bubbles in the hero */
+@keyframes bubble-float {
+  0%   { transform: translateY(0) scale(1); opacity: 0; }
+  12%  { opacity: 0.9; }
+  100% { transform: translateY(-180px) scale(1.15); opacity: 0; }
+}
+.bubble {
+  position: absolute;
+  bottom: -20px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 30% 30%, color-mix(in srgb, var(--color-surface) 55%, transparent), color-mix(in srgb, var(--color-surface) 8%, transparent) 70%);
+  border: 1.5px solid color-mix(in srgb, var(--color-surface) 35%, transparent);
+  animation: bubble-float 7s ease-in infinite;
+  pointer-events: none;
+}
+
+/* Gentle wobble for stickers / icon blobs */
+@keyframes wobble {
+  0%, 100% { transform: rotate(-6deg); }
+  50%      { transform: rotate(4deg); }
+}
+.wobble-hover:hover .wobble-target { animation: wobble 600ms ease-in-out; }
+
+/* Organic blob shape for section icons and images */
+.blob {
+  border-radius: 58% 42% 55% 45% / 48% 58% 42% 52%;
+}
+.blob-alt {
+  border-radius: 42% 58% 46% 54% / 55% 44% 56% 45%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble { animation: none; opacity: 0.5; }
+  .wobble-hover:hover .wobble-target { animation: none; }
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Admin panel themes — light (default) and dark
+   The admin screens use a small set of palette utilities (bg-main-900,
+   text-light-200/xx, border-white/xx …). Tailwind v4 resolves those through
+   CSS variables, so each theme below re-points the palette:
+     <html class="admin-theme">        → light, warm
+     <html class="admin-theme dark">   → dark espresso (+ `dark:` utilities)
+   AdminLayout adds `admin-theme` while the admin is mounted; the theme switch
+   in the top bar toggles `dark`. The customer menu never gets either class.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Light ─────────────────────────────────────────────────────────────── */
+html.admin-theme:not(.dark) {
+  color-scheme: light;
+
+  /* Surfaces */
+  --color-main-950: #f3ece3;   /* app canvas */
+  --color-main-900: #ffffff;   /* cards, panels, drawers */
+  --color-main-800: #f8f3ec;   /* inset fields, secondary surfaces */
+  --color-main-700: #ede2d5;   /* hover / pressed surfaces */
+  --color-main-300: #8f4434;   /* accent text (was pale pink on dark) */
+  --color-main-200: #7a3a2a;
+
+  /* Text — light-* were cream text on dark; now warm ink */
+  --color-light-50: #1a0a07;
+  --color-light-100: #26100b;  /* headings, strong text */
+  --color-light-200: #3b2620;  /* body text, used with /alpha for secondary */
+  --color-light-300: #5a3a2e;
+  --color-light-400: #743121;  /* highlights (was honey on dark) */
+
+  /* "white/x" overlays and borders become warm-ink overlays */
+  --color-white: #3b2620;
+  --color-black: #1a0a07;
+
+  /* Status colors: pale shades were tuned for dark; use deep shades on light */
+  --color-emerald-100: #065f46;
+  --color-emerald-200: #065f46;
+  --color-emerald-300: #047857;
+  --color-emerald-400: #047857;
+  --color-rose-200: #9f1239;
+  --color-rose-300: #be123c;
+  --color-rose-400: #be123c;
+  --color-red-100: #991b1b;
+  --color-red-200: #991b1b;
+  --color-red-300: #b91c1c;
+  --color-red-400: #b91c1c;
+  --color-amber-200: #92400e;
+  --color-amber-300: #b45309;
+  --color-amber-400: #b45309;
+  --color-blue-300: #1d4ed8;
+  --color-blue-400: #1d4ed8;
+  --color-purple-400: #7e22ce;
+  --color-teal-400: #0f766e;
+  --color-orange-300: #c2410c;
+  --color-orange-400: #c2410c;
+  --color-yellow-400: #a16207;
+  --color-green-400: #15803d;
+  --color-sky-400: #0369a1;
+  --color-violet-400: #6d28d9;
+  --color-indigo-400: #4338ca;
+  --color-cyan-400: #0e7490;
+  --color-pink-400: #be185d;
+
+  /* Charts */
+  --color-chart-grid: rgba(59, 38, 32, 0.08);
+  --color-chart-tick: rgba(59, 38, 32, 0.6);
+  --color-chart-cursor: rgba(59, 38, 32, 0.06);
+  --color-chart-tooltip-bg: #ffffff;
+  --color-chart-tooltip-ink: #26100b;
+  --color-chart-brand: #743121;
+  --color-chart-revenue: #047857;
+  --color-chart-profit: #1d4ed8;
+  --color-chart-good: #059669;
+  --color-chart-mid: #d97706;
+  --color-chart-bad: #e11d48;
+}
+
+/* ── Dark ──────────────────────────────────────────────────────────────────
+   White/black overlays, status colors and chart tokens keep their
+   dark-surface defaults; only surfaces, text and the brand fill change. */
+html.admin-theme.dark {
+  color-scheme: dark;
+
+  /* Surfaces — warm espresso, one step apart so cards read on the canvas */
+  --color-main-950: #140b08;   /* app canvas */
+  --color-main-900: #21130e;   /* cards, panels, drawers */
+  --color-main-800: #2d1b14;   /* inset fields, secondary surfaces */
+  --color-main-700: #3b251c;   /* hover / pressed surfaces */
+  --color-main-300: #e3a592;   /* accent text (used via dark:text-main-300) */
+  --color-main-200: #efc6b9;
+
+  /* Text */
+  --color-light-50: #fffaf2;
+  --color-light-100: #f7eee3;  /* headings, strong text */
+  --color-light-200: #eadccd;  /* body text, used with /alpha for secondary */
+  --color-light-300: #d8c4b0;
+  --color-light-400: #f2c98d;  /* highlights (honey) */
+
+  /* Brand fill: a touch brighter than #743121 so buttons stand out on dark
+     (white text on it is still > 4.5:1) */
+  --color-primary: #9a4630;
+  --color-secondary: #b35a40;
+}
+
+html.admin-theme body {
+  background-color: var(--color-main-950);
+  color: var(--color-light-100);
+  font-family: var(--font-body);
+}
+
+/* Admin: numbers line up in tables, totals and tickets */
+html.admin-theme .tabular-nums,
+html.admin-theme td,
+html.admin-theme th { font-variant-numeric: tabular-nums; }
+
+/* Admin: native controls follow the theme */
+html.admin-theme input[type="checkbox"],
+html.admin-theme input[type="radio"] { accent-color: var(--color-primary); }
+html.admin-theme select { background-color: var(--color-main-800); }
+html.admin-theme ::selection { background: color-mix(in srgb, var(--color-primary) 30%, transparent); }
+
+/* Smooth switch between themes (skipped for reduced motion) */
+html.admin-theme.theme-transition,
+html.admin-theme.theme-transition * {
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.admin-theme.theme-transition,
+  html.admin-theme.theme-transition * { transition: none !important; }
+}
+
+/* The "Así se verá en el menú" preview always shows the real customer
+   colors, whatever the admin theme is. */
+.customer-preview {
+  --color-primary: #743121;
+  --color-secondary: #a34d3b;
 }

@@ -19,7 +19,7 @@ export const RouteGate = ({ routeKey, children }) => {
       </div>
       <div>
         <p className="font-semibold text-light-100">No disponible para esta estación</p>
-        <p className="text-sm text-light-200/50 mt-1">Esta pantalla fue deshabilitada para la estación actual.</p>
+        <p className="text-sm text-light-200/70 mt-1">Esta pantalla fue deshabilitada para la estación actual.</p>
       </div>
       <NavLink
         to="/admin/pedidos"

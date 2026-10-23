@@ -13,13 +13,13 @@ const unitShort = (v) => UNIT_SHORT[v] ?? v
 const movDate = (m) => m.purchaseDate?.toDate?.() ?? m.createdAt?.toDate?.() ?? null
 
 const StatCard = ({ icon: Icon, label, value, subtext, colorCls }) => (
-  <div className="bg-main-900/30 border border-white/5 rounded-3xl p-5 shadow-sm">
+  <div className="bg-main-900 border border-white/10 rounded-3xl p-5 shadow-sm">
     <div className={`h-9 w-9 rounded-2xl flex items-center justify-center shrink-0 mb-3 ${colorCls}`}>
       <Icon size={18} />
     </div>
-    <p className="text-xs font-medium text-light-200/40 uppercase tracking-wider truncate">{label}</p>
+    <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider truncate">{label}</p>
     <h4 className="text-xl sm:text-2xl font-bold text-light-100 mt-1 tabular-nums truncate">{value}</h4>
-    {subtext && <p className="text-[10px] text-light-200/30 mt-0.5 truncate">{subtext}</p>}
+    {subtext && <p className="text-[10px] text-light-200/55 mt-0.5 truncate">{subtext}</p>}
   </div>
 )
 
@@ -196,7 +196,7 @@ export const SupplierAnalysis = ({ start, end }) => {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-main-900/30 border border-white/5 rounded-3xl p-5 h-24 animate-pulse" />
+          <div key={i} className="bg-main-900 border border-white/10 rounded-3xl p-5 h-24 animate-pulse" />
         ))}
       </div>
     )
@@ -204,7 +204,7 @@ export const SupplierAnalysis = ({ start, end }) => {
 
   if (enriched.length === 0) {
     return (
-      <div className="bg-main-900/30 border border-white/5 rounded-3xl py-16 flex flex-col items-center gap-3 text-light-200/30">
+      <div className="bg-main-900 border border-white/10 rounded-3xl py-16 flex flex-col items-center gap-3 text-light-200/55">
         <PackageSearch size={36} />
         <p className="text-sm italic text-center px-4">
           No hay compras registradas en este período.<br />
@@ -219,13 +219,13 @@ export const SupplierAnalysis = ({ start, end }) => {
   return (
     <div className="space-y-5">
       {/* Sub-tabs */}
-      <div className="flex items-center gap-1 p-1 rounded-xl bg-main-900/30 border border-white/5 flex-wrap w-fit">
+      <div className="flex items-center gap-1 p-1 rounded-xl bg-main-900 border border-white/10 flex-wrap w-fit">
         {SUB_TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => switchTab(tab.key)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-              subTab === tab.key ? 'bg-main-500 text-white' : 'text-light-200/50 hover:text-light-100'
+              subTab === tab.key ? 'bg-main-500 text-snow' : 'text-light-200/70 hover:text-light-100'
             }`}
           >
             {tab.label}
@@ -240,7 +240,7 @@ export const SupplierAnalysis = ({ start, end }) => {
             <button
               key={s.name}
               onClick={() => setSelectedSupplier(s.name)}
-              className="w-full bg-main-900/30 border border-white/5 rounded-3xl p-5 flex items-center justify-between hover:bg-white/3 transition-colors cursor-pointer group"
+              className="w-full bg-main-900 border border-white/10 rounded-3xl p-5 flex items-center justify-between hover:bg-white/3 transition-colors cursor-pointer group"
             >
               <div className="flex items-center gap-4 min-w-0">
                 <div className="h-10 w-10 rounded-2xl bg-main-500/10 text-main-500 flex items-center justify-center shrink-0">
@@ -248,12 +248,12 @@ export const SupplierAnalysis = ({ start, end }) => {
                 </div>
                 <div className="text-left min-w-0">
                   <p className="text-sm font-bold text-light-100 truncate">{s.name}</p>
-                  <p className="text-xs text-light-200/40">{s.purchaseCount} compra{s.purchaseCount !== 1 ? 's' : ''}</p>
+                  <p className="text-xs text-light-200/65">{s.purchaseCount} compra{s.purchaseCount !== 1 ? 's' : ''}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 <span className="text-sm font-bold text-light-100 tabular-nums">{formatMoney(s.totalSpent)}</span>
-                <ChevronDown size={16} className="text-light-200/30 -rotate-90 group-hover:text-light-200/60 transition-colors" />
+                <ChevronDown size={16} className="text-light-200/55 -rotate-90 group-hover:text-light-200/60 transition-colors" />
               </div>
             </button>
           ))}
@@ -265,7 +265,7 @@ export const SupplierAnalysis = ({ start, end }) => {
         <div className="space-y-5">
           <button
             onClick={() => setSelectedSupplier(null)}
-            className="flex items-center gap-2 text-sm text-light-200/50 hover:text-light-100 transition-colors cursor-pointer"
+            className="flex items-center gap-2 text-sm text-light-200/70 hover:text-light-100 transition-colors cursor-pointer"
           >
             <ArrowLeft size={16} />
             Todos los proveedores
@@ -277,21 +277,21 @@ export const SupplierAnalysis = ({ start, end }) => {
             <StatCard icon={BarChart2} label="Promedio por Compra" value={formatMoney(selData.avgCostPerPurchase)}  subtext="Costo promedio por compra"   colorCls="bg-blue-500/10 text-blue-400"     />
           </div>
 
-          <div className="bg-main-900/30 border border-white/5 rounded-3xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-white/5">
+          <div className="bg-main-900 border border-white/10 rounded-3xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/10">
               <h3 className="text-sm font-bold text-light-100">Compras de {selData.name}</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[400px]">
                 <thead>
-                  <tr className="border-b border-white/5">
-                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/40 uppercase tracking-wider text-left">Fecha</th>
-                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/40 uppercase tracking-wider text-left">Material</th>
-                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/40 uppercase tracking-wider text-right">Cantidad</th>
-                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/40 uppercase tracking-wider text-right">Costo</th>
+                  <tr className="border-b border-white/10">
+                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/65 uppercase tracking-wider text-left">Fecha</th>
+                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/65 uppercase tracking-wider text-left">Material</th>
+                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/65 uppercase tracking-wider text-right">Cantidad</th>
+                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/65 uppercase tracking-wider text-right">Costo</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-white/10">
                   {[...selData.purchases]
                     .sort((a, b) => (b._date?.getTime() ?? 0) - (a._date?.getTime() ?? 0))
                     .map((m) => (
@@ -317,16 +317,16 @@ export const SupplierAnalysis = ({ start, end }) => {
 
       {/* ── Tab 2: Historial de Compras ── */}
       {subTab === 'historial' && (
-        <div className="bg-main-900/30 border border-white/5 rounded-3xl overflow-hidden">
+        <div className="bg-main-900 border border-white/10 rounded-3xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[560px]">
               <thead>
-                <tr className="border-b border-white/5">
+                <tr className="border-b border-white/10">
                   {HIST_COLS.map((col) => (
                     <th
                       key={col.key}
                       onClick={() => toggleHistSort(col.key)}
-                      className={`px-5 py-3 text-xs font-medium text-light-200/40 uppercase tracking-wider cursor-pointer select-none hover:text-light-200/70 transition-colors ${col.align === 'right' ? 'text-right' : 'text-left'}`}
+                      className={`px-5 py-3 text-xs font-medium text-light-200/65 uppercase tracking-wider cursor-pointer select-none hover:text-light-200/70 transition-colors ${col.align === 'right' ? 'text-right' : 'text-left'}`}
                     >
                       <span className={`inline-flex items-center gap-1 ${col.align === 'right' ? 'flex-row-reverse' : ''}`}>
                         {col.label}
@@ -336,7 +336,7 @@ export const SupplierAnalysis = ({ start, end }) => {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-white/10">
                 {sortedHistory.map((m) => (
                   <tr key={m.id} className="hover:bg-white/3 transition-colors">
                     <td className="px-5 py-3 text-light-200/60 text-xs">
@@ -362,30 +362,30 @@ export const SupplierAnalysis = ({ start, end }) => {
       {subTab === 'comparacion' && (
         <div className="space-y-4">
           {materialOptions.length === 0 ? (
-            <div className="bg-main-900/30 border border-white/5 rounded-3xl py-12 flex flex-col items-center gap-2 text-light-200/30">
+            <div className="bg-main-900 border border-white/10 rounded-3xl py-12 flex flex-col items-center gap-2 text-light-200/55">
               <PackageSearch size={32} />
               <p className="text-sm italic">No hay materiales con compras en este período.</p>
             </div>
           ) : (
             <>
               <div className="flex items-center gap-3 flex-wrap">
-                <label className="text-xs font-medium text-light-200/50 shrink-0">Material:</label>
+                <label className="text-xs font-medium text-light-200/70 shrink-0">Material:</label>
                 <div className="relative">
                   <select
                     value={activeMaterialId}
                     onChange={(e) => setSelectedMaterialId(e.target.value)}
-                    className="appearance-none bg-main-900/60 border border-white/10 rounded-xl px-4 py-2 pr-8 text-sm text-light-100 outline-none focus:border-main-500/50 cursor-pointer transition-colors"
+                    className="appearance-none bg-main-900 border border-white/10 rounded-xl px-4 py-2 pr-8 text-sm text-light-100 outline-none focus:border-main-500/50 cursor-pointer transition-colors"
                   >
                     {materialOptions.map((m) => (
                       <option key={m.id} value={m.id}>{m.name}</option>
                     ))}
                   </select>
-                  <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-light-200/40 pointer-events-none" />
+                  <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-light-200/65 pointer-events-none" />
                 </div>
               </div>
 
               {priceComparison.length < 2 ? (
-                <div className="bg-main-900/30 border border-white/5 rounded-2xl px-5 py-4 text-sm text-light-200/40 italic">
+                <div className="bg-main-900 border border-white/10 rounded-2xl px-5 py-4 text-sm text-light-200/65 italic">
                   Solo un proveedor para este material. Registra compras de otros proveedores para comparar.
                 </div>
               ) : (
@@ -399,16 +399,16 @@ export const SupplierAnalysis = ({ start, end }) => {
                     </div>
                   )}
 
-                  <div className="bg-main-900/30 border border-white/5 rounded-3xl overflow-hidden">
+                  <div className="bg-main-900 border border-white/10 rounded-3xl overflow-hidden">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm min-w-[480px]">
                         <thead>
-                          <tr className="border-b border-white/5">
+                          <tr className="border-b border-white/10">
                             {COMP_COLS.map((col) => (
                               <th
                                 key={col.key}
                                 onClick={() => toggleCompSort(col.key)}
-                                className={`px-5 py-3 text-xs font-medium text-light-200/40 uppercase tracking-wider cursor-pointer select-none hover:text-light-200/70 transition-colors ${col.align === 'right' ? 'text-right' : 'text-left'}`}
+                                className={`px-5 py-3 text-xs font-medium text-light-200/65 uppercase tracking-wider cursor-pointer select-none hover:text-light-200/70 transition-colors ${col.align === 'right' ? 'text-right' : 'text-left'}`}
                               >
                                 <span className={`inline-flex items-center gap-1 ${col.align === 'right' ? 'flex-row-reverse' : ''}`}>
                                   {col.label}
@@ -418,7 +418,7 @@ export const SupplierAnalysis = ({ start, end }) => {
                             ))}
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-white/10">
                           {sortedComparison.map((s) => {
                             const isBest  = bestSupplier?.supplier  === s.supplier
                             const isWorst = worstSupplier?.supplier === s.supplier

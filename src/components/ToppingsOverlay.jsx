@@ -57,7 +57,7 @@ export const ToppingsOverlay = ({
   return (
     <div
       className={
-        'fixed inset-0 z-[95] flex items-center justify-center px-6 transition-opacity duration-200 ' +
+        'fixed inset-0 z-[95] flex items-center justify-center px-6 font-body transition-opacity duration-200 ' +
         (isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none')
       }
       onClick={onClose}
@@ -68,13 +68,13 @@ export const ToppingsOverlay = ({
       {/* panel */}
       <div
         className={
-          'relative w-full max-w-sm rounded-2xl bg-light-200 p-6 text-main-800 shadow-2xl transition-all duration-200 ' +
+          'relative w-full max-w-sm rounded-[1.75rem] bg-surface p-6 text-ink shadow-2xl transition-all duration-200 ' +
           (isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0')
         }
         onClick={(e) => e.stopPropagation()}
       >
         {/* header */}
-        <h3 className="text-lg font-semibold leading-tight">{productName}</h3>
+        <h3 className="font-display text-2xl font-semibold leading-tight">{productName}</h3>
         <p className="mt-1 text-sm text-main-600">
           Precio base: {formatMoney(Number(productPrice))}
         </p>
@@ -93,7 +93,7 @@ export const ToppingsOverlay = ({
                 const descOpen = expandedDescId === topping.id
                 const hasDesc = Boolean(topping.description)
                 return (
-                  <li key={topping.id} className="rounded-xl border border-main-200 bg-white overflow-hidden transition hover:bg-light-100">
+                  <li key={topping.id} className="rounded-2xl border border-primary/10 bg-bg overflow-hidden transition hover:border-primary/30">
                     <div
                       className="flex cursor-pointer items-center justify-between gap-2 px-4 py-3"
                       onClick={() => toggle(topping.id)}
@@ -120,7 +120,7 @@ export const ToppingsOverlay = ({
                               setExpandedDescId(descOpen ? null : topping.id)
                             }}
                             aria-label={descOpen ? 'Ocultar descripción' : 'Ver descripción'}
-                            className={`p-2 rounded-lg transition-colors ${descOpen ? 'text-brand bg-brand/10' : 'text-main-400 hover:text-brand hover:bg-brand/10'}`}
+                            className={`p-2 rounded-lg transition-colors ${descOpen ? 'text-primary bg-primary/10' : 'text-main-400 hover:text-primary hover:bg-primary/10'}`}
                           >
                             <Info size={14} />
                           </button>
@@ -154,14 +154,14 @@ export const ToppingsOverlay = ({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-xl border border-main-300 px-4 py-2 text-sm text-main-700 transition hover:bg-main-100"
+            className="flex-1 min-h-[44px] rounded-full border border-primary/20 px-4 py-2 text-sm font-bold text-primary transition hover:bg-bg"
           >
             Cancelar
           </button>
           <button
             type="button"
             onClick={handleConfirm}
-            className="flex-1 rounded-xl bg-main-700 px-4 py-2 text-sm font-semibold text-light-100 transition hover:bg-main-800"
+            className="flex-1 min-h-[44px] rounded-full bg-primary px-3 py-2 font-display text-[0.95rem] font-medium whitespace-nowrap text-surface transition hover:bg-secondary"
           >
             {confirmLabel}
           </button>

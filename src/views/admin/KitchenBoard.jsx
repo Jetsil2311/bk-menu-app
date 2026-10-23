@@ -26,18 +26,18 @@ const ItemCard = ({ order, item, onAdvance, onReturn }) => {
         e.dataTransfer.setData('text/plain', JSON.stringify({ orderId: order.id, lineId: item._lineId }))
       }}
       onClick={() => onAdvance(order, item)}
-      className="rounded-2xl border border-white/10 bg-main-900/60 p-4 cursor-pointer active:scale-[0.98] transition-transform select-none"
+      className="rounded-2xl border border-white/10 bg-main-900 p-4 cursor-pointer active:scale-[0.98] transition-transform select-none"
     >
       <div className="flex items-start gap-2">
-        <GripVertical size={14} className="text-light-200/20 shrink-0 mt-1 cursor-grab" />
+        <GripVertical size={14} className="text-light-200/45 shrink-0 mt-1 cursor-grab" />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-light-200/40">#{(order.orderId || order.id).slice(-6)}</p>
+          <p className="text-xs font-semibold text-light-200/65">#{(order.orderId || order.id).slice(-6)}</p>
           <p className="text-xl font-bold text-light-100 leading-snug mt-0.5">
             {item.qty > 1 && <span className="text-main-400">{item.qty}× </span>}
             {item.name}
           </p>
           {(optionsText || toppingsText) && (
-            <p className="text-sm text-light-200/50 mt-1">{[optionsText, toppingsText].filter(Boolean).join(' · ')}</p>
+            <p className="text-sm text-light-200/70 mt-1">{[optionsText, toppingsText].filter(Boolean).join(' · ')}</p>
           )}
           {item.itemNote && (
             <p className="mt-1.5 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2 py-1 inline-block">
@@ -50,7 +50,7 @@ const ItemCard = ({ order, item, onAdvance, onReturn }) => {
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onReturn(order, item) }}
-          className="mt-3 flex items-center gap-1.5 text-xs text-light-200/40 hover:text-light-100 transition-colors cursor-pointer"
+          className="mt-3 flex items-center gap-1.5 text-xs text-light-200/65 hover:text-light-100 transition-colors cursor-pointer"
         >
           <ArrowLeft size={12} /> Regresar
         </button>
@@ -155,10 +155,10 @@ export const KitchenBoard = () => {
 
   return (
     <div className="min-h-dvh bg-main-950 text-light-100 flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-white/10 shrink-0">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{selectedStation?.name || 'Cocina'}</h1>
-          <p className="text-xs text-light-200/40 mt-1 tabular-nums">
+          <p className="text-xs text-light-200/65 mt-1 tabular-nums">
             {now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
           </p>
         </div>
@@ -182,7 +182,7 @@ export const KitchenBoard = () => {
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-2">
             <p className="text-2xl">Todo al día 🎉</p>
-            <p className="text-sm text-light-200/40">Esperando nuevos pedidos</p>
+            <p className="text-sm text-light-200/65">Esperando nuevos pedidos</p>
           </div>
         </main>
       ) : (
@@ -196,7 +196,7 @@ export const KitchenBoard = () => {
                 onDrop={(e) => handleDrop(e, column.key)}
                 className="flex flex-col bg-main-950 min-h-0 overflow-hidden"
               >
-                <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/5">
+                <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10">
                   <p className="font-semibold text-light-100">{column.label}</p>
                   <span className="h-6 min-w-[24px] px-1.5 rounded-full bg-white/5 text-xs font-bold text-light-200/60 flex items-center justify-center">
                     {items.length}

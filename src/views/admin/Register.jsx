@@ -46,15 +46,15 @@ export const PastSessionRow = ({ session }) => {
   const variance = closing !== null ? closing - expected : null
 
   return (
-    <div className="border-b border-white/5 last:border-0">
+    <div className="border-b border-white/10 last:border-0">
       <button
         onClick={() => setOpen(v => !v)}
         className="w-full px-5 py-4 flex items-center gap-4 hover:bg-white/[0.02] transition-colors cursor-pointer text-left"
       >
-        <Calendar size={16} className="text-light-200/30 shrink-0" />
+        <Calendar size={16} className="text-light-200/55 shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-light-100 capitalize">{fmtDate(session.date)}</p>
-          <p className="text-xs text-light-200/35 mt-0.5">
+          <p className="text-xs text-light-200/60 mt-0.5">
             Apertura: {formatMoney(session.openingFloat || 0)}
             {closing !== null && <> · Cierre: {formatMoney(closing)}</>}
           </p>
@@ -64,11 +64,11 @@ export const PastSessionRow = ({ session }) => {
             {variance >= 0 ? '+' : ''}{formatMoney(variance)}
           </span>
         )}
-        {open ? <ChevronUp size={15} className="text-light-200/30 shrink-0" /> : <ChevronDown size={15} className="text-light-200/30 shrink-0" />}
+        {open ? <ChevronUp size={15} className="text-light-200/55 shrink-0" /> : <ChevronDown size={15} className="text-light-200/55 shrink-0" />}
       </button>
 
       {open && (
-        <div className="px-5 pb-4 grid grid-cols-2 gap-x-8 gap-y-2 text-xs border-t border-white/5 pt-4 bg-white/[0.01]">
+        <div className="px-5 pb-4 grid grid-cols-2 gap-x-8 gap-y-2 text-xs border-t border-white/10 pt-4 bg-white/[0.01]">
           {[
             ['Fondo inicial',        formatMoney(session.openingFloat || 0), ''],
             ['Ventas efectivo',      formatMoney(session.cashSales || 0),    'text-emerald-400'],
@@ -82,7 +82,7 @@ export const PastSessionRow = ({ session }) => {
               variance === null ? '' : Math.abs(variance) < 0.01 ? 'text-emerald-400' : variance > 0 ? 'text-blue-400' : 'text-rose-400'],
           ].map(([label, val, cls]) => (
             <div key={label}>
-              <span className="text-light-200/35">{label}: </span>
+              <span className="text-light-200/60">{label}: </span>
               <span className={cls || 'text-light-200/60'}>{val}</span>
             </div>
           ))}
@@ -207,7 +207,7 @@ export const Register = () => {
 
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (sessionLoading) return (
-    <div className="flex items-center justify-center h-64 text-light-200/30 text-sm animate-pulse">Cargando caja…</div>
+    <div className="flex items-center justify-center h-64 text-light-200/55 text-sm animate-pulse">Cargando caja…</div>
   )
 
   // ── Shared Open Modal ────────────────────────────────────────────────────────
@@ -219,10 +219,10 @@ export const Register = () => {
         onKeyDown={e => { if (e.key === 'Enter' && !isOpening) { e.preventDefault(); handleOpenRegister() } }}
       >
         <h3 className="mb-6 text-2xl font-bold text-light-100">Abrir Caja</h3>
-        <p className="mb-6 text-sm text-light-200/40">Ingresa el fondo inicial de efectivo para comenzar el día</p>
+        <p className="mb-6 text-sm text-light-200/65">Ingresa el fondo inicial de efectivo para comenzar el día</p>
         <div className="space-y-6">
           <div className="space-y-2">
-            <label className="text-left block text-xs font-medium text-light-200/40 uppercase tracking-wider">
+            <label className="text-left block text-xs font-medium text-light-200/65 uppercase tracking-wider">
               Fondo inicial
             </label>
             <MoneyInput
@@ -243,7 +243,7 @@ export const Register = () => {
             <button
               onClick={handleOpenRegister}
               disabled={isOpening}
-              className="flex-1 rounded-2xl bg-main-500 px-6 py-4 font-bold text-white transition hover:bg-main-400 disabled:opacity-40"
+              className="flex-1 rounded-2xl bg-main-500 px-6 py-4 font-bold text-snow transition hover:bg-main-400 disabled:opacity-40"
             >
               {isOpening ? 'Abriendo…' : 'Confirmar'}
             </button>
@@ -256,16 +256,16 @@ export const Register = () => {
   // ── No session today ─────────────────────────────────────────────────────────
   if (!session) return (
     <div className="flex flex-col items-center justify-center gap-6 max-w-sm mx-auto pt-16 animate-in fade-in duration-300">
-      <div className="h-16 w-16 rounded-3xl bg-main-900/50 border border-white/5 flex items-center justify-center">
+      <div className="h-16 w-16 rounded-3xl bg-main-900 border border-white/10 flex items-center justify-center">
         <LogIn size={28} className="text-main-400" />
       </div>
       <div className="text-center">
         <h2 className="text-2xl font-bold text-light-100">Caja sin abrir</h2>
-        <p className="mt-1 text-sm text-light-200/40">No hay una sesión activa para el día de hoy.</p>
+        <p className="mt-1 text-sm text-light-200/65">No hay una sesión activa para el día de hoy.</p>
       </div>
       <button
         onClick={() => setShowOpenModal(true)}
-        className="w-full flex items-center justify-center gap-2 rounded-2xl bg-main-500 hover:bg-main-400 py-4 text-base font-bold text-white transition-all cursor-pointer shadow-lg shadow-main-500/20 active:scale-[0.98]"
+        className="w-full flex items-center justify-center gap-2 rounded-2xl bg-main-500 hover:bg-main-400 py-4 text-base font-bold text-snow transition-all cursor-pointer shadow-lg shadow-main-500/20 active:scale-[0.98]"
       >
         <Plus size={20} />
         Abrir Caja de Hoy
@@ -283,16 +283,16 @@ export const Register = () => {
     
     return (
       <div className="space-y-6 animate-in fade-in duration-500 max-w-2xl mx-auto">
-        <div className="bg-main-900/50 border border-white/5 rounded-3xl p-8 flex flex-col sm:flex-row items-center gap-6">
+        <div className="bg-main-900 border border-white/10 rounded-3xl p-8 flex flex-col sm:flex-row items-center gap-6">
           <div className="h-16 w-16 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
             <Lock size={32} className="text-emerald-400" />
           </div>
           <div className="text-center sm:text-left flex-1">
             <p className="text-xl font-bold text-light-100">Caja cerrada hoy</p>
-            <p className="text-sm text-light-200/40 mt-1 capitalize">{fmtDate(session.date)} · Finalizó a las {closedAt}</p>
+            <p className="text-sm text-light-200/65 mt-1 capitalize">{fmtDate(session.date)} · Finalizó a las {closedAt}</p>
           </div>
-          <div className="text-center sm:text-right px-6 py-3 rounded-2xl bg-white/[0.03] border border-white/5">
-            <p className="text-[10px] text-light-200/30 uppercase font-bold tracking-tighter">Varianza Final</p>
+          <div className="text-center sm:text-right px-6 py-3 rounded-2xl bg-white/[0.03] border border-white/10">
+            <p className="text-[10px] text-light-200/55 uppercase font-bold tracking-tighter">Varianza Final</p>
             <p className={`text-2xl font-black tabular-nums mt-0.5 ${Math.abs(closedVariance) < 0.01 ? 'text-emerald-400' : closedVariance > 0 ? 'text-blue-400' : 'text-rose-400'}`}>
               {closedVariance >= 0 ? '+' : ''}{formatMoney(closedVariance)}
             </p>
@@ -321,12 +321,12 @@ export const Register = () => {
 
       {/* Balance summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-main-900/50 border border-white/5 rounded-3xl p-6">
-          <p className="text-xs font-medium text-light-200/40 uppercase tracking-wider">Fondo Inicial</p>
+        <div className="bg-main-900 border border-white/10 rounded-3xl p-6">
+          <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider">Fondo Inicial</p>
           <p className="text-3xl font-bold text-light-100 mt-2 tabular-nums">{formatMoney(session.openingFloat || 0)}</p>
         </div>
-        <div className="bg-main-900/50 border border-white/5 rounded-3xl p-6">
-          <p className="text-xs font-medium text-light-200/40 uppercase tracking-wider">Saldo Teórico en Caja</p>
+        <div className="bg-main-900 border border-white/10 rounded-3xl p-6">
+          <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider">Saldo Teórico en Caja</p>
           <p className="text-3xl font-bold text-emerald-400 mt-2 tabular-nums">{formatMoney(theoreticalBalance)}</p>
         </div>
       </div>
@@ -338,9 +338,9 @@ export const Register = () => {
           { label: 'Ventas Tarjeta',  val: session.cardSales || 0, icon: CreditCard, color: 'text-blue-400' },
           { label: 'Loyalty',         val: session.loyaltyRedemptions || 0, icon: Wallet, color: 'text-amber-400' },
         ].map(({ label, val, icon: Icon, color }) => (
-          <div key={label} className="bg-main-900/30 border border-white/5 rounded-2xl p-4">
+          <div key={label} className="bg-main-900 border border-white/10 rounded-2xl p-4">
             <Icon size={16} className={`${color} mb-2`} />
-            <p className="text-xs text-light-200/40 leading-tight">{label}</p>
+            <p className="text-xs text-light-200/65 leading-tight">{label}</p>
             <p className={`text-lg font-bold tabular-nums mt-1 ${color}`}>{formatMoney(val)}</p>
           </div>
         ))}
@@ -354,7 +354,7 @@ export const Register = () => {
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border text-sm font-semibold transition-all cursor-pointer min-w-[120px] ${
               activeAction === 'deposit'
                 ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
-                : 'bg-main-900/30 border-white/5 text-light-200/60 hover:border-white/10 hover:text-light-100'
+                : 'bg-main-900 border-white/10 text-light-200/60 hover:border-white/10 hover:text-light-100'
             }`}
           >
             <ArrowDownCircle size={17} />
@@ -365,7 +365,7 @@ export const Register = () => {
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border text-sm font-semibold transition-all cursor-pointer min-w-[120px] ${
               activeAction === 'withdraw'
                 ? 'bg-rose-500/20 border-rose-500/40 text-rose-400'
-                : 'bg-main-900/30 border-white/5 text-light-200/60 hover:border-white/10 hover:text-light-100'
+                : 'bg-main-900 border-white/10 text-light-200/60 hover:border-white/10 hover:text-light-100'
             }`}
           >
             <ArrowUpCircle size={17} />
@@ -376,7 +376,7 @@ export const Register = () => {
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border text-sm font-semibold transition-all cursor-pointer min-w-[120px] ${
               activeAction === 'close'
                 ? 'bg-amber-500/20 border-amber-500/40 text-amber-400'
-                : 'bg-main-900/30 border-white/5 text-light-200/60 hover:border-white/10 hover:text-light-100'
+                : 'bg-main-900 border-white/10 text-light-200/60 hover:border-white/10 hover:text-light-100'
             }`}
           >
             <Lock size={17} />
@@ -404,8 +404,8 @@ export const Register = () => {
                 autoFocus
                 inputClassName={`rounded-xl border py-2.5 text-base text-light-200 outline-none transition ${
                   activeAction === 'deposit'
-                    ? 'border-emerald-500/30 bg-main-900/60 focus:border-emerald-500/50'
-                    : 'border-rose-500/30 bg-main-900/60 focus:border-rose-500/50'
+                    ? 'border-emerald-500/30 bg-main-900 focus:border-emerald-500/50'
+                    : 'border-rose-500/30 bg-main-900 focus:border-rose-500/50'
                 }`}
                 className="flex-none w-36"
               />
@@ -414,17 +414,17 @@ export const Register = () => {
                 placeholder="Descripción (opcional)"
                 value={actionDesc}
                 onChange={e => setActionDesc(e.target.value)}
-                className="flex-1 rounded-xl border border-white/10 bg-main-900/60 px-3 py-2.5 text-sm text-light-200 placeholder:text-light-200/25 outline-none focus:border-white/20 transition"
+                className="flex-1 rounded-xl border border-white/10 bg-main-900 px-3 py-2.5 text-sm text-light-200 placeholder:text-light-200/50 outline-none focus:border-white/20 transition"
               />
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setActiveAction(null)} className="px-4 py-2 rounded-xl border border-white/10 text-sm text-light-200/40 hover:bg-white/5 transition cursor-pointer">
+              <button onClick={() => setActiveAction(null)} className="px-4 py-2 rounded-xl border border-white/10 text-sm text-light-200/65 hover:bg-white/5 transition cursor-pointer">
                 Cancelar
               </button>
               <button
                 onClick={submitAction}
                 disabled={!actionAmount || actionAmount <= 0 || isSubmitting}
-                className={`px-5 py-2 rounded-xl text-sm font-semibold text-white transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`px-5 py-2 rounded-xl text-sm font-semibold text-snow transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                   activeAction === 'deposit' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-rose-700 hover:bg-rose-600'
                 }`}
               >
@@ -440,7 +440,7 @@ export const Register = () => {
             <p className="text-sm font-semibold text-amber-200">Cierre de Caja</p>
 
             {/* Summary table */}
-            <div className="rounded-xl border border-white/5 bg-main-950 p-4 space-y-2 text-sm">
+            <div className="rounded-xl border border-white/10 bg-main-950 p-4 space-y-2 text-sm">
               {[
                 ['Fondo inicial',     formatMoney(session.openingFloat || 0), ''],
                 ['+ Ventas efectivo', formatMoney(session.cashSales || 0),    'text-emerald-400'],
@@ -449,11 +449,11 @@ export const Register = () => {
                 ['− Retiros',         formatMoney(totalWithdrawals),          'text-rose-400'],
               ].map(([label, val, cls]) => (
                 <div key={label} className="flex justify-between">
-                  <span className="text-light-200/40">{label}</span>
+                  <span className="text-light-200/65">{label}</span>
                   <span className={cls || 'text-light-200/70'}>{val}</span>
                 </div>
               ))}
-              <div className="border-t border-white/5 pt-2 flex justify-between font-semibold">
+              <div className="border-t border-white/10 pt-2 flex justify-between font-semibold">
                 <span className="text-light-200/60">Efectivo esperado</span>
                 <span className="text-light-100">{formatMoney(theoreticalBalance)}</span>
               </div>
@@ -461,7 +461,7 @@ export const Register = () => {
 
             {/* Closing cash input */}
             <div className="space-y-2">
-              <label className="text-xs font-medium text-light-200/40 uppercase tracking-wider">Efectivo contado físicamente</label>
+              <label className="text-xs font-medium text-light-200/65 uppercase tracking-wider">Efectivo contado físicamente</label>
               <MoneyInput
                 value={closingCash}
                 onChange={setClosingCash}
@@ -487,13 +487,13 @@ export const Register = () => {
             </div>
 
             <div className="flex gap-2">
-              <button onClick={() => setActiveAction(null)} className="px-4 py-2.5 rounded-xl border border-white/10 text-sm text-light-200/40 hover:bg-white/5 transition cursor-pointer">
+              <button onClick={() => setActiveAction(null)} className="px-4 py-2.5 rounded-xl border border-white/10 text-sm text-light-200/65 hover:bg-white/5 transition cursor-pointer">
                 Cancelar
               </button>
               <button
                 onClick={handleCloseRegister}
                 disabled={isSubmitting}
-                className="flex-1 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-sm font-bold text-white transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex-1 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-sm font-bold text-snow transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Cerrando…' : 'Confirmar cierre'}
               </button>
@@ -505,8 +505,8 @@ export const Register = () => {
       {/* Transaction log */}
       {transactions.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-light-200/50 uppercase tracking-wider px-2">Movimientos de hoy</h2>
-          <div className="bg-main-900/30 border border-white/5 rounded-3xl overflow-hidden divide-y divide-white/5 shadow-xl">
+          <h2 className="text-sm font-semibold text-light-200/70 uppercase tracking-wider px-2">Movimientos de hoy</h2>
+          <div className="bg-main-900 border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/10 shadow-xl">
             {transactions.map((tx, i) => (
               <div key={i} className="flex items-center gap-3 px-5 py-3">
                 <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 ${
@@ -518,7 +518,7 @@ export const Register = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-light-100 truncate">{tx.description}</p>
-                  <p className="text-xs text-light-200/35 flex items-center gap-1 mt-0.5">
+                  <p className="text-xs text-light-200/60 flex items-center gap-1 mt-0.5">
                     <Clock size={10} /> {fmtTime(tx.ts)}
                   </p>
                 </div>

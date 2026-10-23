@@ -18,13 +18,13 @@ const compactPeso = (v) => {
 }
 
 const StatCard = ({ icon: Icon, label, value, subtext, colorCls }) => (
-  <div className="bg-main-900/30 border border-white/5 rounded-3xl p-5 shadow-sm">
+  <div className="bg-main-900 border border-white/10 rounded-3xl p-5 shadow-sm">
     <div className={`h-9 w-9 rounded-2xl flex items-center justify-center shrink-0 mb-3 ${colorCls}`}>
       <Icon size={18} />
     </div>
-    <p className="text-xs font-medium text-light-200/40 uppercase tracking-wider truncate">{label}</p>
+    <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider truncate">{label}</p>
     <h4 className="text-xl sm:text-2xl font-bold text-light-100 mt-1 tabular-nums truncate">{value}</h4>
-    {subtext && <p className="text-[10px] text-light-200/30 mt-0.5 truncate">{subtext}</p>}
+    {subtext && <p className="text-[10px] text-light-200/55 mt-0.5 truncate">{subtext}</p>}
   </div>
 )
 
@@ -35,23 +35,23 @@ const CustomTooltip = ({ active, payload }) => {
     <div className="rounded-xl border border-white/10 bg-main-950 px-3 py-2.5 shadow-xl text-xs space-y-1.5 min-w-[10rem]">
       <p className="font-semibold text-light-100">{dayName}</p>
       <div className="flex items-center justify-between gap-4">
-        <span className="text-light-200/50 flex items-center gap-1.5">
+        <span className="text-light-200/70 flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-blue-400" />Ingresos
         </span>
         <span className="font-bold text-light-100 tabular-nums">{formatMoney(avgRevenue)}</span>
       </div>
       <div className="flex items-center justify-between gap-4">
-        <span className="text-light-200/50 flex items-center gap-1.5">
+        <span className="text-light-200/70 flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-full bg-emerald-400" />Ganancia
         </span>
         <span className="font-bold text-light-100 tabular-nums">{formatMoney(avgProfit)}</span>
       </div>
       <div className="flex items-center justify-between gap-4">
-        <span className="text-light-200/50">Pedidos prom.</span>
+        <span className="text-light-200/70">Pedidos prom.</span>
         <span className="font-bold text-light-100 tabular-nums">{Math.round(avgOrders)}</span>
       </div>
       <div className="flex items-center justify-between gap-4">
-        <span className="text-light-200/50">Margen</span>
+        <span className="text-light-200/70">Margen</span>
         <span className="font-bold text-light-100 tabular-nums">{margin.toFixed(1)}%</span>
       </div>
     </div>
@@ -68,9 +68,9 @@ const TABLE_COLS = [
 
 // Green for top 3 days, red for bottom 3, amber for the middle
 const profitBarColor = (rank) => {
-  if (rank <= 2) return '#10b981' // emerald-500
-  if (rank >= 4) return '#f43f5e' // rose-500
-  return '#f59e0b'                // amber-500
+  if (rank <= 2) return 'var(--color-chart-good)'
+  if (rank >= 4) return 'var(--color-chart-bad)'
+  return 'var(--color-chart-mid)'
 }
 
 export const ProfitByDayOfWeek = ({ orders, start, end }) => {
@@ -138,7 +138,7 @@ export const ProfitByDayOfWeek = ({ orders, start, end }) => {
 
   if (orders.length === 0) {
     return (
-      <div className="bg-main-900/30 border border-white/5 rounded-3xl py-16 flex flex-col items-center gap-3 text-light-200/30">
+      <div className="bg-main-900 border border-white/10 rounded-3xl py-16 flex flex-col items-center gap-3 text-light-200/55">
         <BarChart2 size={36} />
         <p className="text-sm italic text-center px-4">
           No hay pedidos en este período para calcular patrones por día.
@@ -197,33 +197,33 @@ export const ProfitByDayOfWeek = ({ orders, start, end }) => {
       </div>
 
       {/* Bar chart */}
-      <div className="bg-main-900/30 border border-white/5 rounded-3xl p-5 sm:p-6">
+      <div className="bg-main-900 border border-white/10 rounded-3xl p-5 sm:p-6">
         <p className="text-sm font-bold text-light-100 mb-5">Ganancia e ingresos promedio por día</p>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barGap={2} barCategoryGap="25%">
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-chart-grid)" vertical={false} />
             <XAxis
               dataKey="dayShort"
-              tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
+              tick={{ fill: 'var(--color-chart-tick)', fontSize: 11 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               tickFormatter={compactPeso}
-              tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
+              tick={{ fill: 'var(--color-chart-tick)', fontSize: 11 }}
               axisLine={false}
               tickLine={false}
               width={48}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--color-chart-cursor)' }} />
             <Legend
               formatter={(value) => (
-                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{value}</span>
+                <span style={{ color: 'var(--color-chart-tick)', fontSize: 11 }}>{value}</span>
               )}
               iconType="circle"
               iconSize={8}
             />
-            <Bar dataKey="avgRevenue" name="Ingresos" fill="#3b82f6" radius={[5, 5, 0, 0]} />
+            <Bar dataKey="avgRevenue" name="Ingresos" fill="var(--color-chart-profit)" radius={[5, 5, 0, 0]} />
             <Bar dataKey="avgProfit"  name="Ganancia" radius={[5, 5, 0, 0]}>
               {chartData.map((entry) => (
                 <Cell key={entry.dayIndex} fill={profitBarColor(entry._rank)} />
@@ -231,7 +231,7 @@ export const ProfitByDayOfWeek = ({ orders, start, end }) => {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-        <p className="text-[10px] text-light-200/30 mt-2 text-right">
+        <p className="text-[10px] text-light-200/55 mt-2 text-right">
           Verde = top 3 días · Rojo = peor 3 días
         </p>
       </div>
@@ -246,25 +246,25 @@ export const ProfitByDayOfWeek = ({ orders, start, end }) => {
       )}
 
       {/* Drill-down table */}
-      <div className="bg-main-900/30 border border-white/5 rounded-3xl shadow-sm overflow-hidden">
+      <div className="bg-main-900 border border-white/10 rounded-3xl shadow-sm overflow-hidden">
         <button
           onClick={() => setTableOpen((v) => !v)}
           className="w-full flex items-center justify-between px-5 sm:px-6 py-4 cursor-pointer hover:bg-white/3 transition-colors"
         >
           <span className="text-sm font-bold text-light-100">Desglose por día</span>
-          {tableOpen ? <ChevronUp size={18} className="text-light-200/40" /> : <ChevronDown size={18} className="text-light-200/40" />}
+          {tableOpen ? <ChevronUp size={18} className="text-light-200/65" /> : <ChevronDown size={18} className="text-light-200/65" />}
         </button>
 
         {tableOpen && (
           <div className="overflow-x-auto px-5 sm:px-6 pb-5 sm:pb-6">
             <table className="w-full text-sm min-w-[480px]">
               <thead>
-                <tr className="border-b border-white/5">
+                <tr className="border-b border-white/10">
                   {TABLE_COLS.map((col) => (
                     <th
                       key={col.key}
                       onClick={() => toggleSort(col.key)}
-                      className={`py-2.5 text-xs font-medium text-light-200/40 uppercase tracking-wider cursor-pointer select-none hover:text-light-200/70 transition-colors ${col.align === 'right' ? 'text-right' : 'text-left'}`}
+                      className={`py-2.5 text-xs font-medium text-light-200/65 uppercase tracking-wider cursor-pointer select-none hover:text-light-200/70 transition-colors ${col.align === 'right' ? 'text-right' : 'text-left'}`}
                     >
                       <span className={`inline-flex items-center gap-1 ${col.align === 'right' ? 'flex-row-reverse' : ''}`}>
                         {col.label}
@@ -274,7 +274,7 @@ export const ProfitByDayOfWeek = ({ orders, start, end }) => {
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-white/10">
                 {sortedTable.map((day) => {
                   const rank = rankMap[day.dayIndex]
                   const isBest  = rank === 0

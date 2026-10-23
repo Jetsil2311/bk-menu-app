@@ -9,13 +9,13 @@ const startOfDay = (d) => { const x = new Date(d); x.setHours(0, 0, 0, 0); retur
 const endOfDay = (d) => { const x = new Date(d); x.setHours(23, 59, 59, 999); return x }
 
 const StatCard = ({ icon: Icon, label, value, subtext, colorCls }) => (
-  <div className="bg-main-900/30 border border-white/5 rounded-3xl p-5 shadow-sm">
+  <div className="bg-main-900 border border-white/10 rounded-3xl p-5 shadow-sm">
     <div className={`h-9 w-9 rounded-2xl flex items-center justify-center shrink-0 mb-3 ${colorCls}`}>
       <Icon size={18} />
     </div>
-    <p className="text-xs font-medium text-light-200/40 uppercase tracking-wider truncate">{label}</p>
+    <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider truncate">{label}</p>
     <h4 className="text-xl sm:text-2xl font-bold text-light-100 mt-1 tabular-nums truncate">{value}</h4>
-    {subtext && <p className="text-[10px] text-light-200/30 mt-0.5 truncate">{subtext}</p>}
+    {subtext && <p className="text-[10px] text-light-200/55 mt-0.5 truncate">{subtext}</p>}
   </div>
 )
 
@@ -62,7 +62,7 @@ export const BreakEvenAnalysis = ({ orders, hasAnyRecipe }) => {
   }, [todayOrders, fixedCosts, hasExpenses])
 
   const profitColorCls = !stats.canCalculate
-    ? 'text-light-200/40'
+    ? 'text-light-200/65'
     : stats.averageProfitPerOrder < 0
     ? 'text-rose-400'
     : stats.averageProfitPerOrder >= 50
@@ -81,7 +81,7 @@ export const BreakEvenAnalysis = ({ orders, hasAnyRecipe }) => {
       <ExpenseManager onTotalsChange={setExpenseTotals} />
 
       {hasExpenses && (
-        <p className="text-xs text-light-200/40 px-1">
+        <p className="text-xs text-light-200/65 px-1">
           Costo fijo diario usado en el cálculo de abajo: <span className="text-light-100 font-semibold">{formatMoney(fixedCosts)}</span> (de tus gastos fijos registrados arriba).
         </p>
       )}
@@ -111,11 +111,11 @@ export const BreakEvenAnalysis = ({ orders, hasAnyRecipe }) => {
           icon={Flag}
           label="Estado"
           value={!stats.canCalculate ? 'Sin datos aún' : stats.isBreakEven ? '✓ Equilibrio alcanzado' : `Falta ${formatMoney(stats.revenueNeeded)}`}
-          colorCls={!stats.canCalculate ? 'bg-white/10 text-light-200/50' : stats.isBreakEven ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}
+          colorCls={!stats.canCalculate ? 'bg-white/10 text-light-200/70' : stats.isBreakEven ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}
         />
       </div>
 
-      <div className="bg-main-900/30 border border-white/5 rounded-3xl p-5 sm:p-6 shadow-sm space-y-3">
+      <div className="bg-main-900 border border-white/10 rounded-3xl p-5 sm:p-6 shadow-sm space-y-3">
         <div className="flex items-center justify-between text-sm">
           <span className="text-light-200/60">
             {stats.canCalculate
@@ -132,7 +132,7 @@ export const BreakEvenAnalysis = ({ orders, hasAnyRecipe }) => {
             style={{ width: `${stats.progressPct}%` }}
           />
         </div>
-        <p className="text-xs text-light-200/40">
+        <p className="text-xs text-light-200/65">
           {stats.canCalculate ? `${Math.round(stats.progressPct)}% del objetivo` : 'El progreso aparecerá con la primera venta rentable de hoy.'}
         </p>
       </div>

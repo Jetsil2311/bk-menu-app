@@ -19,7 +19,7 @@ import {
   where,
   writeBatch,
 } from 'firebase/firestore'
-import { auth, db } from '../firebase'
+import { auth, db, isTestEnv } from '../firebase'
 import { uploadToCloudinary } from '../utils/cloudinary'
 
 export const useAdminData = () => {
@@ -128,9 +128,13 @@ export const useAdminData = () => {
   const googleProvider = useMemo(() => new GoogleAuthProvider(), [])
 
   // Email-based admin gate (case-insensitive).
+  // In test mode (npm run dev:test) the emulator-only test login is also allowed.
   const isAllowedEmail = (email) =>
     Boolean(email) &&
-    ALLOWED_EMAILS.map((item) => item.toLowerCase()).includes(email.toLowerCase())
+    (
+      (isTestEnv && email.toLowerCase() === String(import.meta.env.VITE_TEST_LOGIN_EMAIL || '').toLowerCase()) ||
+      ALLOWED_EMAILS.map((item) => item.toLowerCase()).includes(email.toLowerCase())
+    )
 
   useEffect(() => {
     // Keep auth state in sync and block non-admin users.
@@ -655,10 +659,14 @@ export const useAdminData = () => {
       await addDoc(collection(db, 'carousel'), {
         imageUrl:  url,
         publicId:  publicId,
-        altText:   carouselAltText.trim(),
+        // Alt text defaults to the linked product's name; new slides go last
+        // (reordering is done with the arrows in the Carrusel tab).
+        altText:   carouselAltText.trim() || (carouselProducts.find((p) => p.docId === carouselLinkedId)?.name ?? ''),
         linkType:  carouselLinkType,
         linkedId:  carouselLinkedId,
-        order:     carouselOrder === '' ? 0 : Number(carouselOrder),
+        order:     carouselOrder === ''
+          ? (carouselSlides.length ? Math.max(...carouselSlides.map((sl) => Number(sl.order) || 0)) + 1 : 0)
+          : Number(carouselOrder),
         active:    carouselActive,
         createdAt: serverTimestamp(),
       })
@@ -1004,11 +1012,18 @@ export const useAdminData = () => {
 
       setIsSubmitting(true)
 
+      // No order given → append after the last section (the editor has
+      // drag-to-reorder, so there is no separate "Orden" field anymore).
+      const nextOrder = menuSections.length
+        ? Math.max(...menuSections.map((sec) => Number(sec.order) || 0)) + 1
+        : 0
+      const finalOrder = orderValue ?? nextOrder
+
       const sectionRef = await addDoc(collection(db, 'sections'), {
         name: trimmedName,
         desc: sectionDesc.trim(),
         category: trimmedCategory,
-        order: orderValue ?? 0,
+        order: finalOrder,
         image: sectionImage.trim(),
         createdAt: serverTimestamp(),
       })
@@ -1021,7 +1036,7 @@ export const useAdminData = () => {
           name: trimmedName,
           desc: sectionDesc.trim(),
           category: trimmedCategory,
-          order: orderValue ?? 0,
+          order: finalOrder,
           image: sectionImage.trim(),
         },
       ])

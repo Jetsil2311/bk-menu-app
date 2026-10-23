@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 import { Navbar } from '../components/Navbar'
+import { MenuHero } from '../components/MenuHero'
+import Logo from '../assets/bklogo.svg'
 import { PromoCarousel } from '../components/PromoCarousel'
 import { CartButton } from '../components/CartButton'
 import { CartOverlay } from '../components/CartOverlay'
@@ -20,13 +22,21 @@ import {
 } from 'firebase/firestore'
 import { usePromotion } from '../hooks/usePromotion'
 import { useSections } from '../hooks/useSections'
+import { useSettings } from '../hooks/useSettings'
 import { flyToCart, formatMoney, getCartKey } from '../utils/cart'
 import { toSafeItems } from '../utils/posCalculations'
-import { db } from '../firebase'
+import { db, isTestEnv } from '../firebase'
 
 export const Home = () => {
   const location = useLocation()
-  const WHATSAPP_NUMBER = '5574182443'
+  // Orders go to the number set in Admin → Ajustes → "WhatsApp para pedidos"
+  // (settings/general.orderNotificationPhone). Falls back to the original
+  // hardcoded number while unset.
+  // In test mode (npm run dev:test) there is no fallback: test orders open
+  // WhatsApp without a recipient so they never reach the café.
+  const { settings } = useSettings()
+  const WHATSAPP_NUMBER =
+    String(settings?.orderNotificationPhone || '').replace(/\D/g, '') || (isTestEnv ? '' : '5574182443')
 
   // Cart + overlay state.
   const [cart, setCart] = useState([])
@@ -479,9 +489,10 @@ export const Home = () => {
     )
 
   return (
-    <>
+    <div className="menu-bg font-body text-ink min-h-dvh">
       <Navbar />
-      {promotion && isPromoVisible && (
+      <MenuHero />
+      {promotion && isPromoVisible && !isCartOpen && (
         <PromoBanner
           title={promotion.title || 'Nueva promoción'}
           message={promotion.message || ''}
@@ -496,15 +507,15 @@ export const Home = () => {
           100% { transform: scale(1); }
         }
         @keyframes toastIn {
-          0%   { opacity: 0; transform: translate(-50%, -8px); }
-          100% { opacity: 1; transform: translate(-50%, 0); }
+          0%   { opacity: 0; transform: translateY(-8px) scale(0.95); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
         }
       `}</style>
 
       {/* ── Brief add-to-cart toast ──────────────────────────────────── */}
       {toast && (
         <div
-          className="fixed left-1/2 pointer-events-none"
+          className="fixed inset-x-0 flex justify-center pointer-events-none"
           style={{
             top: 72,
             zIndex: 9100,
@@ -512,13 +523,9 @@ export const Home = () => {
           }}
         >
           <div
-            className="rounded-full px-5 py-2.5 text-sm font-semibold shadow-2xl"
-            style={{
-              background: '#1c0d05',
-              border: '1px solid rgba(120,60,20,0.4)',
-              color: '#faf6f0',
-              transform: 'translateX(-50%)',
-            }}
+            role="status"
+            aria-live="polite"
+            className="rounded-full bg-ink px-5 py-2.5 font-display text-base font-medium text-surface shadow-[0_14px_30px_-10px_var(--color-ink)]"
           >
             {toast}
           </div>
@@ -535,7 +542,7 @@ export const Home = () => {
         />
       )}
 
-      <div className="mb-24 sm:mb-50">
+      <main className="pb-6">
         <SectionsList
           isLoading={sectionsLoading}
           error={sectionsError}
@@ -544,7 +551,22 @@ export const Home = () => {
           onAddToCart={addToCart}
           toppingsMap={toppingsMap}
         />
-      </div>
+      </main>
+
+      {/* ── Footer ──────────────────────────────────────────────────── */}
+      <footer className="relative mt-10 bg-primary pb-32 pt-14 text-center text-surface sm:pb-16">
+        <svg
+          className="absolute bottom-full left-0 block h-8 w-full text-primary"
+          viewBox="0 0 400 32"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path d="M0 18 C 50 30, 100 30, 150 16 S 250 2, 300 16 S 370 30, 400 18 L400 32 L0 32 Z" fill="currentColor" />
+        </svg>
+        <img src={Logo} alt="Bubble Kaapeh" className="mx-auto h-12 opacity-90" />
+        <p className="mt-3 font-display text-lg">Hecho con cariño y mucha tapioca</p>
+        <p className="mt-1 text-sm text-surface/70">Haz tu pedido aquí y te lo confirmamos por WhatsApp.</p>
+      </footer>
 
       <CartButton
         ref={cartBtnRef}
@@ -607,6 +629,6 @@ export const Home = () => {
         onConfirm={handleToppingConfirmEdit}
         confirmLabel="Guardar cambios"
       />
-    </>
+    </div>
   )
 }

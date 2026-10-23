@@ -13,7 +13,7 @@ const COLUMNS = [
 ]
 
 const marginColorCls = (margin) => {
-  if (margin === null) return 'text-light-200/30'
+  if (margin === null) return 'text-light-200/55'
   if (margin >= 80) return 'text-emerald-400'
   if (margin >= 60) return 'text-amber-400'
   return 'text-rose-400'
@@ -61,7 +61,7 @@ export const ProductProfitability = ({ orders }) => {
   }
 
   return (
-    <div className="bg-main-900/30 border border-white/5 rounded-3xl p-5 sm:p-6 shadow-sm">
+    <div className="bg-main-900 border border-white/10 rounded-3xl p-5 sm:p-6 shadow-sm">
       <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
         <div className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center shrink-0">
@@ -69,22 +69,22 @@ export const ProductProfitability = ({ orders }) => {
           </div>
           <div>
             <h3 className="text-sm font-bold text-light-100">Rentabilidad por Producto</h3>
-            <p className="text-xs text-light-200/40">Toca una columna para ordenar</p>
+            <p className="text-xs text-light-200/65">Toca una columna para ordenar</p>
           </div>
         </div>
         <div className="relative w-full sm:w-56">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/30" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/55" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar producto..."
-            className="w-full rounded-xl border border-white/10 bg-main-900/60 pl-8 pr-8 py-2 text-sm text-light-100 outline-none focus:border-main-500/50 transition-colors placeholder:text-light-200/30"
+            className="w-full rounded-xl border border-white/10 bg-main-900 pl-8 pr-8 py-2 text-sm text-light-100 outline-none focus:border-main-500/50 transition-colors placeholder:text-light-200/55"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-light-200/30 hover:text-light-100 cursor-pointer"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-light-200/55 hover:text-light-100 cursor-pointer"
             >
               <X size={14} />
             </button>
@@ -93,12 +93,12 @@ export const ProductProfitability = ({ orders }) => {
       </div>
 
       {productMetrics.length === 0 ? (
-        <div className="py-16 flex flex-col items-center gap-2 text-light-200/30">
+        <div className="py-16 flex flex-col items-center gap-2 text-light-200/55">
           <Table2 size={32} />
           <p className="text-sm italic">No hay datos en este período.</p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="py-16 flex flex-col items-center gap-2 text-light-200/30">
+        <div className="py-16 flex flex-col items-center gap-2 text-light-200/55">
           <Search size={32} />
           <p className="text-sm italic">No hay productos que coincidan con &quot;{search}&quot;.</p>
         </div>
@@ -106,12 +106,12 @@ export const ProductProfitability = ({ orders }) => {
         <div className="overflow-x-auto -mx-5 sm:-mx-6 px-5 sm:px-6">
           <table className="w-full text-sm min-w-[540px]">
             <thead>
-              <tr className="border-b border-white/5">
+              <tr className="border-b border-white/10">
                 {COLUMNS.map((col) => (
                   <th
                     key={col.key}
                     onClick={() => toggleSort(col.key)}
-                    className={`py-2.5 text-xs font-medium text-light-200/40 uppercase tracking-wider cursor-pointer select-none hover:text-light-200/70 transition-colors ${
+                    className={`py-2.5 text-xs font-medium text-light-200/65 uppercase tracking-wider cursor-pointer select-none hover:text-light-200/70 transition-colors ${
                       col.align === 'right' ? 'text-right' : 'text-left'
                     } ${col.hideOnMobile ? 'hidden md:table-cell' : ''}`}
                   >
@@ -123,7 +123,7 @@ export const ProductProfitability = ({ orders }) => {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-white/10">
               {filtered.map((row) => (
                 <tr key={row.key} className="hover:bg-white/3 transition-colors">
                   <td className="py-3 pr-3 text-light-100 font-medium truncate max-w-[10rem]">{row.name}</td>

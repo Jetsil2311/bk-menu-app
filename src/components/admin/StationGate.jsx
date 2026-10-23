@@ -3,6 +3,14 @@ import { ChefHat } from 'lucide-react'
 import { useStationContext } from '../../context/StationContext'
 import { ROLE_LABELS, ROLE_ICONS } from '../../utils/stations'
 import { PinKeypad } from './PinKeypad'
+import Logo from '../../assets/bklogo.svg'
+
+// Plain-language summary of what each role sees, shown on the picker cards.
+const ROLE_HINTS = {
+  admin: 'Acceso completo al panel',
+  cajero: 'Cobrar, pedidos y caja',
+  kitchen: 'Pantalla de pedidos en cocina',
+}
 
 // Full-screen station picker. Not a security boundary (the PIN is
 // app-level only) — matches the original single shared-PIN system's own
@@ -13,10 +21,8 @@ export const StationGate = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-main-950 flex items-center justify-center">
-        <p className="text-sm uppercase tracking-[0.35em] text-light-200/70 animate-pulse">
-          Cargando estaciones
-        </p>
+      <div className="min-h-dvh bg-main-950 flex items-center justify-center">
+        <p className="text-sm font-semibold text-light-200/70 animate-pulse">Cargando estaciones…</p>
       </div>
     )
   }
@@ -42,29 +48,35 @@ export const StationGate = () => {
   }
 
   return (
-    <div className="min-h-screen bg-main-950 flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl">
+    <div className="min-h-dvh bg-main-950 text-light-100 font-body flex items-center justify-center p-5">
+      <div className="w-full max-w-3xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-light-100">Bubble Kaapeh</h1>
-          <p className="mt-2 text-sm text-light-200/60">Selecciona tu estación</p>
+          <div className="inline-flex rounded-2xl bg-primary px-5 py-3.5">
+            <img src={Logo} alt="Bubble Kaapeh" className="h-9" />
+          </div>
+          <h1 className="mt-6 font-display text-3xl font-semibold">¿Quién usa este dispositivo?</h1>
+          <p className="mt-2 text-sm text-light-200/70">Elige tu estación y escribe su PIN para entrar.</p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {stations.map((station) => {
             const Icon = ROLE_ICONS[station.role] || ChefHat
+            const roleLabel = ROLE_LABELS[station.role] || station.role
             return (
               <button
                 key={station.id}
                 type="button"
                 onClick={() => setActiveStation(station)}
-                className="flex flex-col items-center gap-3 rounded-3xl border border-white/10 bg-main-800/60 p-6 hover:border-main-400/40 hover:bg-main-800 transition-all cursor-pointer"
+                className="group flex sm:flex-col items-center gap-4 sm:gap-3 rounded-3xl bg-main-900 p-5 sm:p-7 text-left sm:text-center ring-1 ring-white/10 shadow-[0_12px_30px_-22px_var(--color-ink)] hover:ring-primary/40 hover:-translate-y-0.5 transition-all cursor-pointer"
               >
-                <div className="h-14 w-14 rounded-2xl bg-main-500/15 border border-main-500/20 flex items-center justify-center text-main-300">
+                <div className="h-14 w-14 shrink-0 rounded-2xl bg-primary/10 flex items-center justify-center text-primary dark:text-main-300 group-hover:bg-primary group-hover:text-snow transition-colors">
                   <Icon size={26} />
                 </div>
-                <div className="text-center">
-                  <p className="font-semibold text-light-100">{station.name}</p>
-                  <p className="text-xs text-light-200/40 mt-0.5">{ROLE_LABELS[station.role] || station.role}</p>
+                <div className="min-w-0">
+                  <p className="font-display text-lg font-semibold">{station.name}</p>
+                  <p className="text-xs text-light-200/70 mt-0.5">
+                    {station.name !== roleLabel ? `${roleLabel} · ` : ''}{ROLE_HINTS[station.role] || ''}
+                  </p>
                 </div>
               </button>
             )

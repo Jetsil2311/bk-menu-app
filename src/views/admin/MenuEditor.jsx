@@ -6,6 +6,8 @@ import { db } from '../../firebase'
 import { useAdminData } from '../../hooks/useAdminData'
 import { useStationContext } from '../../context/StationContext'
 import { ConfirmDialog } from '../../components/admin/ConfirmDialog'
+import { MenuCard } from '../../components/MenuCard'
+import { getSectionTone } from '../../utils/menuTheme'
 import {
   addOptionToGroup,
   createMenuOption,
@@ -16,440 +18,394 @@ import {
   updateOptionInGroup,
 } from '../../utils/menuOptionGroups'
 import {
+  Drawer, Field, FormSection, Toggle, MiniSwitch, Segmented, ChipCheck, Notice, EmptyState,
+  inputCls, textareaCls, btnPrimary, btnSecondary, iconBtn, iconBtnDanger,
+} from '../../components/admin/ui'
+import {
   Plus,
   Pencil,
   Trash2,
   ChevronDown,
   GripVertical,
-  X,
   Check,
   AlertCircle,
-  Image as ImageIcon,
+  ImagePlus,
   Layers,
   Candy,
   MonitorPlay,
   RefreshCcw,
-  ToggleLeft,
-  ToggleRight,
+  Search,
+  Eye,
+  EyeOff,
+  SlidersHorizontal,
+  ChefHat,
+  Info,
+  ArrowUp,
+  ArrowDown,
+  Smartphone,
 } from 'lucide-react'
 
-// ── Shared input style ────────────────────────────────────────────────────────
-const inputCls =
-  'w-full rounded-xl border border-white/10 bg-main-900/60 px-3 py-2.5 text-sm text-light-100 placeholder-light-200/30 outline-none transition focus:border-main-500/50 focus:ring-1 focus:ring-main-500/20'
+const BASE_URL = import.meta.env.BASE_URL
 
-const labelCls = 'block text-xs font-medium text-light-200/60 mb-1.5'
+const productImageSrc = (p) =>
+  p?.imageUrl || (p?.id !== undefined && p?.id !== null && p?.id !== '' ? `${BASE_URL}products/${p.id}${p.image ?? ''}` : '')
 
-// ── Option Groups Editor ──────────────────────────────────────────────────────
-// Renders inside ProductDrawer to manage the optionGroups array.
-const OptionGroupsEditor = ({ groups = [], onChange }) => {
-  const addGroup = () => {
-    onChange([...groups, createOptionGroup()])
-  }
-
-  const updateGroup = (gIdx, field, value) => {
-    onChange(updateOptionGroup(groups, gIdx, field, value))
-  }
-
-  const removeGroup = (gIdx) => {
-    onChange(removeOptionGroup(groups, gIdx))
-  }
-
-  const addOption = (gIdx) => {
-    onChange(addOptionToGroup(groups, gIdx, createMenuOption()))
-  }
-
-  const updateOption = (gIdx, oIdx, field, value) => {
-    onChange(updateOptionInGroup(groups, gIdx, oIdx, field, value))
-  }
-
-  const removeOption = (gIdx, oIdx) => {
-    onChange(removeOptionFromGroup(groups, gIdx, oIdx))
-  }
-
+// Small square product thumbnail with graceful fallback.
+const Thumb = ({ src, className = 'h-12 w-12' }) => {
+  const [failed, setFailed] = useState(false)
   return (
-    <div className="col-span-2 space-y-3">
-      {/* Section header */}
-      <div className="flex items-center justify-between">
-        <span className={labelCls + ' mb-0'}>Grupos de Opciones</span>
-        <button
-          type="button"
-          onClick={addGroup}
-          className="flex items-center gap-1 rounded-lg border border-main-500/30 bg-main-600/20 px-2.5 py-1 text-xs font-medium text-main-300 transition-colors hover:bg-main-600/40 cursor-pointer"
-        >
-          <Plus size={12} /> Agregar grupo
-        </button>
-      </div>
-
-      {groups.length === 0 && (
-        <p className="text-[11px] italic text-light-200/25">
-          Sin grupos configurados. Agrega grupos para mostrar opciones al cliente (Sabores, Estilo, Temperatura, etc.).
-        </p>
-      )}
-
-      {groups.map((group, gIdx) => (
-        <div
-          key={group.id}
-          className="rounded-xl border border-amber-900/20 p-4 space-y-3"
-          style={{ background: 'rgba(255,255,255,0.04)' }}
-        >
-          {/* Row 1: drag handle + name + required toggle */}
-          <div className="flex items-center gap-2">
-            <GripVertical
-              size={14}
-              className="text-light-200/20 shrink-0 cursor-grab"
-            />
-            <input
-              className={inputCls + ' flex-1'}
-              placeholder="Nombre del grupo, ej. Sabores"
-              value={group.name}
-              onChange={(e) => updateGroup(gIdx, 'name', e.target.value)}
-            />
-            {/* Required toggle */}
-            <button
-              type="button"
-              onClick={() => updateGroup(gIdx, 'required', !group.required)}
-              title={group.required ? 'Requerido — clic para desactivar' : 'Opcional — clic para hacer requerido'}
-              className={`shrink-0 rounded-lg border px-2 py-1 text-[11px] font-semibold transition-colors cursor-pointer ${
-                group.required
-                  ? 'border-red-500/30 bg-red-500/15 text-red-300'
-                  : 'border-white/10 bg-white/5 text-light-200/30 hover:border-white/20'
-              }`}
-            >
-              * req
-            </button>
-          </div>
-
-          {/* Row 2: type toggle — single / multi */}
-          <div className="flex gap-2">
-            {[
-              { value: 'single', label: 'Elige 1' },
-              { value: 'multi', label: 'Elige varios' },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => updateGroup(gIdx, 'type', opt.value)}
-                className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition-colors cursor-pointer ${
-                  group.type === opt.value
-                    ? 'border border-main-500/40 bg-main-500/20 text-main-300'
-                    : 'border border-white/10 bg-white/5 text-light-200/40 hover:bg-white/10'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Options list */}
-          {(group.options || []).length > 0 && (
-            <div className="space-y-2">
-              {(group.options || []).map((opt, oIdx) => (
-                <div key={opt.id} className="flex items-center gap-2">
-                  <input
-                    className={inputCls + ' flex-1'}
-                    placeholder="Nombre, ej. Mango"
-                    value={opt.name}
-                    onChange={(e) =>
-                      updateOption(gIdx, oIdx, 'name', e.target.value)
-                    }
-                  />
-                  <div className="relative w-24 shrink-0">
-                    <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-light-200/30">
-                      +$
-                    </span>
-                    <input
-                      className={inputCls + ' pl-7'}
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="0"
-                      value={opt.priceModifier === 0 ? '' : opt.priceModifier}
-                      onChange={(e) =>
-                        updateOption(
-                          gIdx,
-                          oIdx,
-                          'priceModifier',
-                          e.target.value === '' ? 0 : Number(e.target.value)
-                        )
-                      }
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeOption(gIdx, oIdx)}
-                    className="shrink-0 p-1.5 rounded-lg text-light-200/30 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
-                    aria-label="Eliminar opción"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Add option */}
-          <button
-            type="button"
-            onClick={() => addOption(gIdx)}
-            className="flex items-center gap-1 text-xs text-main-400 hover:text-main-300 transition-colors cursor-pointer"
-          >
-            <Plus size={12} /> Agregar opción
-          </button>
-
-          {/* Group footer: delete group */}
-          <div
-            className="flex justify-end pt-2"
-            style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
-          >
-            <button
-              type="button"
-              onClick={() => removeGroup(gIdx)}
-              className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] text-light-200/25 hover:text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
-            >
-              <Trash2 size={12} /> Eliminar grupo
-            </button>
-          </div>
-        </div>
-      ))}
+    <div className={`${className} shrink-0 overflow-hidden rounded-xl bg-main-800 flex items-center justify-center`}>
+      {src && !failed
+        ? <img src={src} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} />
+        : <ImagePlus size={18} className="text-light-200/45" />}
     </div>
   )
 }
 
-// ── Slide-over drawer wrapper ─────────────────────────────────────────────────
-const Drawer = ({ isOpen, onClose, title, children }) => {
-  useEffect(() => {
-    if (!isOpen) return
-    const handleKey = (e) => {
-      if (e.key === 'Escape') { onClose(); return }
-      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-        const form = document.activeElement?.closest('form')
-        if (form) { e.preventDefault(); form.requestSubmit() }
-      }
-    }
-    document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
-  }, [isOpen, onClose])
-
-  if (!isOpen) return null
-
+// Image picker: shows the current/new photo and a big tap target to change it.
+const ImagePicker = ({ currentSrc, onFile, aspect = 'aspect-[4/3]', hint }) => {
+  const [preview, setPreview] = useState(null)
+  const inputRef = useRef(null)
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview) }, [preview])
+  const src = preview || currentSrc
   return (
-    <>
-      {/* Backdrop — z-[70]: above the mobile BottomTabBar (z-60) and its Más drawer (z-65)
-          so this full-screen drawer actually blocks them instead of rendering underneath */}
-      <div
-        className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      {/* Panel */}
-      <div className="fixed inset-y-0 right-0 z-[71] flex w-full max-w-lg flex-col bg-[#1c0a04] border-l border-white/10 shadow-2xl overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 sticky top-0 bg-[#1c0a04] z-10">
-          <h2 className="text-base font-semibold text-light-100">{title}</h2>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-light-200/50 hover:text-light-100 hover:bg-white/5 transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
-        <div className="flex-1 px-6 py-5">{children}</div>
+    <div className="flex items-center gap-4">
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className={`relative ${aspect} w-28 sm:w-32 shrink-0 overflow-hidden rounded-2xl border-2 border-dashed border-white/20 bg-main-800 hover:border-primary/50 transition-colors cursor-pointer`}
+        aria-label={src ? 'Cambiar foto' : 'Subir foto'}
+      >
+        {src
+          ? <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          : <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-light-200/60"><ImagePlus size={22} /><span className="text-xs font-semibold">Subir</span></span>}
+      </button>
+      <div className="min-w-0">
+        <button type="button" onClick={() => inputRef.current?.click()} className={btnSecondary}>
+          <ImagePlus size={16} /> {src ? 'Cambiar foto' : 'Elegir foto'}
+        </button>
+        {hint && <p className="mt-2 text-xs text-light-200/70 leading-snug">{hint}</p>}
       </div>
-    </>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0] ?? null
+          if (preview) URL.revokeObjectURL(preview)
+          setPreview(file ? URL.createObjectURL(file) : null)
+          onFile(file)
+        }}
+      />
+    </div>
   )
 }
 
-// ── Confirm delete dialog ─────────────────────────────────────────────────────
-const DeleteConfirm = ({ label, onConfirm, onCancel, loading }) => (
-  <ConfirmDialog
-    message={label}
-    onConfirm={onConfirm}
-    onCancel={onCancel}
-    isPending={loading}
-    panelClassName="bg-[#1c0a04]"
-  />
-)
+// ── Option Groups Editor ──────────────────────────────────────────────────────
+// Manages the product's optionGroups array: { id, name, type, required, options[] }.
+const OptionGroupsEditor = ({ groups = [], onChange }) => {
+  const addGroup = () => onChange([...groups, createOptionGroup()])
+  const updateGroup = (gIdx, field, value) => onChange(updateOptionGroup(groups, gIdx, field, value))
+  const removeGroup = (gIdx) => onChange(removeOptionGroup(groups, gIdx))
+  const addOption = (gIdx) => onChange(addOptionToGroup(groups, gIdx, createMenuOption()))
+  const updateOption = (gIdx, oIdx, field, value) => onChange(updateOptionInGroup(groups, gIdx, oIdx, field, value))
+  const removeOption = (gIdx, oIdx) => onChange(removeOptionFromGroup(groups, gIdx, oIdx))
 
-// ── Product drawer form ───────────────────────────────────────────────────────
+  return (
+    <div className="space-y-3">
+      {groups.length === 0 && (
+        <p className="rounded-xl bg-main-800 px-4 py-3 text-sm text-light-200/75">
+          Sin opciones. Agrega una pregunta para el cliente, por ejemplo <b>Sabor</b> (Taro, Mango…) o <b>Tamaño</b>.
+        </p>
+      )}
+
+      {groups.map((group, gIdx) => (
+        <div key={group.id} className="rounded-2xl border border-white/10 bg-main-800 p-3.5 space-y-3">
+          <div className="flex items-center gap-2">
+            <input
+              className={inputCls + ' flex-1 font-semibold'}
+              placeholder="Pregunta, ej. Sabor"
+              aria-label="Nombre del grupo de opciones"
+              value={group.name}
+              onChange={(e) => updateGroup(gIdx, 'name', e.target.value)}
+            />
+            <button type="button" onClick={() => removeGroup(gIdx)} className={iconBtnDanger} aria-label="Eliminar pregunta">
+              <Trash2 size={17} />
+            </button>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Segmented
+              ariaLabel="Cuántas opciones puede elegir"
+              value={group.type}
+              onChange={(v) => updateGroup(gIdx, 'type', v)}
+              options={[{ value: 'single', label: 'Elige 1' }, { value: 'multi', label: 'Elige varias' }]}
+            />
+            <div className="rounded-xl bg-main-900 px-3 py-1.5 flex items-center">
+              <Toggle
+                checked={Boolean(group.required)}
+                onChange={(v) => updateGroup(gIdx, 'required', v)}
+                label="Obligatorio"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {(group.options || []).map((opt, oIdx) => (
+              <div key={opt.id} className="flex items-center gap-2">
+                <input
+                  className={inputCls + ' flex-1'}
+                  placeholder="Opción, ej. Mango"
+                  aria-label="Nombre de la opción"
+                  value={opt.name}
+                  onChange={(e) => updateOption(gIdx, oIdx, 'name', e.target.value)}
+                />
+                <div className="relative w-24 sm:w-28 shrink-0">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-light-200/60">+$</span>
+                  <input
+                    className={inputCls + ' pl-8 tabular-nums'}
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="1"
+                    placeholder="0"
+                    aria-label="Costo extra de la opción"
+                    value={opt.priceModifier === 0 ? '' : opt.priceModifier}
+                    onChange={(e) => updateOption(gIdx, oIdx, 'priceModifier', e.target.value === '' ? 0 : Number(e.target.value))}
+                  />
+                </div>
+                <button type="button" onClick={() => removeOption(gIdx, oIdx)} className={iconBtnDanger} aria-label="Eliminar opción">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <button type="button" onClick={() => addOption(gIdx)} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg px-2 text-sm font-bold text-primary dark:text-main-300 hover:bg-primary/5 cursor-pointer">
+            <Plus size={16} /> Agregar opción
+          </button>
+        </div>
+      ))}
+
+      <button type="button" onClick={addGroup} className={btnSecondary + ' w-full border-dashed'}>
+        <Plus size={16} /> Agregar pregunta
+      </button>
+    </div>
+  )
+}
+
+// ── Product drawer ────────────────────────────────────────────────────────────
 const ProductDrawer = ({
   isOpen, onClose, title,
   item, onChange,
   onSave, onImageChange,
-  isSubmitting, error, success,
+  isSubmitting, error,
   menuSections, menuSectionsLoading,
   toppingsList,
   stationTagOptions = [],
 }) => {
-  const BASE_URL = import.meta.env.BASE_URL
+  const [newImagePreview, setNewImagePreview] = useState(null)
+  useEffect(() => { if (!isOpen) setNewImagePreview(null) }, [isOpen])
+
+  const sectionIndex = Math.max(0, menuSections.findIndex((s) => s.name === item.section))
+  const optionGroups = Array.isArray(item.optionGroups) ? item.optionGroups : []
+  const selectedToppings = toppingsList.filter((t) => (item.toppingIds || []).includes(t.docId))
+  const priceNumber = Number(item.price) || 0
+  const canSave =
+    Boolean(item.name?.trim()) && Boolean(item.section) &&
+    item.price !== '' && item.price !== undefined && item.price !== null && Number.isFinite(Number(item.price))
+
+  const toggleId = (field, list, id) =>
+    onChange(field, list.includes(id) ? list.filter((x) => x !== id) : [...list, id])
+
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} title={title}>
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      subtitle="Los cambios se ven en el menú al guardar"
+      wide
+      footer={
+        <div className="flex items-center gap-3">
+          {!canSave && <p className="hidden sm:block flex-1 text-xs text-light-200/70">Completa nombre, sección y precio.</p>}
+          <button type="button" onClick={onClose} className={btnSecondary + ' sm:ml-auto flex-1 sm:flex-none'}>Cancelar</button>
+          <button type="button" onClick={onSave} disabled={isSubmitting || !canSave} className={btnPrimary + ' flex-1 sm:flex-none sm:min-w-[170px]'}>
+            {isSubmitting ? 'Guardando…' : 'Guardar producto'}
+          </button>
+        </div>
+      }
+    >
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
-            <label className={labelCls}>Nombre *</label>
-            <input className={inputCls} value={item.name || ''} onChange={e => onChange('name', e.target.value)} required />
-          </div>
-          <div>
-            <label className={labelCls}>Sección *</label>
-            {menuSectionsLoading ? (
-              <div className="h-10 rounded-xl bg-white/5 animate-pulse" />
-            ) : (
-              <select
-                className={inputCls}
-                value={item.section || ''}
-                onChange={e => onChange('section', e.target.value)}
-              >
-                <option value="">Selecciona sección</option>
-                {menuSections.map(s => (
-                  <option key={s.docId ?? s.name} value={s.name}>{s.name}</option>
-                ))}
-              </select>
-            )}
-          </div>
-          <div>
-            <label className={labelCls}>Precio *</label>
-            <input className={inputCls} type="number" min="0" step="0.01" value={item.price ?? ''} onChange={e => onChange('price', e.target.value)} />
-          </div>
-          <div className="col-span-2">
-            <label className={labelCls}>Descripción corta</label>
-            <input className={inputCls} value={item.desc || ''} onChange={e => onChange('desc', e.target.value)} />
-          </div>
-          <div className="col-span-2">
-            <label className={labelCls}>Descripción larga</label>
-            <textarea className={inputCls + ' resize-none'} rows={3} value={item.long_desc || ''} onChange={e => onChange('long_desc', e.target.value)} />
-          </div>
-          <div className="col-span-2">
-            <label className={labelCls}>Sabores (separados por comas)</label>
-            <input className={inputCls} placeholder="Taro, Mango, Matcha" value={item.flavorsText || ''} onChange={e => onChange('flavorsText', e.target.value)} />
-          </div>
-          <div className="col-span-2">
-            <label className={labelCls}>Imagen</label>
-            <div className="flex items-center gap-3">
-              <div className="h-14 w-14 rounded-xl overflow-hidden bg-main-800 border border-white/10 flex items-center justify-center shrink-0">
-                {item.imageUrl ? (
-                  <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
-                ) : item.id ? (
-                  <img src={`${BASE_URL}products/${item.id}${item.image ?? ''}`} alt="" className="h-full w-full object-cover" onError={e => { e.currentTarget.style.display = 'none' }} />
-                ) : (
-                  <ImageIcon size={20} className="text-light-200/20" />
-                )}
+        {/* Live preview — the exact card customers see */}
+        <div className="customer-preview rounded-2xl bg-bg p-3 sm:p-4 ring-1 ring-white/10">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-ink-soft">
+            <Smartphone size={13} /> Así se verá en el menú
+          </p>
+          <ul className="pointer-events-none font-body text-ink sm:max-w-[290px] sm:mx-auto" aria-hidden="true">
+            <MenuCard
+              key={`${item.docId ?? 'new'}-${newImagePreview ?? ''}`}
+              id={item.id ?? 'preview'}
+              name={item.name?.trim() || 'Nombre del producto'}
+              desc={item.desc}
+              long_desc={item.long_desc}
+              price={priceNumber}
+              image={item.image}
+              imageUrl={newImagePreview || item.imageUrl}
+              isActive={item.isActive !== false}
+              featured={item.featured || false}
+              popular={item.popular || false}
+              availableToppings={selectedToppings.map((t) => ({ id: t.docId, name: t.name, price: Number(t.price || 0) }))}
+              optionGroups={optionGroups}
+              tone={getSectionTone(sectionIndex)}
+            />
+          </ul>
+        </div>
+
+        <FormSection icon={Info} title="Información" hint="Lo que el cliente lee en la tarjeta del producto.">
+          <Field label="Nombre" required htmlFor="p-name">
+            <input id="p-name" className={inputCls} value={item.name || ''} onChange={(e) => onChange('name', e.target.value)} placeholder="Ej. Matcha Latte" />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Sección" required htmlFor="p-section">
+              {menuSectionsLoading ? (
+                <div className="h-11 rounded-xl bg-main-800 animate-pulse" />
+              ) : (
+                <select id="p-section" className={inputCls} value={item.section || ''} onChange={(e) => onChange('section', e.target.value)}>
+                  <option value="">Elige una sección</option>
+                  {menuSections.map((s) => (
+                    <option key={s.docId ?? s.name} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+              )}
+            </Field>
+            <Field label="Precio" required htmlFor="p-price" hint="Precio base, sin extras.">
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-semibold text-light-200/60">$</span>
+                <input id="p-price" className={inputCls + ' pl-7 tabular-nums'} type="number" inputMode="decimal" min="0" step="0.5" value={item.price ?? ''} onChange={(e) => onChange('price', e.target.value)} placeholder="0" />
               </div>
-              <input type="file" accept="image/*" onChange={e => onImageChange(e.target.files?.[0] ?? null)} className="text-xs text-light-200/50 file:mr-3 file:rounded-lg file:border-0 file:bg-main-700 file:px-3 file:py-1.5 file:text-xs file:text-light-200 hover:file:bg-main-600" />
-            </div>
+            </Field>
           </div>
+          <Field label="Descripción corta" htmlFor="p-desc" hint="Una línea bajo el nombre, ej. “Con tapioca”.">
+            <input id="p-desc" className={inputCls} maxLength={60} value={item.desc || ''} onChange={(e) => onChange('desc', e.target.value)} />
+          </Field>
+          <Field label="Descripción completa" htmlFor="p-long" hint="Aparece cuando el cliente toca el botón ⓘ del producto.">
+            <textarea id="p-long" className={textareaCls} rows={3} value={item.long_desc || ''} onChange={(e) => onChange('long_desc', e.target.value)} />
+          </Field>
+        </FormSection>
+
+        <FormSection icon={ImagePlus} title="Foto">
+          <ImagePicker
+            key={item.docId ?? 'new'}
+            currentSrc={productImageSrc(item)}
+            onFile={(file) => {
+              onImageChange(file)
+              setNewImagePreview(file ? URL.createObjectURL(file) : null)
+            }}
+            hint="Foto horizontal con el producto al centro. Se sube al guardar."
+          />
+        </FormSection>
+
+        <FormSection
+          icon={SlidersHorizontal}
+          title="Personalización"
+          hint="Preguntas que el cliente responde al pedir (sabor, tamaño…) y extras con costo."
+        >
+          <OptionGroupsEditor groups={optionGroups} onChange={(groups) => onChange('optionGroups', groups)} />
+
           {toppingsList.length > 0 && (
-            <div className="col-span-2">
-              <label className={labelCls}>Toppings disponibles</label>
+            <Field label="Extras disponibles" hint="Se ofrecen después de elegir opciones. Los extras se crean en la pestaña Extras.">
               <div className="flex flex-wrap gap-2">
-                {toppingsList.map(t => {
+                {toppingsList.map((t) => {
                   const checked = (item.toppingIds || []).includes(t.docId)
                   return (
-                    <label key={t.docId} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors ${checked ? 'border-main-500/50 bg-main-500/10 text-light-100' : 'border-white/10 text-light-200/50 hover:border-white/20'}`}>
-                      <input type="checkbox" className="accent-main-500 h-3 w-3" checked={checked} onChange={() => onChange('toppingIds', checked ? (item.toppingIds || []).filter(id => id !== t.docId) : [...(item.toppingIds || []), t.docId])} />
-                      {t.name} (+${t.price})
-                    </label>
+                    <ChipCheck key={t.docId} checked={checked} onChange={() => toggleId('toppingIds', item.toppingIds || [], t.docId)}>
+                      {checked && <Check size={14} />} {t.name} <span className="opacity-75">+${t.price}</span>
+                    </ChipCheck>
                   )
                 })}
               </div>
-            </div>
+            </Field>
           )}
-          {stationTagOptions.length > 0 && (
-            <div className="col-span-2">
-              <label className={labelCls}>Estación (cocina)</label>
-              <div className="flex flex-wrap gap-2">
-                {stationTagOptions.map(tag => {
-                  const checked = (item.stationTags || []).includes(tag)
-                  return (
-                    <label key={tag} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-xs transition-colors ${checked ? 'border-main-500/50 bg-main-500/10 text-light-100' : 'border-white/10 text-light-200/50 hover:border-white/20'}`}>
-                      <input type="checkbox" className="accent-main-500 h-3 w-3" checked={checked} onChange={() => onChange('stationTags', checked ? (item.stationTags || []).filter(t => t !== tag) : [...(item.stationTags || []), tag])} />
-                      {tag}
-                    </label>
-                  )
-                })}
-              </div>
-              <p className="mt-1.5 text-[11px] text-light-200/30">Sin etiqueta ⇒ se enruta a Cajero.</p>
+        </FormSection>
+
+        {stationTagOptions.length > 0 && (
+          <FormSection icon={ChefHat} title="¿Quién lo prepara?" hint="Elige la estación que recibe este producto. Sin selección, el pedido le llega a Caja.">
+            <div className="flex flex-wrap gap-2">
+              {stationTagOptions.map((tag) => {
+                const checked = (item.stationTags || []).includes(tag)
+                return (
+                  <ChipCheck key={tag} checked={checked} onChange={() => toggleId('stationTags', item.stationTags || [], tag)}>
+                    {checked && <Check size={14} />} {tag}
+                  </ChipCheck>
+                )
+              })}
             </div>
-          )}
-          {/* Option Groups */}
-          <OptionGroupsEditor
-            groups={Array.isArray(item.optionGroups) ? item.optionGroups : []}
-            onChange={(groups) => onChange('optionGroups', groups)}
+          </FormSection>
+        )}
+
+        <div className="rounded-2xl border border-white/10 bg-main-900 px-4 py-3.5">
+          <Toggle
+            checked={item.isActive !== false}
+            onChange={(v) => onChange('isActive', v)}
+            label="Disponible para vender"
+            hint="Apágalo cuando se acabe: en el menú aparecerá como “Agotado”."
           />
-
-          <div className="col-span-2 flex items-center justify-between py-2 px-3 rounded-xl bg-white/5 border border-white/10">
-            <span className="text-sm text-light-200/70">Disponible (activo)</span>
-            <button type="button" onClick={() => onChange('isActive', item.isActive === false ? true : false)} className={`transition-colors ${item.isActive !== false ? 'text-main-400' : 'text-light-200/20'}`}>
-              {item.isActive !== false ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
-            </button>
-          </div>
         </div>
 
-        {error && (
-          <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-xs text-red-300">
-            <AlertCircle size={14} /> {error}
-          </div>
-        )}
-        {success && (
-          <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2.5 text-xs text-emerald-300">
-            <Check size={14} /> {success}
-          </div>
-        )}
-
-        <div className="flex gap-3 pt-2">
-          <button onClick={onClose} className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-light-200/70 hover:bg-white/10 transition-colors">
-            Cancelar
-          </button>
-          <button onClick={onSave} disabled={isSubmitting} className="flex-1 rounded-xl bg-main-500 py-2.5 text-sm font-semibold text-white hover:bg-main-400 transition-colors disabled:opacity-50">
-            {isSubmitting ? 'Guardando...' : 'Guardar'}
-          </button>
-        </div>
+        {error && <Notice icon={AlertCircle}>{error}</Notice>}
       </div>
     </Drawer>
   )
 }
 
-// ── Section drawer form ───────────────────────────────────────────────────────
-const SectionDrawer = ({ isOpen, onClose, title, item, onChange, onSave, isSubmitting, error, success }) => (
-  <Drawer isOpen={isOpen} onClose={onClose} title={title}>
-    <div className="space-y-4">
-      <div>
-        <label className={labelCls}>Nombre *</label>
-        <input className={inputCls} value={item.name || ''} onChange={e => onChange('name', e.target.value)} required />
-      </div>
-      <div>
-        <label className={labelCls}>Categoría (ruta URL) *</label>
-        <input className={inputCls} placeholder="bebidas" value={item.category || ''} onChange={e => onChange('category', e.target.value)} required />
-      </div>
-      <div>
-        <label className={labelCls}>Descripción</label>
-        <input className={inputCls} value={item.desc || ''} onChange={e => onChange('desc', e.target.value)} />
-      </div>
-      <div>
-        <label className={labelCls}>Orden (número)</label>
-        <input className={inputCls} type="number" min="0" value={item.order ?? ''} onChange={e => onChange('order', e.target.value)} />
-      </div>
-
-      {error && (
-        <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-xs text-red-300">
-          <AlertCircle size={14} /> {error}
+// ── Section drawer ────────────────────────────────────────────────────────────
+// "category" decides which customer page shows the section (/bebidas, /alimentos).
+const SectionDrawer = ({ isOpen, onClose, title, item, onChange, onSave, isSubmitting, error, categoryOptions }) => {
+  const current = (item.category || '').toLowerCase()
+  const options = categoryOptions.includes(current) || !current ? categoryOptions : [...categoryOptions, current]
+  const canSave = Boolean(item.name?.trim()) && Boolean(current)
+  const renamed = item._originalName && item._originalName !== item.name
+  return (
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      footer={
+        <div className="flex gap-3">
+          <button type="button" onClick={onClose} className={btnSecondary + ' flex-1'}>Cancelar</button>
+          <button type="button" onClick={onSave} disabled={isSubmitting || !canSave} className={btnPrimary + ' flex-1'}>
+            {isSubmitting ? 'Guardando…' : 'Guardar sección'}
+          </button>
         </div>
-      )}
-      {success && (
-        <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2.5 text-xs text-emerald-300">
-          <Check size={14} /> {success}
-        </div>
-      )}
-
-      <div className="flex gap-3 pt-2">
-        <button onClick={onClose} className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-light-200/70 hover:bg-white/10 transition-colors">Cancelar</button>
-        <button onClick={onSave} disabled={isSubmitting} className="flex-1 rounded-xl bg-main-500 py-2.5 text-sm font-semibold text-white hover:bg-main-400 transition-colors disabled:opacity-50">
-          {isSubmitting ? 'Guardando...' : 'Guardar'}
-        </button>
+      }
+    >
+      <div className="space-y-4">
+        <FormSection icon={Layers} title="Sección del menú" hint="Agrupa productos, por ejemplo “Bebidas Heladas” o “Panadería”.">
+          <Field label="Nombre" required htmlFor="s-name" hint={renamed ? 'Al renombrarla, sus productos se mueven automáticamente.' : undefined}>
+            <input id="s-name" className={inputCls} value={item.name || ''} onChange={(e) => onChange('name', e.target.value)} placeholder="Ej. Bebidas Heladas" />
+          </Field>
+          <Field label="¿En qué botón del menú aparece?" required hint="El menú tiene los botones “Bebidas” y “Alimentos”. La sección también sale siempre en “Todo”.">
+            <Segmented
+              ariaLabel="Categoría de la sección"
+              value={current}
+              onChange={(v) => onChange('category', v)}
+              options={options.map((c) => ({ value: c, label: c.charAt(0).toUpperCase() + c.slice(1) }))}
+            />
+          </Field>
+          <Field label="Descripción" htmlFor="s-desc" hint="1–2 frases que invitan, ej. “Para refrescarte en cualquier momento del día.”">
+            <textarea id="s-desc" className={textareaCls} rows={2} value={item.desc || ''} onChange={(e) => onChange('desc', e.target.value)} />
+          </Field>
+        </FormSection>
+        <p className="px-1 text-xs text-light-200/70">Para cambiar el orden, arrastra las secciones en la lista (en computadora).</p>
+        {error && <Notice icon={AlertCircle}>{error}</Notice>}
       </div>
-    </div>
-  </Drawer>
-)
+    </Drawer>
+  )
+}
 
 // ── Products tab ──────────────────────────────────────────────────────────────
-const ProductsTab = ({ data }) => {
+const ProductsTab = ({ data, notify }) => {
   const {
     menuItems, menuLoading, menuError, menuSections, menuSectionsLoading,
     menuSectionsError, menuSavingId, toppingsList,
@@ -459,16 +415,16 @@ const ProductsTab = ({ data }) => {
     deleteTarget, setDeleteTarget,
     editingSection, setEditingSection,
     deleteSectionTarget, setDeleteSectionTarget,
-    isSubmitting, error,
+    isSubmitting, error, setError,
     productName, setProductName, productSection, setProductSection,
     productDesc, setProductDesc, productLongDesc, setProductLongDesc,
-    productPrice, setProductPrice, productFlavors, setProductFlavors,
+    productPrice, setProductPrice,
     productImage, setProductImage, setProductImageFile,
     productToppingIds, setProductToppingIds, productStationTags, setProductStationTags,
-    productOptionGroups, productSuccess,
+    productOptionGroups, productSuccess, setProductSuccess,
     sectionName, setSectionName, sectionCategory, setSectionCategory,
-    sectionDesc, setSectionDesc, sectionOrder, setSectionOrder,
-    sectionSuccess,
+    sectionDesc, setSectionDesc,
+    sectionSuccess, setSectionSuccess,
     loadMenuItems, loadMenuSections,
   } = data
 
@@ -476,7 +432,9 @@ const ProductsTab = ({ data }) => {
   const [addProductOpen, setAddProductOpen] = useState(false)
   const [addSectionOpen, setAddSectionOpen] = useState(false)
   const [dragOverSection, setDragOverSection] = useState(null)
+  const [search, setSearch] = useState('')
   const dragSectionRef = useRef(null)
+  const pendingEditName = useRef(null)
 
   const { stations } = useStationContext()
   const stationTagOptions = useMemo(() => {
@@ -488,18 +446,52 @@ const ProductsTab = ({ data }) => {
     return Array.from(tags)
   }, [stations])
 
-  // Open drawer if navigated here with state
+  // Category choices = the customer menu buttons (bebidas/alimentos) + any already in use
+  const categoryOptions = useMemo(() => {
+    const set = new Set(['bebidas', 'alimentos'])
+    menuSections.forEach((s) => { if (s.category) set.add(String(s.category).toLowerCase()) })
+    return Array.from(set)
+  }, [menuSections])
+
+  const openAddProduct = (sectionName = '') => {
+    setError('')
+    if (sectionName) setProductSection(sectionName)
+    setAddProductOpen(true)
+  }
+  const openAddSection = () => { setError(''); setAddSectionOpen(true) }
+
+  // Open drawer if navigated here with state (Inicio quick actions)
   const location = useLocation()
   useEffect(() => {
     if (location.state?.openAddProduct) {
-      setAddProductOpen(true)
+      openAddProduct()
       window.history.replaceState({}, '')
     }
     if (location.state?.openAddSection) {
-      setAddSectionOpen(true)
+      openAddSection()
       window.history.replaceState({}, '')
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state])
+
+  // Close the "add" drawers once the hook reports success
+  useEffect(() => {
+    if (productSuccess) { setAddProductOpen(false); notify('Producto agregado al menú'); setProductSuccess('') }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productSuccess])
+  useEffect(() => {
+    if (sectionSuccess) { setAddSectionOpen(false); notify('Sección creada'); setSectionSuccess('') }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sectionSuccess])
+
+  // The hook clears editingItem only when the save succeeded
+  useEffect(() => {
+    if (!editingItem && pendingEditName.current) {
+      notify(`“${pendingEditName.current}” guardado`)
+      pendingEditName.current = null
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingItem])
 
   const toggleSection = (name) =>
     setCollapsedSections(prev => ({ ...prev, [name]: !prev[name] }))
@@ -509,16 +501,26 @@ const ProductsTab = ({ data }) => {
     section: sec,
     products: menuItems.filter(p => p.section === sec.name),
   }))
-  // Ungrouped products (section not in menuSections list)
+  // Products whose section no longer exists
   const ungroupedSections = [...new Set(menuItems.filter(p => !menuSections.find(s => s.name === p.section)).map(p => p.section))]
   ungroupedSections.forEach(name => {
-    grouped.push({ section: { name, docId: null }, products: menuItems.filter(p => p.section === name) })
+    grouped.push({ section: { name: name || 'Sin sección', docId: null }, products: menuItems.filter(p => p.section === name) })
   })
+
+  const q = search.trim().toLowerCase()
+  const visibleGroups = q
+    ? grouped
+      .map(g => ({ ...g, products: g.products.filter(p => p.name?.toLowerCase().includes(q)) }))
+      .filter(g => g.products.length > 0)
+    : grouped
+
+  const totalProducts = menuItems.length
+  const soldOut = menuItems.filter(p => p.isActive === false).length
 
   // New product form state object for add drawer
   const newProductObj = {
     name: productName, section: productSection, desc: productDesc,
-    long_desc: productLongDesc, price: productPrice, flavorsText: productFlavors,
+    long_desc: productLongDesc, price: productPrice,
     image: productImage, toppingIds: productToppingIds, stationTags: productStationTags,
     optionGroups: productOptionGroups || [],
     isActive: true,
@@ -527,51 +529,49 @@ const ProductsTab = ({ data }) => {
   const handleNewProductChange = (field, value) => {
     const setters = {
       name: setProductName, section: setProductSection, desc: setProductDesc,
-      long_desc: setProductLongDesc, price: setProductPrice, flavorsText: setProductFlavors,
+      long_desc: setProductLongDesc, price: setProductPrice,
       image: setProductImage, toppingIds: setProductToppingIds, stationTags: setProductStationTags,
       optionGroups: data.setProductOptionGroups,
     }
     setters[field]?.(value)
   }
 
-  const handleSaveNewProduct = () => {
-    handleAddProduct({ preventDefault: () => {} })
-  }
+  const handleSaveNewProduct = () => handleAddProduct({ preventDefault: () => {} })
 
-  // Edit product form state object
+  const openEdit = (product) => {
+    pendingEditName.current = null
+    setEditingItem(product)
+    setEditingImageFile(null)
+  }
   const handleEditChange = (field, value) => {
     setEditingItem(prev => prev ? { ...prev, [field]: value } : prev)
   }
-
   const handleSaveEdit = () => {
-    if (editingItem) handleSaveMenuItem(editingItem)
+    if (!editingItem) return
+    pendingEditName.current = editingItem.name
+    handleSaveMenuItem(editingItem)
+  }
+  const closeEdit = () => {
+    pendingEditName.current = null
+    setEditingItem(null)
   }
 
-  // New section form state object
-  const newSectionObj = { name: sectionName, category: sectionCategory, desc: sectionDesc, order: sectionOrder }
+  const newSectionObj = { name: sectionName, category: sectionCategory, desc: sectionDesc }
   const handleNewSectionChange = (field, value) => {
-    const setters = { name: setSectionName, category: setSectionCategory, desc: setSectionDesc, order: setSectionOrder }
+    const setters = { name: setSectionName, category: setSectionCategory, desc: setSectionDesc }
     setters[field]?.(value)
   }
-  const handleSaveNewSection = () => {
-    handleAddSection({ preventDefault: () => {} })
-  }
+  const handleSaveNewSection = () => handleAddSection({ preventDefault: () => {} })
 
   // Section drag-and-drop reorder
-  const handleSectionDragStart = (idx) => {
-    dragSectionRef.current = idx
-  }
-  const handleSectionDragOver = (e, idx) => {
-    e.preventDefault()
-    setDragOverSection(idx)
-  }
+  const handleSectionDragStart = (idx) => { dragSectionRef.current = idx }
+  const handleSectionDragOver = (e, idx) => { e.preventDefault(); setDragOverSection(idx) }
   const handleSectionDrop = async (dropIdx) => {
     setDragOverSection(null)
     const fromIdx = dragSectionRef.current
     dragSectionRef.current = null
     if (fromIdx === null || fromIdx === dropIdx) return
 
-    // Reorder the docId-backed sections only
     const docSections = grouped.filter(g => g.section.docId)
     if (fromIdx >= docSections.length || dropIdx >= docSections.length) return
 
@@ -579,21 +579,18 @@ const ProductsTab = ({ data }) => {
     const [moved] = reordered.splice(fromIdx, 1)
     reordered.splice(dropIdx, 0, moved)
 
-    // Persist new order via writeBatch
     try {
       const batch = writeBatch(db)
       reordered.forEach(({ section }, i) => {
         batch.update(doc(db, 'sections', section.docId), { order: i })
       })
       await batch.commit()
-      // Reload sections to reflect new order
       loadMenuSections()
     } catch (err) {
       console.error('Error reordering sections:', err)
     }
   }
 
-  // Edit section state
   const handleEditSectionChange = (field, value) => {
     setEditingSection(prev => prev ? { ...prev, [field]: value } : prev)
   }
@@ -601,180 +598,190 @@ const ProductsTab = ({ data }) => {
     if (editingSection) handleSaveSection({ ...editingSection, originalName: editingSection._originalName ?? editingSection.name })
   }
 
-  const BASE_URL = import.meta.env.BASE_URL
-
   return (
     <div className="space-y-5">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          onClick={() => setAddProductOpen(true)}
-          className="flex items-center gap-2 rounded-xl bg-main-500 px-4 py-2 text-sm font-semibold text-white hover:bg-main-400 transition-colors shadow-lg shadow-main-500/10"
-        >
-          <Plus size={16} /> Agregar producto
-        </button>
-        <button
-          onClick={() => setAddSectionOpen(true)}
-          className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-light-200/70 hover:bg-white/10 hover:text-light-100 transition-colors"
-        >
-          <Layers size={16} /> Nueva sección
-        </button>
-        <button
-          onClick={() => { loadMenuItems(); loadMenuSections() }}
-          className="ml-auto flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-light-200/50 hover:text-light-100 hover:bg-white/10 transition-colors"
-        >
-          <RefreshCcw size={13} /> Recargar
-        </button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-light-200/55" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar producto…"
+            aria-label="Buscar producto"
+            className={inputCls + ' pl-10'}
+          />
+        </div>
+        <div className="flex gap-2">
+          <button onClick={openAddSection} className={btnSecondary + ' flex-1 sm:flex-none'}>
+            <Layers size={16} /> <span className="sm:hidden">Sección</span><span className="hidden sm:inline">Nueva sección</span>
+          </button>
+          <button onClick={() => openAddProduct()} className={btnPrimary + ' flex-1 sm:flex-none'}>
+            <Plus size={18} /> <span className="sm:hidden">Producto</span><span className="hidden sm:inline">Nuevo producto</span>
+          </button>
+          <button
+            onClick={() => { loadMenuItems(); loadMenuSections() }}
+            className={iconBtn + ' border border-white/15 bg-main-900 shrink-0'}
+            aria-label="Recargar menú"
+            title="Recargar"
+          >
+            <RefreshCcw size={16} />
+          </button>
+        </div>
       </div>
 
-      {menuError && (
-        <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
-          <AlertCircle size={16} /> {menuError}
-        </div>
+      {!menuLoading && totalProducts > 0 && (
+        <p className="text-sm text-light-200/75">
+          {menuSections.length} secciones · {totalProducts} productos
+          {soldOut > 0 && <> · <span className="font-bold text-rose-400">{soldOut} agotado{soldOut === 1 ? '' : 's'}</span></>}
+          <span className="hidden sm:inline"> · Toca un producto para editarlo.</span>
+        </p>
       )}
+
+      {menuError && !editingItem && <Notice icon={AlertCircle}>{menuError}</Notice>}
+      {menuSectionsError && !editingSection && <Notice icon={AlertCircle}>{menuSectionsError}</Notice>}
 
       {menuLoading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-16 rounded-2xl bg-white/5 animate-pulse" />
-          ))}
+          {[1, 2, 3].map(i => <div key={i} className="h-20 rounded-2xl bg-main-900 animate-pulse" />)}
         </div>
       ) : grouped.length === 0 ? (
-        <div className="rounded-3xl border border-white/5 bg-main-900/20 p-12 text-center text-light-200/30 italic">
-          No hay secciones ni productos. Agrega una sección para comenzar.
-        </div>
+        <EmptyState
+          icon={Layers}
+          title="Tu menú está vacío"
+          action={<button onClick={openAddSection} className={btnPrimary}><Plus size={16} /> Crear primera sección</button>}
+        >
+          Primero crea una sección (por ejemplo “Bebidas Heladas”) y luego agrega sus productos.
+        </EmptyState>
+      ) : visibleGroups.length === 0 ? (
+        <EmptyState icon={Search} title="Sin resultados">No hay productos que coincidan con “{search}”.</EmptyState>
       ) : (
         <div className="space-y-4">
-          {grouped.map(({ section, products }, idx) => (
-            <div
-              key={section.docId ?? section.name}
-              className={`rounded-2xl border overflow-hidden transition-colors ${dragOverSection === idx ? 'border-main-500/60 bg-main-500/5' : 'border-white/8 bg-main-900/20'}`}
-              draggable={Boolean(section.docId)}
-              onDragStart={() => handleSectionDragStart(idx)}
-              onDragOver={(e) => handleSectionDragOver(e, idx)}
-              onDrop={() => handleSectionDrop(idx)}
-              onDragLeave={() => setDragOverSection(null)}
-            >
-              {/* Section header */}
-              <div className="flex items-center gap-3 px-4 py-3 bg-main-900/40 border-b border-white/5">
-                <GripVertical size={16} className={`shrink-0 ${section.docId ? 'text-light-200/30 cursor-grab' : 'text-light-200/10'}`} />
-                <button onClick={() => toggleSection(section.name)} className="flex items-center gap-2 flex-1 text-left">
-                  <span className="font-semibold text-light-100 text-sm">{section.name}</span>
-                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-light-200/50">{products.length}</span>
-                  <ChevronDown size={14} className={`ml-auto text-light-200/40 transition-transform ${collapsedSections[section.name] ? '-rotate-90' : ''}`} />
-                </button>
-                <div className="flex items-center gap-1 shrink-0">
+          {visibleGroups.map(({ section, products }, idx) => {
+            const isCollapsed = !q && collapsedSections[section.name]
+            const isHidden = section.visible === false
+            const canDrag = Boolean(section.docId) && !q
+            return (
+              <div
+                key={section.docId ?? section.name}
+                className={`rounded-2xl border bg-main-900 overflow-hidden transition-colors ${dragOverSection === idx ? 'border-primary ring-2 ring-primary/15' : 'border-white/10'}`}
+                draggable={canDrag}
+                onDragStart={() => handleSectionDragStart(idx)}
+                onDragOver={(e) => canDrag && handleSectionDragOver(e, idx)}
+                onDrop={() => canDrag && handleSectionDrop(idx)}
+                onDragLeave={() => setDragOverSection(null)}
+              >
+                {/* Section header */}
+                <div className="flex items-center gap-1 sm:gap-2 pl-2 pr-2 py-1.5 border-b border-white/10 bg-main-800/60">
+                  <span className={`hidden sm:flex h-10 w-6 items-center justify-center ${canDrag ? 'text-light-200/55 cursor-grab' : 'text-light-200/25'}`} title={canDrag ? 'Arrastra para reordenar' : undefined}>
+                    <GripVertical size={16} />
+                  </span>
+                  <button onClick={() => toggleSection(section.name)} className="flex min-h-[44px] flex-1 min-w-0 items-center gap-2 px-1 text-left cursor-pointer" aria-expanded={!isCollapsed}>
+                    <ChevronDown size={18} className={`shrink-0 text-light-200/60 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                    <span className="font-display text-lg font-semibold text-light-100 truncate">{section.name}</span>
+                    <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-xs font-bold text-light-200/80">{products.length}</span>
+                    {section.category && <span className="hidden sm:inline shrink-0 text-xs font-semibold text-light-200/60 capitalize">· {section.category}</span>}
+                    {isHidden && <span className="shrink-0 rounded-full bg-rose-500/10 px-2 py-0.5 text-[11px] font-bold text-rose-400">Oculta</span>}
+                  </button>
                   {section.docId && (
-                    <>
+                    <div className="flex items-center shrink-0">
                       <button
                         onClick={() => data.handleToggleSectionVisible(section)}
                         disabled={menuSavingId === section.docId}
-                        title={section.visible !== false ? 'Visible' : 'Oculta'}
-                        className={`transition-colors ${section.visible !== false ? 'text-emerald-400' : 'text-light-200/20'} disabled:opacity-40`}
+                        className={iconBtn}
+                        aria-label={isHidden ? `Mostrar sección ${section.name}` : `Ocultar sección ${section.name}`}
+                        title={isHidden ? 'Mostrar en el menú' : 'Ocultar del menú'}
                       >
-                        {section.visible !== false ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
+                        {isHidden ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
-                      <button
-                        onClick={() => setEditingSection({ ...section, _originalName: section.name })}
-                        className="p-1.5 rounded-lg text-light-200/40 hover:text-light-100 hover:bg-white/10 transition-colors"
-                      >
-                        <Pencil size={14} />
+                      <button onClick={() => setEditingSection({ ...section, _originalName: section.name })} className={iconBtn} aria-label={`Editar sección ${section.name}`} title="Editar sección">
+                        <Pencil size={17} />
                       </button>
-                      <button
-                        onClick={() => setDeleteSectionTarget(section)}
-                        className="p-1.5 rounded-lg text-light-200/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                      >
-                        <Trash2 size={14} />
+                      <button onClick={() => setDeleteSectionTarget(section)} className={iconBtnDanger} aria-label={`Eliminar sección ${section.name}`} title="Eliminar sección">
+                        <Trash2 size={17} />
                       </button>
-                    </>
+                    </div>
                   )}
                 </div>
-              </div>
 
-              {/* Products list */}
-              {!collapsedSections[section.name] && (
-                <div className="divide-y divide-white/5">
-                  {products.length === 0 ? (
-                    <p className="px-5 py-4 text-xs text-light-200/30 italic">No hay productos en esta sección.</p>
-                  ) : (
-                    products.map(product => (
-                      <div key={product.docId} className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group">
-                        {/* Thumbnail */}
-                        <div className="h-10 w-10 rounded-lg overflow-hidden bg-main-800 border border-white/10 shrink-0">
-                          {product.imageUrl ? (
-                            <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
-                          ) : (
-                            <img
-                              src={`${BASE_URL}products/${product.id}${product.image ?? ''}`}
-                              alt=""
-                              className="h-full w-full object-cover"
-                              onError={e => { e.currentTarget.style.display = 'none' }}
+                {/* Products */}
+                {!isCollapsed && (
+                  <div className="divide-y divide-white/10">
+                    {products.map(product => {
+                      const groups = Array.isArray(product.optionGroups) ? product.optionGroups.length : 0
+                      const extras = Array.isArray(product.toppingIds) ? product.toppingIds.length : 0
+                      const active = product.isActive !== false
+                      return (
+                        <div
+                          key={product.docId}
+                          className="flex items-center gap-3 pl-3 sm:pl-4 pr-2 py-2.5 hover:bg-white/5 transition-colors cursor-pointer"
+                          onClick={() => openEdit(product)}
+                        >
+                          <Thumb src={productImageSrc(product)} />
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-[0.95rem] font-bold truncate ${active ? 'text-light-100' : 'text-light-200/60'}`}>{product.name}</p>
+                            <p className="text-xs text-light-200/75 truncate">
+                              <span className="font-bold tabular-nums text-light-100">${Number(product.price).toLocaleString('es-MX')}</span>
+                              {groups > 0 && <> · {groups} pregunta{groups === 1 ? '' : 's'}</>}
+                              {extras > 0 && <> · {extras} extra{extras === 1 ? '' : 's'}</>}
+                              {!active && <> · <span className="font-bold text-rose-400">Agotado</span></>}
+                            </p>
+                          </div>
+                          <div className="flex items-center shrink-0" onClick={(e) => e.stopPropagation()}>
+                            <MiniSwitch
+                              checked={active}
+                              onChange={() => handleToggleProductActive(product)}
+                              disabled={menuSavingId === product.docId}
+                              label={active ? `${product.name}: disponible (tocar para marcar agotado)` : `${product.name}: agotado (tocar para marcar disponible)`}
                             />
-                          )}
+                            <button onClick={() => openEdit(product)} className={iconBtn.replace('inline-flex', 'hidden sm:inline-flex')} aria-label={`Editar ${product.name}`}>
+                              <Pencil size={17} />
+                            </button>
+                            <button onClick={() => setDeleteTarget(product)} className={iconBtnDanger} aria-label={`Eliminar ${product.name}`}>
+                              <Trash2 size={17} />
+                            </button>
+                          </div>
                         </div>
-                        {/* Name + price */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-light-100 truncate">{product.name}</p>
-                          <p className="text-xs text-light-200/40">${Number(product.price).toLocaleString('es-MX')}</p>
-                        </div>
-                        {/* Actions */}
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => handleToggleProductActive(product)}
-                            disabled={menuSavingId === product.docId}
-                            title={product.isActive !== false ? 'Activo' : 'Agotado'}
-                            className={`transition-colors ${product.isActive !== false ? 'text-emerald-400' : 'text-light-200/20'} disabled:opacity-40`}
-                          >
-                            {product.isActive !== false ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingItem(product)
-                              setEditingImageFile(null)
-                            }}
-                            className="p-1.5 rounded-lg text-light-200/40 hover:text-light-100 hover:bg-white/10 transition-colors"
-                          >
-                            <Pencil size={14} />
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(product)}
-                            className="p-1.5 rounded-lg text-light-200/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+                      )
+                    })}
+                    {section.docId && !q && (
+                      <button
+                        onClick={() => openAddProduct(section.name)}
+                        className="flex w-full min-h-[48px] items-center gap-2 px-4 text-sm font-bold text-primary dark:text-main-300 hover:bg-primary/5 transition-colors cursor-pointer"
+                      >
+                        <Plus size={16} /> Agregar producto a {section.name}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {/* Add product drawer */}
+      {/* Add product */}
       <ProductDrawer
         isOpen={addProductOpen}
         onClose={() => setAddProductOpen(false)}
-        title="Agregar producto"
+        title="Nuevo producto"
         item={newProductObj}
         onChange={handleNewProductChange}
         onSave={handleSaveNewProduct}
         onImageChange={setProductImageFile}
         isSubmitting={isSubmitting}
         error={error}
-        success={productSuccess}
         menuSections={menuSections}
         menuSectionsLoading={menuSectionsLoading}
         toppingsList={toppingsList}
         stationTagOptions={stationTagOptions}
       />
 
-      {/* Edit product drawer */}
+      {/* Edit product */}
       <ProductDrawer
         isOpen={Boolean(editingItem)}
-        onClose={() => setEditingItem(null)}
+        onClose={closeEdit}
         title="Editar producto"
         item={editingItem ?? {}}
         onChange={handleEditChange}
@@ -782,27 +789,26 @@ const ProductsTab = ({ data }) => {
         onImageChange={setEditingImageFile}
         isSubmitting={menuSavingId === editingItem?.docId}
         error={menuError}
-        success=""
         menuSections={menuSections}
         menuSectionsLoading={menuSectionsLoading}
         toppingsList={toppingsList}
         stationTagOptions={stationTagOptions}
       />
 
-      {/* Add section drawer */}
+      {/* Add section */}
       <SectionDrawer
         isOpen={addSectionOpen}
         onClose={() => setAddSectionOpen(false)}
-        title="Agregar sección"
+        title="Nueva sección"
         item={newSectionObj}
         onChange={handleNewSectionChange}
         onSave={handleSaveNewSection}
         isSubmitting={isSubmitting}
         error={error}
-        success={sectionSuccess}
+        categoryOptions={categoryOptions}
       />
 
-      {/* Edit section drawer */}
+      {/* Edit section */}
       <SectionDrawer
         isOpen={Boolean(editingSection)}
         onClose={() => setEditingSection(null)}
@@ -812,24 +818,22 @@ const ProductsTab = ({ data }) => {
         onSave={handleSaveEditSection}
         isSubmitting={menuSavingId === editingSection?.docId}
         error={menuSectionsError}
-        success=""
+        categoryOptions={categoryOptions}
       />
 
-      {/* Delete product confirm */}
       {deleteTarget && (
-        <DeleteConfirm
-          label={`¿Seguro que deseas eliminar "${deleteTarget.name}"? Esta acción no se puede deshacer.`}
-          loading={menuSavingId === deleteTarget.docId}
+        <ConfirmDialog
+          message={`¿Eliminar “${deleteTarget.name}”? Desaparecerá del menú y no se puede deshacer. Si solo se acabó, mejor márcalo como agotado con el interruptor.`}
+          isPending={menuSavingId === deleteTarget.docId}
           onConfirm={async () => { await handleDeleteMenuItem(deleteTarget); setDeleteTarget(null) }}
           onCancel={() => setDeleteTarget(null)}
         />
       )}
 
-      {/* Delete section confirm */}
       {deleteSectionTarget && (
-        <DeleteConfirm
-          label={`¿Eliminar la sección "${deleteSectionTarget.name}" y todos sus productos?`}
-          loading={menuSavingId === deleteSectionTarget.docId}
+        <ConfirmDialog
+          message={`¿Eliminar la sección “${deleteSectionTarget.name}” y TODOS sus productos? No se puede deshacer. Para quitarla solo por un tiempo, ocúltala con el ojo.`}
+          isPending={menuSavingId === deleteSectionTarget.docId}
           onConfirm={() => handleDeleteSection(deleteSectionTarget)}
           onCancel={() => setDeleteSectionTarget(null)}
         />
@@ -838,7 +842,7 @@ const ProductsTab = ({ data }) => {
   )
 }
 
-// ── Toppings tab ──────────────────────────────────────────────────────────────
+// ── Extras (toppings) tab ─────────────────────────────────────────────────────
 const ToppingsTab = ({ data }) => {
   const {
     toppingsList, toppingsLoading, toppingsError, toppingsSuccess,
@@ -851,81 +855,75 @@ const ToppingsTab = ({ data }) => {
   } = data
 
   return (
-    <div className="space-y-6 max-w-lg">
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] items-start">
       {/* Add form */}
-      <div className="rounded-2xl border border-white/8 bg-main-900/20 p-5">
-        <h3 className="text-sm font-semibold text-light-100 mb-4">Agregar topping</h3>
-        <form onSubmit={handleAddTopping} className="space-y-3">
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className={labelCls}>Nombre *</label>
-              <input className={inputCls} value={toppingName} onChange={e => setToppingName(e.target.value)} required />
-            </div>
-            <div className="w-28">
-              <label className={labelCls}>Precio *</label>
-              <input className={inputCls} type="number" min="0" step="0.01" value={toppingPrice} onChange={e => setToppingPrice(e.target.value)} required />
-            </div>
-            <div className="flex items-end">
-              <button type="submit" disabled={isSubmitting} className="rounded-xl bg-main-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-main-400 transition-colors disabled:opacity-50">
-                <Plus size={16} />
-              </button>
-            </div>
+      <form onSubmit={handleAddTopping} className="lg:sticky lg:top-0">
+        <FormSection icon={Candy} title="Nuevo extra" hint="Algo que se cobra aparte: tapioca extra, cloud top, shot de café… Después actívalo en cada producto.">
+          <div className="grid grid-cols-[1fr_7rem] gap-3">
+            <Field label="Nombre" required htmlFor="t-name">
+              <input id="t-name" className={inputCls} value={toppingName} onChange={e => setToppingName(e.target.value)} placeholder="Ej. Tapioca extra" required />
+            </Field>
+            <Field label="Precio" required htmlFor="t-price">
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-light-200/60">+$</span>
+                <input id="t-price" className={inputCls + ' pl-8 tabular-nums'} type="number" inputMode="decimal" min="0" step="0.5" value={toppingPrice} onChange={e => setToppingPrice(e.target.value)} required />
+              </div>
+            </Field>
           </div>
-          <div>
-            <label className={labelCls}>Descripción (opcional)</label>
-            <textarea
-              className={inputCls + ' resize-none'}
-              rows={2}
-              value={toppingDescription}
-              onChange={e => setToppingDescription(e.target.value)}
-              placeholder="Breve descripción del topping…"
-            />
-          </div>
-        </form>
-        {toppingsError && <p className="mt-2 text-xs text-red-400">{toppingsError}</p>}
-        {toppingsSuccess && <p className="mt-2 text-xs text-emerald-400">{toppingsSuccess}</p>}
-      </div>
+          <Field label="Descripción" htmlFor="t-desc" hint="Opcional. El cliente la ve al tocar ⓘ junto al extra.">
+            <textarea id="t-desc" className={textareaCls} rows={2} value={toppingDescription} onChange={e => setToppingDescription(e.target.value)} />
+          </Field>
+          {toppingsError && <Notice icon={AlertCircle}>{toppingsError}</Notice>}
+          {toppingsSuccess && <Notice tone="success" icon={Check}>{toppingsSuccess}</Notice>}
+          <button type="submit" disabled={isSubmitting} className={btnPrimary + ' w-full'}>
+            <Plus size={16} /> Agregar extra
+          </button>
+        </FormSection>
+      </form>
 
       {/* List */}
-      <div className="rounded-2xl border border-white/8 bg-main-900/20 overflow-hidden">
+      <div className="rounded-2xl border border-white/10 bg-main-900 overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/10 bg-main-800/60">
+          <h3 className="font-display text-lg font-semibold">Extras ({toppingsList.length})</h3>
+        </div>
         {toppingsLoading ? (
-          <div className="p-8 text-center text-light-200/30">Cargando...</div>
+          <div className="p-8 text-center text-sm text-light-200/70">Cargando…</div>
         ) : toppingsList.length === 0 ? (
-          <div className="p-8 text-center text-light-200/30 italic">No hay toppings.</div>
+          <div className="p-6"><EmptyState icon={Candy} title="Aún no hay extras">Crea el primero con el formulario.</EmptyState></div>
         ) : (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-white/10">
             {toppingsList.map(t => (
-              <div key={t.docId} className="flex items-center px-4 py-3 hover:bg-white/5 transition-colors group">
+              <div key={t.docId} className="px-4 py-3">
                 {editingTopping?.docId === t.docId ? (
-                  <form onSubmit={e => { e.preventDefault(); handleSaveTopping(editingTopping) }} className="flex-1 space-y-2">
-                    <div className="flex gap-3">
-                      <input className={inputCls + ' flex-1'} value={editingTopping.name} onChange={e => setEditingTopping(prev => ({ ...prev, name: e.target.value }))} autoFocus />
-                      <input className={inputCls + ' w-24'} type="number" min="0" step="0.01" value={editingTopping.price} onChange={e => setEditingTopping(prev => ({ ...prev, price: e.target.value }))} />
-                      <button type="submit" className="p-2 rounded-lg text-emerald-400 hover:bg-emerald-500/10"><Check size={16} /></button>
-                      <button type="button" onClick={() => setEditingTopping(null)} className="p-2 rounded-lg text-light-200/40 hover:bg-white/10"><X size={16} /></button>
+                  <form onSubmit={e => { e.preventDefault(); handleSaveTopping(editingTopping) }} className="space-y-2">
+                    <div className="flex gap-2">
+                      <input className={inputCls + ' flex-1'} aria-label="Nombre" value={editingTopping.name} onChange={e => setEditingTopping(prev => ({ ...prev, name: e.target.value }))} autoFocus />
+                      <input className={inputCls + ' w-24 tabular-nums'} aria-label="Precio" type="number" min="0" step="0.5" value={editingTopping.price} onChange={e => setEditingTopping(prev => ({ ...prev, price: e.target.value }))} />
                     </div>
                     <textarea
-                      className={inputCls + ' resize-none text-xs'}
+                      className={textareaCls}
                       rows={2}
                       placeholder="Descripción (opcional)"
+                      aria-label="Descripción"
                       value={editingTopping.description || ''}
                       onChange={e => setEditingTopping(prev => ({ ...prev, description: e.target.value }))}
                     />
+                    <div className="flex justify-end gap-2">
+                      <button type="button" onClick={() => setEditingTopping(null)} className={btnSecondary}>Cancelar</button>
+                      <button type="submit" className={btnPrimary}><Check size={16} /> Guardar</button>
+                    </div>
                   </form>
                 ) : (
-                  <>
-                    <div className="flex-1">
-                      <span className="text-sm text-light-100">{t.name}</span>
-                      <span className="ml-2 text-xs text-light-200/40">+${t.price}</span>
-                      {t.description && (
-                        <p className="text-xs text-light-200/35 mt-0.5 leading-snug">{t.description}</p>
-                      )}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[0.95rem] font-bold text-light-100">
+                        {t.name} <span className="ml-1 text-sm font-bold text-primary dark:text-main-300 tabular-nums">+${t.price}</span>
+                      </p>
+                      {t.description && <p className="text-xs text-light-200/75 mt-0.5 leading-snug">{t.description}</p>}
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => setEditingTopping(t)} className="p-1.5 rounded-lg text-light-200/40 hover:text-light-100 hover:bg-white/10 transition-colors"><Pencil size={14} /></button>
-                      <button onClick={() => setDeleteToppingTarget(t)} className="p-1.5 rounded-lg text-light-200/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 size={14} /></button>
-                    </div>
-                  </>
+                    <button onClick={() => setEditingTopping(t)} className={iconBtn} aria-label={`Editar ${t.name}`}><Pencil size={17} /></button>
+                    <button onClick={() => setDeleteToppingTarget(t)} className={iconBtnDanger} aria-label={`Eliminar ${t.name}`}><Trash2 size={17} /></button>
+                  </div>
                 )}
               </div>
             ))}
@@ -934,9 +932,9 @@ const ToppingsTab = ({ data }) => {
       </div>
 
       {deleteToppingTarget && (
-        <DeleteConfirm
-          label={`¿Eliminar el topping "${deleteToppingTarget.name}"?`}
-          loading={false}
+        <ConfirmDialog
+          message={`¿Eliminar el extra “${deleteToppingTarget.name}”? Dejará de ofrecerse en todos los productos.`}
+          isPending={false}
           onConfirm={() => handleDeleteTopping(deleteToppingTarget)}
           onCancel={() => setDeleteToppingTarget(null)}
         />
@@ -946,138 +944,177 @@ const ToppingsTab = ({ data }) => {
 }
 
 // ── Carousel tab ──────────────────────────────────────────────────────────────
+// Product <select> grouped by section.
+const LinkedProductSelect = ({ id, value, onChange, products, loading }) => {
+  const bySection = useMemo(() => {
+    const map = new Map()
+    products.forEach((p) => {
+      const key = p.section || 'Sin sección'
+      if (!map.has(key)) map.set(key, [])
+      map.get(key).push(p)
+    })
+    return Array.from(map.entries())
+  }, [products])
+  if (loading) return <div className="h-11 rounded-xl bg-main-800 animate-pulse" />
+  return (
+    <select id={id} className={inputCls} value={value} onChange={(e) => onChange(e.target.value, products.find((p) => p.docId === e.target.value))}>
+      <option value="">Elige el producto que se agrega al tocar</option>
+      {bySection.map(([section, list]) => (
+        <optgroup key={section} label={section}>
+          {list.map((p) => <option key={p.docId} value={p.docId}>{p.name}</option>)}
+        </optgroup>
+      ))}
+    </select>
+  )
+}
+
+// Products in a "Combos" section are stored with linkType "combo" (same as before).
+const isComboSection = (section = '') => ['combos', 'combo'].includes(String(section).toLowerCase())
+
 const CarouselTab = ({ data }) => {
   const {
     carouselSlides, carouselLoading, carouselError, carouselSuccess,
-    carouselAltText, setCarouselAltText,
-    carouselLinkType, setCarouselLinkType,
-    carouselLinkedId, setCarouselLinkedId,
-    carouselOrder, setCarouselOrder,
+    carouselLinkedId, setCarouselLinkedId, setCarouselLinkType,
     carouselActive, setCarouselActive,
     setCarouselImageFile,
-    carouselProducts, carouselCombos, carouselItemsLoading,
+    carouselProducts, carouselItemsLoading,
     handleAddCarouselSlide, handleSaveCarouselSlide, handleDeleteCarouselSlide,
-    handleToggleSlideActive,
+    handleToggleSlideActive, handleSlideReorder,
     editingSlide, setEditingSlide, setEditingSlideImageFile,
     deleteSlideTarget, setDeleteSlideTarget,
     isSubmitting,
   } = data
 
-  const linkedList = carouselLinkType === 'combo' ? carouselCombos : carouselProducts
+  const [formKey, setFormKey] = useState(0)
+  const productName = (pid) => carouselProducts.find((p) => p.docId === pid)?.name
+
+  // Reset the image picker after a successful add
+  useEffect(() => { if (carouselSuccess) setFormKey((k) => k + 1) }, [carouselSuccess])
 
   return (
-    <div className="space-y-6">
-      {/* Add slide form */}
-      <div className="rounded-2xl border border-white/8 bg-main-900/20 p-5">
-        <h3 className="text-sm font-semibold text-light-100 mb-4">Agregar diapositiva</h3>
-        <form onSubmit={handleAddCarouselSlide} className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
-            <label className={labelCls}>Imagen *</label>
-            <input type="file" accept="image/*" onChange={e => setCarouselImageFile(e.target.files?.[0] ?? null)} className="text-xs text-light-200/50 file:mr-3 file:rounded-lg file:border-0 file:bg-main-700 file:px-3 file:py-1.5 file:text-xs file:text-light-200 hover:file:bg-main-600" />
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] items-start">
+      {/* Add slide */}
+      <form onSubmit={handleAddCarouselSlide} className="lg:sticky lg:top-0">
+        <FormSection icon={MonitorPlay} title="Nueva promoción en carrusel" hint="Aparece arriba del menú. Al tocarla, el cliente agrega el producto vinculado.">
+          <Field label="Imagen" required hint="Usa la misma imagen de tu historia de Instagram (vertical 9:16).">
+            <ImagePicker key={formKey} aspect="aspect-[9/16]" onFile={setCarouselImageFile} />
+          </Field>
+          <Field label="Producto vinculado" required htmlFor="c-linked">
+            <LinkedProductSelect
+              id="c-linked"
+              value={carouselLinkedId}
+              products={carouselProducts}
+              loading={carouselItemsLoading}
+              onChange={(pid, p) => { setCarouselLinkedId(pid); setCarouselLinkType(isComboSection(p?.section) ? 'combo' : 'product') }}
+            />
+          </Field>
+          <div className="rounded-xl bg-main-800 px-3 py-2">
+            <Toggle checked={carouselActive} onChange={setCarouselActive} label="Publicar de inmediato" hint="Si lo apagas, se guarda oculta." />
           </div>
-          <div>
-            <label className={labelCls}>Texto alternativo</label>
-            <input className={inputCls} value={carouselAltText} onChange={e => setCarouselAltText(e.target.value)} />
-          </div>
-          <div>
-            <label className={labelCls}>Orden</label>
-            <input className={inputCls} type="number" min="0" value={carouselOrder} onChange={e => setCarouselOrder(e.target.value)} />
-          </div>
-          <div>
-            <label className={labelCls}>Tipo de enlace</label>
-            <select className={inputCls} value={carouselLinkType} onChange={e => setCarouselLinkType(e.target.value)}>
-              <option value="product">Producto</option>
-              <option value="combo">Combo</option>
-            </select>
-          </div>
-          <div>
-            <label className={labelCls}>Producto vinculado *</label>
-            {carouselItemsLoading ? (
-              <div className="h-10 rounded-xl bg-white/5 animate-pulse" />
-            ) : (
-              <select className={inputCls} value={carouselLinkedId} onChange={e => setCarouselLinkedId(e.target.value)}>
-                <option value="">Selecciona...</option>
-                {linkedList.map(p => (
-                  <option key={p.docId} value={p.docId}>{p.name}</option>
-                ))}
-              </select>
-            )}
-          </div>
-          <div className="col-span-2 flex items-center justify-between py-2 px-3 rounded-xl bg-white/5 border border-white/10">
-            <span className="text-sm text-light-200/70">Activa</span>
-            <button type="button" onClick={() => setCarouselActive(v => !v)} className={carouselActive ? 'text-main-400' : 'text-light-200/20'}>
-              {carouselActive ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
-            </button>
-          </div>
-          {carouselError && <p className="col-span-2 text-xs text-red-400">{carouselError}</p>}
-          {carouselSuccess && <p className="col-span-2 text-xs text-emerald-400">{carouselSuccess}</p>}
-          <div className="col-span-2">
-            <button type="submit" disabled={isSubmitting} className="w-full rounded-xl bg-main-500 py-2.5 text-sm font-semibold text-white hover:bg-main-400 transition-colors disabled:opacity-50">
-              {isSubmitting ? 'Subiendo...' : 'Agregar diapositiva'}
-            </button>
-          </div>
-        </form>
-      </div>
+          {carouselError && <Notice icon={AlertCircle}>{carouselError}</Notice>}
+          {carouselSuccess && <Notice tone="success" icon={Check}>{carouselSuccess}</Notice>}
+          <button type="submit" disabled={isSubmitting} className={btnPrimary + ' w-full'}>
+            {isSubmitting ? 'Subiendo…' : <><Plus size={16} /> Agregar al carrusel</>}
+          </button>
+        </FormSection>
+      </form>
 
-      {/* Slides list */}
-      <div className="rounded-2xl border border-white/8 bg-main-900/20 overflow-hidden">
-        {carouselLoading ? (
-          <div className="p-8 text-center text-light-200/30">Cargando carrusel...</div>
+      {/* Slides */}
+      <div className="rounded-2xl border border-white/10 bg-main-900 overflow-hidden">
+        <div className="px-4 py-3 border-b border-white/10 bg-main-800/60">
+          <h3 className="font-display text-lg font-semibold">En el carrusel ({carouselSlides.length})</h3>
+          <p className="text-xs text-light-200/70">Se muestran en este orden. Usa las flechas para moverlas.</p>
+        </div>
+        {carouselLoading && carouselSlides.length === 0 ? (
+          <div className="p-8 text-center text-sm text-light-200/70">Cargando…</div>
         ) : carouselSlides.length === 0 ? (
-          <div className="p-8 text-center text-light-200/30 italic">No hay diapositivas.</div>
+          <div className="p-6"><EmptyState icon={MonitorPlay} title="El carrusel está vacío">Agrega tu primera promoción con el formulario.</EmptyState></div>
         ) : (
-          <div className="divide-y divide-white/5">
-            {carouselSlides.map((slide, idx) => (
-              <div key={slide.id} className="flex items-center gap-3 px-4 py-3 hover:bg-white/5 transition-colors group">
-                <GripVertical size={16} className="text-light-200/20 shrink-0" />
-                <div className="h-10 w-16 rounded-lg overflow-hidden bg-main-800 border border-white/10 shrink-0">
-                  {slide.imageUrl && <img src={slide.imageUrl} alt="" className="h-full w-full object-cover" />}
+          <div className="divide-y divide-white/10">
+            {carouselSlides.map((slide, idx) => {
+              const active = slide.active === true || slide.isActive === true
+              const linkedName = productName(slide.linkedId)
+              return (
+                <div key={slide.id} className="flex items-center gap-2 sm:gap-3 px-2 sm:px-4 py-3">
+                  <div className="flex flex-col">
+                    <button onClick={() => handleSlideReorder(idx, idx - 1)} disabled={idx === 0} className={iconBtn.replace('h-10', 'h-9')} aria-label="Mover arriba"><ArrowUp size={16} /></button>
+                    <button onClick={() => handleSlideReorder(idx, idx + 1)} disabled={idx === carouselSlides.length - 1} className={iconBtn.replace('h-10', 'h-9')} aria-label="Mover abajo"><ArrowDown size={16} /></button>
+                  </div>
+                  <div className="h-24 aspect-[9/16] shrink-0 overflow-hidden rounded-xl bg-main-800">
+                    {slide.imageUrl && <img src={slide.imageUrl} alt="" className="h-full w-full object-cover" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[0.95rem] font-bold text-light-100 truncate">{linkedName || slide.altText || `Promoción ${idx + 1}`}</p>
+                    <p className={`text-xs font-bold mt-0.5 ${active ? 'text-emerald-400' : 'text-light-200/60'}`}>{active ? 'Visible en el menú' : 'Oculta'}</p>
+                    {!linkedName && !carouselItemsLoading && (
+                      <p className="text-xs font-semibold text-amber-400 mt-0.5">El producto vinculado ya no existe</p>
+                    )}
+                  </div>
+                  <div className="flex items-center shrink-0">
+                    <MiniSwitch checked={active} onChange={() => handleToggleSlideActive(slide)} label={active ? 'Ocultar del menú' : 'Mostrar en el menú'} />
+                    <button onClick={() => { setEditingSlide(slide); setEditingSlideImageFile(null) }} className={iconBtn} aria-label="Editar promoción"><Pencil size={17} /></button>
+                    <button onClick={() => setDeleteSlideTarget(slide)} className={iconBtnDanger} aria-label="Quitar promoción"><Trash2 size={17} /></button>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-light-100 truncate">{slide.altText || `Slide ${idx + 1}`}</p>
-                  <p className="text-xs text-light-200/40">Orden: {slide.order} · {slide.linkType}</p>
-                </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => handleToggleSlideActive(slide)} className={slide.active ? 'text-emerald-400' : 'text-light-200/20'}>
-                    {slide.active ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
-                  </button>
-                  <button onClick={() => { setEditingSlide(slide); setEditingSlideImageFile(null) }} className="p-1.5 rounded-lg text-light-200/40 hover:text-light-100 hover:bg-white/10 transition-colors"><Pencil size={14} /></button>
-                  <button onClick={() => setDeleteSlideTarget(slide)} className="p-1.5 rounded-lg text-light-200/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"><Trash2 size={14} /></button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
 
-      {/* Edit slide drawer */}
+      {/* Edit slide */}
       {editingSlide && (
-        <Drawer isOpen={Boolean(editingSlide)} onClose={() => setEditingSlide(null)} title="Editar diapositiva">
+        <Drawer
+          isOpen={Boolean(editingSlide)}
+          onClose={() => setEditingSlide(null)}
+          title="Editar promoción"
+          footer={
+            <div className="flex gap-3">
+              <button onClick={() => setEditingSlide(null)} className={btnSecondary + ' flex-1'}>Cancelar</button>
+              <button
+                onClick={() => handleSaveCarouselSlide({
+                  ...editingSlide,
+                  altText: productName(editingSlide.linkedId) || editingSlide.altText || '',
+                })}
+                disabled={!editingSlide.linkedId}
+                className={btnPrimary + ' flex-1'}
+              >
+                Guardar
+              </button>
+            </div>
+          }
+        >
           <div className="space-y-4">
-            <div>
-              <label className={labelCls}>Texto alternativo</label>
-              <input className={inputCls} value={editingSlide.altText || ''} onChange={e => setEditingSlide(prev => ({ ...prev, altText: e.target.value }))} />
-            </div>
-            <div>
-              <label className={labelCls}>Nueva imagen (opcional)</label>
-              <input type="file" accept="image/*" onChange={e => setEditingSlideImageFile(e.target.files?.[0] ?? null)} className="text-xs text-light-200/50 file:mr-3 file:rounded-lg file:border-0 file:bg-main-700 file:px-3 file:py-1.5 file:text-xs file:text-light-200 hover:file:bg-main-600" />
-            </div>
-            <div>
-              <label className={labelCls}>Orden</label>
-              <input className={inputCls} type="number" min="0" value={editingSlide.order ?? ''} onChange={e => setEditingSlide(prev => ({ ...prev, order: e.target.value }))} />
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button onClick={() => setEditingSlide(null)} className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm text-light-200/70 hover:bg-white/10 transition-colors">Cancelar</button>
-              <button onClick={() => handleSaveCarouselSlide(editingSlide)} className="flex-1 rounded-xl bg-main-500 py-2.5 text-sm font-semibold text-white hover:bg-main-400 transition-colors">Guardar</button>
-            </div>
+            <FormSection icon={MonitorPlay} title="Promoción">
+              <Field label="Imagen" hint="Vertical 9:16, igual que tu historia de Instagram.">
+                <ImagePicker key={editingSlide.id} aspect="aspect-[9/16]" currentSrc={editingSlide.imageUrl} onFile={setEditingSlideImageFile} />
+              </Field>
+              <Field label="Producto vinculado" required htmlFor="c-edit-linked">
+                <LinkedProductSelect
+                  id="c-edit-linked"
+                  value={editingSlide.linkedId || ''}
+                  products={carouselProducts}
+                  loading={carouselItemsLoading}
+                  onChange={(pid, p) => setEditingSlide(prev => ({ ...prev, linkedId: pid, linkType: isComboSection(p?.section) ? 'combo' : 'product' }))}
+                />
+              </Field>
+              <div className="rounded-xl bg-main-800 px-3 py-2">
+                <Toggle
+                  checked={editingSlide.active ?? true}
+                  onChange={(v) => setEditingSlide(prev => ({ ...prev, active: v }))}
+                  label="Visible en el menú"
+                />
+              </div>
+            </FormSection>
+            {carouselError && <Notice icon={AlertCircle}>{carouselError}</Notice>}
           </div>
         </Drawer>
       )}
 
       {deleteSlideTarget && (
-        <DeleteConfirm
-          label={`¿Eliminar la diapositiva "${deleteSlideTarget.altText || 'esta diapositiva'}"?`}
-          loading={carouselLoading}
+        <ConfirmDialog
+          message={`¿Quitar “${productName(deleteSlideTarget.linkedId) || deleteSlideTarget.altText || 'esta promoción'}” del carrusel?`}
+          isPending={carouselLoading}
           onConfirm={() => handleDeleteCarouselSlide(deleteSlideTarget)}
           onCancel={() => setDeleteSlideTarget(null)}
         />
@@ -1089,7 +1126,7 @@ const CarouselTab = ({ data }) => {
 // ── Main MenuEditor view ──────────────────────────────────────────────────────
 const TABS = [
   { id: 'products', label: 'Productos', icon: Layers },
-  { id: 'toppings', label: 'Toppings', icon: Candy },
+  { id: 'toppings', label: 'Extras', icon: Candy },
   { id: 'carousel', label: 'Carrusel', icon: MonitorPlay },
 ]
 
@@ -1097,10 +1134,15 @@ export const MenuEditor = () => {
   const data = useAdminData()
   const location = useLocation()
 
-  // Determine initial tab from route state
-  const [activeTab, setActiveTab] = useState(
-    location.state?.tab ?? 'products'
-  )
+  const [activeTab, setActiveTab] = useState(location.state?.tab ?? 'products')
+  const [toast, setToast] = useState('')
+  const toastTimer = useRef(null)
+  const notify = (msg) => {
+    setToast(msg)
+    clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setToast(''), 2600)
+  }
+  useEffect(() => () => clearTimeout(toastTimer.current), [])
 
   // Load all data on mount
   useEffect(() => {
@@ -1113,29 +1155,37 @@ export const MenuEditor = () => {
   }, [])
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Tab bar */}
-      <div className="flex items-center gap-1 border-b border-white/8 pb-0">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              activeTab === tab.id
-                ? 'border-main-500 text-main-400'
-                : 'border-transparent text-light-200/50 hover:text-light-100'
-            }`}
-          >
-            <tab.icon size={15} />
-            {tab.label}
-          </button>
-        ))}
+    <div className="space-y-5">
+      {/* Tabs */}
+      <div role="tablist" aria-label="Partes del menú" className="flex w-full sm:inline-flex sm:w-auto gap-1 rounded-2xl bg-main-900 p-1.5 ring-1 ring-white/10">
+        {TABS.map(tab => {
+          const active = activeTab === tab.id
+          return (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={active}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex flex-1 sm:flex-none min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition-colors cursor-pointer ${
+                active ? 'bg-primary text-snow shadow-sm' : 'text-light-200/75 hover:bg-white/5 hover:text-light-100'
+              }`}
+            >
+              <tab.icon size={16} />
+              {tab.label}
+            </button>
+          )
+        })}
       </div>
 
-      {/* Tab content */}
-      {activeTab === 'products' && <ProductsTab data={data} />}
+      {activeTab === 'products' && <ProductsTab data={data} notify={notify} />}
       {activeTab === 'toppings' && <ToppingsTab data={data} />}
       {activeTab === 'carousel' && <CarouselTab data={data} />}
+
+      {toast && (
+        <div role="status" aria-live="polite" className="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-8 z-[80] flex items-center gap-2 rounded-full bg-light-100 px-5 py-3 text-sm font-bold text-main-900 shadow-2xl">
+          <Check size={16} /> {toast}
+        </div>
+      )}
     </div>
   )
 }

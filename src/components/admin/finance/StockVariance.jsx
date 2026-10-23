@@ -8,13 +8,13 @@ import {
 } from 'lucide-react'
 
 const StatCard = ({ icon: Icon, label, value, subtext, colorCls }) => (
-  <div className="bg-main-900/30 border border-white/5 rounded-3xl p-5 shadow-sm">
+  <div className="bg-main-900 border border-white/10 rounded-3xl p-5 shadow-sm">
     <div className={`h-9 w-9 rounded-2xl flex items-center justify-center shrink-0 mb-3 ${colorCls}`}>
       <Icon size={18} />
     </div>
-    <p className="text-xs font-medium text-light-200/40 uppercase tracking-wider truncate">{label}</p>
+    <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider truncate">{label}</p>
     <h4 className="text-xl sm:text-2xl font-bold text-light-100 mt-1 tabular-nums truncate">{value}</h4>
-    {subtext && <p className="text-[10px] text-light-200/30 mt-0.5 truncate">{subtext}</p>}
+    {subtext && <p className="text-[10px] text-light-200/55 mt-0.5 truncate">{subtext}</p>}
   </div>
 )
 
@@ -155,16 +155,16 @@ export const StockVariance = ({ orders, docIdByLegacyId = {}, nameToDocId = {} }
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-main-900/30 border border-white/5 rounded-3xl p-5 h-24 animate-pulse" />
+            <div key={i} className="bg-main-900 border border-white/10 rounded-3xl p-5 h-24 animate-pulse" />
           ))}
         </div>
       ) : !hasOrders ? (
-        <div className="bg-main-900/30 border border-white/5 rounded-3xl py-16 flex flex-col items-center gap-3 text-light-200/30">
+        <div className="bg-main-900 border border-white/10 rounded-3xl py-16 flex flex-col items-center gap-3 text-light-200/55">
           <PackageSearch size={36} />
           <p className="text-sm italic">No hay órdenes en este período.</p>
         </div>
       ) : !hasComparableData ? (
-        <div className="bg-main-900/30 border border-white/5 rounded-3xl py-16 flex flex-col items-center gap-3 text-light-200/30 px-4">
+        <div className="bg-main-900 border border-white/10 rounded-3xl py-16 flex flex-col items-center gap-3 text-light-200/55 px-4">
           <PackageSearch size={36} />
           <p className="text-sm italic text-center">Algunas recetas no están definidas. No se puede calcular varianza.</p>
         </div>
@@ -209,30 +209,30 @@ export const StockVariance = ({ orders, docIdByLegacyId = {}, nameToDocId = {} }
           )}
 
           {variance.excludedItems > 0 && (
-            <p className="text-xs text-light-200/30 px-1">
+            <p className="text-xs text-light-200/55 px-1">
               {variance.excludedItems} línea{variance.excludedItems !== 1 ? 's' : ''} de pedido sin costo registrado o sin receta actual — excluida{variance.excludedItems !== 1 ? 's' : ''} de este cálculo.
             </p>
           )}
 
-          <div className="bg-main-900/30 border border-white/5 rounded-3xl shadow-sm overflow-hidden">
+          <div className="bg-main-900 border border-white/10 rounded-3xl shadow-sm overflow-hidden">
             <button
               onClick={() => setTableOpen((v) => !v)}
               className="w-full flex items-center justify-between px-5 sm:px-6 py-4 cursor-pointer hover:bg-white/3 transition-colors"
             >
               <span className="text-sm font-bold text-light-100">Desglose por producto</span>
-              {tableOpen ? <ChevronUp size={18} className="text-light-200/40" /> : <ChevronDown size={18} className="text-light-200/40" />}
+              {tableOpen ? <ChevronUp size={18} className="text-light-200/65" /> : <ChevronDown size={18} className="text-light-200/65" />}
             </button>
 
             {tableOpen && (
               <div className="overflow-x-auto px-5 sm:px-6 pb-5 sm:pb-6">
                 <table className="w-full text-sm min-w-[480px]">
                   <thead>
-                    <tr className="border-b border-white/5">
+                    <tr className="border-b border-white/10">
                       {COLUMNS.map((col) => (
                         <th
                           key={col.key}
                           onClick={() => toggleSort(col.key)}
-                          className={`py-2.5 text-xs font-medium text-light-200/40 uppercase tracking-wider cursor-pointer select-none hover:text-light-200/70 transition-colors ${col.align === 'right' ? 'text-right' : 'text-left'}`}
+                          className={`py-2.5 text-xs font-medium text-light-200/65 uppercase tracking-wider cursor-pointer select-none hover:text-light-200/70 transition-colors ${col.align === 'right' ? 'text-right' : 'text-left'}`}
                         >
                           <span className={`inline-flex items-center gap-1 ${col.align === 'right' ? 'flex-row-reverse' : ''}`}>
                             {col.label}
@@ -242,7 +242,7 @@ export const StockVariance = ({ orders, docIdByLegacyId = {}, nameToDocId = {} }
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-white/10">
                     {sortedProducts.map((p) => (
                       <tr key={p.key} className="hover:bg-white/3 transition-colors">
                         <td className="py-3 pr-3 text-light-100 font-medium truncate max-w-[10rem]">{p.name}</td>

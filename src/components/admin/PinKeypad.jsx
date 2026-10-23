@@ -114,8 +114,8 @@ export const PinKeypad = ({ length = 4, onComplete, onCancel, title, subtitle })
 
       {(title || subtitle) && (
         <div className="text-center space-y-1.5">
-          {title && <h1 className="text-2xl font-bold tracking-tight text-light-100">{title}</h1>}
-          {subtitle && <p className="text-sm text-light-200/50">{subtitle}</p>}
+          {title && <h1 className="font-display text-3xl font-semibold text-light-100">{title}</h1>}
+          {subtitle && <p className="text-sm text-light-200/70">{subtitle}</p>}
         </div>
       )}
 
@@ -130,13 +130,13 @@ export const PinKeypad = ({ length = 4, onComplete, onCancel, title, subtitle })
               w-14 h-14 rounded-2xl border-2 flex items-center justify-center
               transition-all duration-150
               ${digits[i] !== undefined
-                ? 'border-main-400 bg-main-500/15'
-                : 'border-white/10 bg-white/[0.03]'
+                ? 'border-primary bg-primary/10'
+                : 'border-white/15 bg-main-900'
               }
             `}
           >
             {digits[i] !== undefined && (
-              <div className="w-3.5 h-3.5 rounded-full bg-main-400" />
+              <div className="w-3.5 h-3.5 rounded-full bg-primary" />
             )}
           </div>
         ))}
@@ -167,15 +167,15 @@ export const PinKeypad = ({ length = 4, onComplete, onCancel, title, subtitle })
               onClick={() => handleKey(key)}
               aria-label={isBackspace ? 'Borrar' : isCancel ? 'Cancelar' : key}
               className={`
-                h-14 rounded-2xl text-base font-semibold border
+                h-16 rounded-2xl text-xl font-bold border
                 transition-all duration-150 cursor-pointer
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-main-400/60
                 active:scale-95
                 ${isCancel
-                  ? 'border-rose-500/20 bg-rose-500/[0.08] text-rose-400 hover:bg-rose-500/15 text-xs'
+                  ? 'border-transparent bg-transparent text-rose-400 hover:bg-rose-500/10 !text-sm'
                   : isBackspace
-                  ? 'border-white/5 bg-white/[0.05] text-light-200/60 hover:bg-white/10 hover:text-light-100'
-                  : 'border-white/5 bg-main-800/60 text-light-100 hover:bg-main-700/70'
+                  ? 'border-transparent bg-transparent text-light-200/70 hover:bg-white/5 hover:text-light-100'
+                  : 'border-white/10 bg-main-900 text-light-100 shadow-[0_2px_0_var(--color-main-700)] hover:bg-main-800'
                 }
                 ${isDigit && digits.length >= length ? 'opacity-40 pointer-events-none' : ''}
               `}

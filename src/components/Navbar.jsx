@@ -1,142 +1,54 @@
-import React, { useEffect, useState } from 'react'
 import Logo from '../assets/bklogo.svg'
 import { NavLink } from 'react-router'
 import Boba from '../assets/Boba.svg'
 import Croissant from '../assets/Croissant.svg'
+import { MaskIcon } from './MaskIcon'
 
-export const Navbar = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+const LINKS = [
+  { to: '/', label: 'Todo el menú', icon: null },
+  { to: '/bebidas', label: 'Bebidas', icon: Boba },
+  { to: '/alimentos', label: 'Alimentos', icon: Croissant },
+]
 
-  useEffect(() => {
-    // Prevent background scroll when the mobile menu is open
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
+// Desktop/tablet navbar (sm and up). On phones the MenuHero header carries
+// the logo and the Todo / Bebidas / Alimentos filter instead.
+// Height stays 104px — CategoryTabs, PromoCarousel and the section
+// scroll-margin all offset by it.
+export const Navbar = () => (
+  <div className="hidden sm:block fixed w-full z-40 bg-primary text-surface">
+    <div className="container mx-auto h-[104px] px-4 flex items-center justify-between gap-6">
+      <NavLink to="/" aria-label="Bubble Kaapeh — inicio">
+        <img src={Logo} alt="Bubble Kaapeh" className="h-14" />
+      </NavLink>
 
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isMobileMenuOpen])
-
-  const closeMobileMenu = () => setIsMobileMenuOpen(false)
-
-  return (
-    <>
-      {/* Floating bars button on small screens */}
-      <button
-        type="button"
-        onClick={() => setIsMobileMenuOpen((v) => !v)}
-        className="sm:hidden fixed top-15 right-4 z-50 inline-flex h-12 w-12 items-center justify-center rounded-full bg-main-600 text-light-200 shadow-2xl transition hover:bg-main-700 hover:text-light-400"
-        aria-label={isMobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
-        aria-expanded={isMobileMenuOpen}
-      >
-        <i className={isMobileMenuOpen ? 'fas fa-xmark fa-lg' : 'fas fa-bars fa-lg'} />
-      </button>
-
-      {/* Mobile expanding bubble + full overlay layout */}
-      <div
-        className={
-          "sm:hidden fixed inset-0 z-40 " +
-          (isMobileMenuOpen ? "pointer-events-auto" : "pointer-events-none")
-        }
-        aria-hidden={!isMobileMenuOpen}
-      >
-        {/* Expanding circle background */}
-        <div
-          className={
-            "fixed top-15 right-4 h-11 w-11 rounded-full bg-main-700 transition-transform duration-500 ease-in-out " +
-            (isMobileMenuOpen ? "scale-[40]" : "scale-0")
-          }
-        />
-
-        {/* Menu content */}
-        <div
-          className={
-            "fixed inset-0 flex flex-col items-center justify-center gap-6 px-8 transition-opacity duration-300 " +
-            (isMobileMenuOpen ? "opacity-100" : "opacity-0")
-          }
-        >
-          <NavLink to="/" onClick={closeMobileMenu} className="flex items-center gap-3">
-            <img src={Logo} alt="BK Logo" className="h-14" />
-            <span className="text-2xl font-bold text-light-200">Bubble Kaapeh</span>
-          </NavLink>
-
-          <div className="mt-6 flex w-full max-w-sm flex-col gap-3">
-            <NavLink
-              to="/bebidas"
-              onClick={closeMobileMenu}
-              className={({ isActive }) =>
-                "w-full rounded-xl px-5 py-4 text-center text-lg font-semibold transition " +
-                (isActive
-                  ? "bg-white/25 text-light-200 shadow-[inset_0_0_0_2px_rgba(255,255,255,0.35)]"
-                  : "bg-white/10 text-light-200 hover:bg-white/15 hover:text-light-400")
-              }
-            >
-              Bebidas
-            </NavLink>
-
-            <NavLink
-              to="/alimentos"
-              onClick={closeMobileMenu}
-              className={({ isActive }) =>
-                "w-full rounded-xl px-5 py-4 text-center text-lg font-semibold transition " +
-                (isActive
-                  ? "bg-white/25 text-light-200 shadow-[inset_0_0_0_2px_rgba(255,255,255,0.35)]"
-                  : "bg-white/10 text-light-200 hover:bg-white/15 hover:text-light-400")
-              }
-            >
-              Alimentos
-            </NavLink>
-          </div>
-
-          <button
-            type="button"
-            onClick={closeMobileMenu}
-            className="mt-2 text-sm text-light-200/70 underline underline-offset-4 hover:text-light-200"
+      <nav aria-label="Filtrar menú" className="flex items-center gap-1 rounded-full bg-ink/25 p-1.5">
+        {LINKS.map(({ to, label, icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end
+            className={({ isActive }) =>
+              'inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-[0.95rem] font-bold transition-all duration-200 ' +
+              (isActive
+                ? 'bg-surface text-primary shadow-[0_6px_14px_-6px_var(--color-ink)]'
+                : 'text-surface/85 hover:bg-surface/10 hover:text-surface')
+            }
           >
-            Cerrar
-          </button>
-        </div>
-      </div>
+            {icon && <MaskIcon src={icon} className="h-6 w-6" />}
+            {label}
+          </NavLink>
+        ))}
+      </nav>
+    </div>
 
-      {/* Full navbar hidden on small screens */}
-      <div className="hidden sm:block bg-main-700 shadow-2xl fixed w-full z-40">
-        <div className="container mx-auto px-4 py-6 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className='text-main-500'>
-              <NavLink to="/">
-                <img src={Logo} alt="BK Logo" className="h-14 fill-current" />
-              </NavLink>
-            </div>
-          </div>
-          <div className="flex items-center sm:gap-50 lg:gap-100">
-            <NavLink
-              to="/bebidas"
-              className={({ isActive }) =>
-                "text-light-200 text-xl transition hidden sm:block p-2 rounded-md " +
-                (isActive
-                  ? "text-light-400 bg-white/10 shadow-[inset_0_0_0_3px_rgba(255,255,255,0.18),inset_0_-10px_18px_rgba(69,26,3,0.45)]"
-                  : "hover:text-light-400 hover:shadow-[inset_0_0_0_3px_rgba(69,26,3,0.55),inset_0_-10px_18px_rgba(69,26,3,0.5)]")
-              }
-            >
-              <img src={Boba} alt="Bebidas" className="h-15 inline-block fill-current" />
-            </NavLink>
-            <NavLink
-              to="/alimentos"
-              className={({ isActive }) =>
-                "text-light-200 transition hidden sm:block p-2 rounded-md " +
-                (isActive
-                  ? "text-light-400 bg-white/10 shadow-[inset_0_0_0_3px_rgba(255,255,255,0.18),inset_0_-10px_18px_rgba(69,26,3,0.45)]"
-                  : "hover:text-light-400 hover:shadow-[inset_0_0_0_3px_rgba(69,26,3,0.55),inset_0_-10px_18px_rgba(69,26,3,0.5)]")
-              }
-            >
-              <img src={Croissant} alt="Alimentos" className="h-15 inline-block transition" />
-            </NavLink>
-          </div>
-        </div>
-      </div>
-    </>
-  )
-}
+    {/* Wavy bottom edge */}
+    <svg
+      className="absolute top-full left-0 block h-3 w-full text-primary"
+      viewBox="0 0 400 12"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <path d="M0 0 L400 0 L400 4 C 350 12, 300 12, 250 5 S 150 -2, 100 6 S 30 12, 0 5 Z" fill="currentColor" />
+    </svg>
+  </div>
+)

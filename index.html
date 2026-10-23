@@ -1,11 +1,25 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/bklogo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#743121" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <script src="https://kit.fontawesome.com/7a4a305811.js" crossorigin="anonymous"></script>
     <title>Bubble Kaapeh</title>
+    <script>
+      // Admin theme before first paint (see src/hooks/useAdminTheme.js)
+      try {
+        if (location.pathname.indexOf('/admin') === 0) {
+          var root = document.documentElement
+          root.classList.add('admin-theme')
+          if (localStorage.getItem('bk_admin_theme') === 'dark') root.classList.add('dark')
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

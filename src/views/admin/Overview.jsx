@@ -5,9 +5,9 @@ import {
   TrendingUp,
   TrendingDown,
   PlusCircle,
-  ListPlus,
-  Settings,
-  Plus,
+  Landmark,
+  ToggleRight,
+  Megaphone,
   ArrowRight,
   Clock,
   Package,
@@ -62,10 +62,10 @@ export const Overview = () => {
     const hasPrevData = previousValue > 0
 
     return (
-      <div className="bg-main-900/50 border border-white/5 rounded-3xl p-6 shadow-sm">
-        <p className="text-xs font-medium text-light-200/40 uppercase tracking-wider">{title}</p>
+      <div className="bg-main-900 border border-white/10 rounded-2xl p-4 sm:p-6">
+        <p className="text-sm font-bold text-light-200/75">{title}</p>
         <div className="mt-2 flex items-baseline gap-2">
-          <h3 className="text-3xl font-bold text-light-100">
+          <h3 className="font-display text-[1.7rem] sm:text-4xl font-semibold text-light-100 tabular-nums">
             {prefix}{loading ? '—' : value.toLocaleString('es-MX', { maximumFractionDigits: 2 })}
           </h3>
           {!loading && hasPrevData && (
@@ -76,38 +76,19 @@ export const Overview = () => {
           )}
         </div>
         {!loading && hasPrevData && (
-          <p className="text-[10px] text-light-200/30 mt-1">vs ayer</p>
+          <p className="hidden sm:block text-xs text-light-200/65 mt-1">comparado con ayer a esta hora</p>
         )}
       </div>
     )
   }
 
+  // Everyday tasks first — each tile says what it does in plain words.
   const quickActions = [
-    {
-      name: 'Abrir POS',
-      icon: ShoppingCart,
-      action: () => navigate('/admin/pos'),
-    },
-    {
-      name: 'Agregar producto',
-      icon: PlusCircle,
-      action: () => navigate('/admin/menu', { state: { openAddProduct: true } }),
-    },
-    {
-      name: 'Actualizar menú',
-      icon: ListPlus,
-      action: () => navigate('/admin/menu'),
-    },
-    {
-      name: 'Agregar sección',
-      icon: Plus,
-      action: () => navigate('/admin/menu', { state: { openAddSection: true } }),
-    },
-    {
-      name: 'Gestionar toppings',
-      icon: Settings,
-      action: () => navigate('/admin/menu', { state: { tab: 'toppings' } }),
-    },
+    { name: 'Cobrar un pedido', desc: 'Abrir la pantalla de cobro', icon: ShoppingCart, action: () => navigate('/admin/pos') },
+    { name: 'Caja del día', desc: 'Abrir, cerrar o registrar efectivo', icon: Landmark, action: () => navigate('/admin/caja') },
+    { name: 'Marcar agotados', desc: 'Prender o apagar productos', icon: ToggleRight, action: () => navigate('/admin/menu') },
+    { name: 'Nuevo producto', desc: 'Agregarlo al menú', icon: PlusCircle, action: () => navigate('/admin/menu', { state: { openAddProduct: true } }) },
+    { name: 'Promoción', desc: 'Aviso para los clientes', icon: Megaphone, action: () => navigate('/admin/promociones') },
   ]
 
   const getStatusColor = (status) => {
@@ -117,56 +98,63 @@ export const Overview = () => {
       case 'en preparación':   return 'bg-blue-500/10 text-blue-400 border-blue-500/20'
       case 'listo':            return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
       case 'pagado':
-      case 'entregado':        return 'bg-light-200/5 text-light-200/40 border-light-200/10'
+      case 'entregado':        return 'bg-light-200/5 text-light-200/65 border-light-200/10'
       default:                 return 'bg-amber-500/10 text-amber-400 border-amber-500/20'
     }
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 sm:space-y-8">
       {/* Hero Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
         <StatCard
-          title="Pedidos Hoy"
+          title="Pedidos hoy"
           value={stats.ordersToday}
           previousValue={stats.prevOrdersToday}
         />
         <StatCard
-          title="Ingresos del Día"
+          title="Ventas de hoy"
           value={stats.revenueToday}
           previousValue={stats.prevRevenueToday}
           prefix="$"
         />
         <StatCard
-          title="Promedio Ticket"
+          title="Ticket promedio"
           value={stats.avgTicket}
           previousValue={0}
           prefix="$"
         />
       </div>
 
-      {/* Quick Actions Strip */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <p className="text-sm font-medium text-light-200/60 mr-2">Acciones rápidas:</p>
-        {quickActions.map((action) => (
-          <button
-            key={action.name}
-            type="button"
-            onClick={action.action}
-            className="flex items-center gap-2 px-4 py-2 bg-main-900/40 hover:bg-main-500/20 border border-white/5 hover:border-main-500/30 rounded-full text-sm font-medium text-light-100 transition-all duration-200 cursor-pointer"
-          >
-            <action.icon size={16} className="text-main-400" />
-            {action.name}
-          </button>
-        ))}
-      </div>
+      {/* Quick actions */}
+      <section aria-label="Accesos rápidos">
+        <h2 className="mb-3 text-sm font-bold text-light-200/75">Accesos rápidos</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {quickActions.map((action) => (
+            <button
+              key={action.name}
+              type="button"
+              onClick={action.action}
+              className="group flex flex-col sm:flex-row items-start gap-2.5 sm:gap-3 rounded-2xl border border-white/10 bg-main-900 p-4 text-left transition-all hover:border-primary/40 hover:-translate-y-0.5 hover:shadow-[0_12px_24px_-18px_var(--color-ink)] cursor-pointer"
+            >
+              <span className="h-10 w-10 shrink-0 rounded-xl bg-primary/10 text-primary dark:text-main-300 flex items-center justify-center group-hover:bg-primary group-hover:text-snow transition-colors">
+                <action.icon size={19} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-bold text-light-100 leading-tight">{action.name}</span>
+                <span className="block text-xs text-light-200/70 mt-0.5 leading-snug">{action.desc}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* Recent Orders Feed */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-light-100 flex items-center gap-2">
-            <Package size={20} className="text-main-400" />
-            Pedidos Recientes
+          <h2 className="font-display text-xl font-semibold text-light-100 flex items-center gap-2">
+            <Package size={20} className="text-primary dark:text-main-300" />
+            Pedidos recientes
           </h2>
           <NavLink
             to="/admin/pedidos"
@@ -176,9 +164,9 @@ export const Overview = () => {
           </NavLink>
         </div>
 
-        <div className="bg-main-900/30 border border-white/5 rounded-3xl overflow-hidden shadow-sm">
+        <div className="bg-main-900 border border-white/10 rounded-3xl overflow-hidden shadow-sm">
           {loading ? (
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-white/10">
               {[1, 2, 3].map(i => (
                 <div key={i} className="p-5 flex items-center gap-4">
                   <div className="h-10 w-10 rounded-2xl bg-white/5 animate-pulse" />
@@ -190,9 +178,9 @@ export const Overview = () => {
               ))}
             </div>
           ) : recentOrders.length === 0 ? (
-            <div className="p-12 text-center text-light-200/40 italic">No hay pedidos registrados.</div>
+            <div className="p-12 text-center text-light-200/65 italic">No hay pedidos registrados.</div>
           ) : (
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-white/10">
               {recentOrders.slice(0, 5).map((order) => {
                 const shortId = order.orderId
                   ? order.orderId.slice(-6)
@@ -212,7 +200,7 @@ export const Overview = () => {
                 return (
                   <div key={order.id} className="p-5 flex items-center justify-between hover:bg-white/5 transition-colors group">
                     <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-2xl bg-main-800 flex items-center justify-center text-main-400 font-bold text-xs border border-white/5">
+                      <div className="h-10 w-10 rounded-2xl bg-main-800 flex items-center justify-center text-main-400 font-bold text-xs border border-white/10">
                         #{shortId}
                       </div>
                       <div>
@@ -224,7 +212,7 @@ export const Overview = () => {
                             {order.status || 'Nuevo'}
                           </span>
                         </div>
-                        <p className="text-xs text-light-200/40 flex items-center gap-1 mt-0.5">
+                        <p className="text-xs text-light-200/65 flex items-center gap-1 mt-0.5">
                           <Clock size={12} />
                           {timeStr}
                         </p>
@@ -232,12 +220,12 @@ export const Overview = () => {
                     </div>
 
                     <div className="flex items-center gap-4">
-                      <p className="hidden sm:block text-xs font-medium text-light-200/50 truncate max-w-[160px]">
+                      <p className="hidden sm:block text-xs font-medium text-light-200/70 truncate max-w-[160px]">
                         {displayItems}
                       </p>
                       <NavLink
                         to="/admin/pedidos"
-                        className="p-2 rounded-xl bg-white/5 text-light-200/40 hover:text-light-100 hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100"
+                        className="p-2 rounded-xl bg-white/5 text-light-200/65 hover:text-light-100 hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100"
                       >
                         <ArrowRight size={18} />
                       </NavLink>
@@ -251,33 +239,33 @@ export const Overview = () => {
       </div>
 
       {/* Register History Dropdown */}
-      <div className="bg-main-900/30 border border-white/5 rounded-3xl overflow-hidden shadow-sm">
+      <div className="bg-main-900 border border-white/10 rounded-3xl overflow-hidden shadow-sm">
         <button
           type="button"
           onClick={toggleHist}
           className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/2 transition-colors cursor-pointer text-left"
         >
           <div className="flex items-center gap-2.5">
-            <Calendar size={16} className="text-light-200/30 shrink-0" />
+            <Calendar size={16} className="text-light-200/55 shrink-0" />
             <span className="text-sm font-semibold text-light-200/60">Historial de Caja</span>
             {histLoaded && pastSessions.length > 0 && (
-              <span className="text-[10px] text-light-200/25 tabular-nums">{pastSessions.length} sesiones</span>
+              <span className="text-[10px] text-light-200/50 tabular-nums">{pastSessions.length} sesiones</span>
             )}
           </div>
           {histOpen
-            ? <ChevronUp size={15} className="text-light-200/25 shrink-0" />
-            : <ChevronDown size={15} className="text-light-200/25 shrink-0" />
+            ? <ChevronUp size={15} className="text-light-200/50 shrink-0" />
+            : <ChevronDown size={15} className="text-light-200/50 shrink-0" />
           }
         </button>
 
         {histOpen && (
-          <div className="border-t border-white/5">
+          <div className="border-t border-white/10">
             {histLoading ? (
-              <div className="py-10 text-center text-sm text-light-200/30 animate-pulse">Cargando historial…</div>
+              <div className="py-10 text-center text-sm text-light-200/55 animate-pulse">Cargando historial…</div>
             ) : pastSessions.length === 0 ? (
-              <div className="py-10 text-center text-sm text-light-200/25 italic">Sin sesiones anteriores</div>
+              <div className="py-10 text-center text-sm text-light-200/50 italic">Sin sesiones anteriores</div>
             ) : (
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-white/10">
                 {pastSessions.map(s => <PastSessionRow key={s.id} session={s} />)}
               </div>
             )}

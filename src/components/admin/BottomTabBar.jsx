@@ -31,10 +31,10 @@ export const BottomTabBar = () => {
     <>
       {/* ── Bottom Tab Bar — mobile only ──────────────────────────────────── */}
       <nav
-        className="md:hidden fixed bottom-0 inset-x-0 z-[60] bg-main-950/98 border-t border-white/8 backdrop-blur-md"
+        className="md:hidden fixed bottom-0 inset-x-0 z-[60] bg-main-900 border-t border-white/10 backdrop-blur-md shadow-[0_-10px_30px_-20px_var(--color-ink)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', touchAction: 'manipulation' }}
       >
-        <div className="flex items-stretch h-16">
+        <div className="flex items-stretch h-[68px] px-1">
 
           {primaryTabs.map(tab => {
             const isDisabled = disabledRoutes.includes(tab.routeKey)
@@ -45,12 +45,12 @@ export const BottomTabBar = () => {
                   key={tab.routeKey}
                   aria-disabled="true"
                   title="No disponible para esta estación"
-                  className="flex-1 flex flex-col items-center justify-center gap-0.5 opacity-40 pointer-events-none select-none text-light-200/35"
+                  className="flex-1 flex flex-col items-center justify-center gap-0.5 opacity-40 pointer-events-none select-none text-light-200/60"
                 >
-                  <div className="h-8 w-8 flex items-center justify-center rounded-xl">
+                  <div className="h-8 w-14 flex items-center justify-center rounded-full">
                     <tab.icon size={21} />
                   </div>
-                  <span className="text-[9px] font-medium leading-none tracking-wide">{tab.name}</span>
+                  <span className="text-[11px] font-bold leading-none">{tab.name}</span>
                 </div>
               )
             }
@@ -63,19 +63,19 @@ export const BottomTabBar = () => {
                 className={({ isActive }) => `
                   flex-1 flex flex-col items-center justify-center gap-0.5 cursor-pointer
                   transition-colors duration-200 select-none
-                  ${isActive ? 'text-main-400' : 'text-light-200/35'}
+                  ${isActive ? 'text-primary dark:text-main-300' : 'text-light-200/70'}
                 `}
               >
                 {({ isActive }) => (
                   <>
                     <div className={`
-                      h-8 w-8 flex items-center justify-center rounded-xl
+                      h-8 w-14 flex items-center justify-center rounded-full
                       transition-all duration-200
-                      ${isActive ? 'bg-main-500/25' : ''}
+                      ${isActive ? 'bg-primary text-snow' : ''}
                     `}>
                       <tab.icon size={21} />
                     </div>
-                    <span className="text-[9px] font-medium leading-none tracking-wide">{tab.name}</span>
+                    <span className="text-[11px] font-bold leading-none">{tab.name}</span>
                   </>
                 )}
               </NavLink>
@@ -90,17 +90,17 @@ export const BottomTabBar = () => {
             className={`
               flex-1 flex flex-col items-center justify-center gap-0.5 cursor-pointer
               transition-colors duration-200 select-none
-              ${isMasActive || masOpen ? 'text-main-400' : 'text-light-200/35'}
+              ${isMasActive || masOpen ? 'text-primary dark:text-main-300' : 'text-light-200/70'}
             `}
           >
             <div className={`
-              h-8 w-8 flex items-center justify-center rounded-xl
+              h-8 w-14 flex items-center justify-center rounded-full
               transition-all duration-200
-              ${isMasActive || masOpen ? 'bg-main-500/25' : ''}
+              ${isMasActive || masOpen ? 'bg-primary text-snow' : ''}
             `}>
               <MoreHorizontal size={21} />
             </div>
-            <span className="text-[9px] font-medium leading-none tracking-wide">Más</span>
+            <span className="text-[11px] font-bold leading-none">Más</span>
           </button>
 
         </div>
@@ -120,20 +120,20 @@ export const BottomTabBar = () => {
 
           {/* Sheet */}
           <div
-            className="relative bg-main-900 rounded-t-[20px] border-t border-white/8"
-            style={{ paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }}
+            className="relative bg-main-900 rounded-t-[24px] shadow-2xl"
+            style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}
           >
             {/* Drag handle */}
             <div className="flex justify-center pt-3 pb-0">
               <div className="w-10 h-[4px] rounded-full bg-light-200/20" />
             </div>
 
-            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-light-200/30 px-5 pt-3 pb-2">
-              Más opciones
+            <p className="font-display text-lg font-semibold text-light-100 px-5 pt-3 pb-3">
+              Más secciones
             </p>
 
             {/* 4-col grid of nav items */}
-            <div className="px-4 pb-4 grid grid-cols-4 gap-2">
+            <div className="px-4 pb-4 grid grid-cols-3 gap-2">
               {moreItems.map(item => {
                 const isActive = location.pathname === item.path ||
                   location.pathname.startsWith(item.path + '/')
@@ -150,26 +150,26 @@ export const BottomTabBar = () => {
                       flex flex-col items-center justify-center gap-2.5 py-4 rounded-2xl border
                       transition-all duration-200 select-none
                       ${isDisabled
-                        ? 'opacity-40 pointer-events-none bg-main-950/70 border-white/5 text-light-200/35'
+                        ? 'opacity-40 pointer-events-none bg-main-800 border-transparent text-light-200/55'
                         : `cursor-pointer active:scale-[0.96] ${isActive
-                          ? 'bg-main-500/20 border-main-500/30 text-main-400'
-                          : 'bg-main-950/70 border-white/5 text-light-200/60 hover:bg-main-800/60 hover:border-white/10 hover:text-light-100'}`}
+                          ? 'bg-primary/10 border-primary/30 text-primary dark:text-main-300'
+                          : 'bg-main-800 border-transparent text-light-200 hover:bg-main-700'}`}
                     `}
                   >
                     <item.icon size={22} />
-                    <span className="text-[11px] font-medium leading-none">{item.name}</span>
+                    <span className="text-xs font-bold leading-none">{item.name}</span>
                   </button>
                 )
               })}
             </div>
 
             {/* Ver menú link */}
-            <div className="mx-4 mb-1 border-t border-white/5">
+            <div className="mx-4 mb-1 border-t border-white/10">
               <a
                 href="/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm text-light-200/35 hover:text-light-100 hover:bg-white/5 transition-all"
+                className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-light-200/70 hover:text-light-100 hover:bg-white/5 transition-all"
               >
                 <ExternalLink size={16} />
                 Ver menú público

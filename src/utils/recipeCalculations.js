@@ -22,7 +22,7 @@ export const getUnitShortLabel = (value) => unitShortLabels[value] ?? value
 export const formatQuantity = (value) => Number((value ?? 0).toFixed(4)).toString()
 
 export const getMarginColor = (margin) => {
-  if (margin == null) return 'text-light-200/40'
+  if (margin == null) return 'text-light-200/65'
   if (margin < 0) return 'text-rose-400'
   if (margin > 80) return 'text-emerald-400'
   if (margin >= 60) return 'text-amber-400'

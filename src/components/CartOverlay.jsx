@@ -44,7 +44,7 @@ export const CartOverlay = ({
     <>
       <div
         className={
-          'fixed inset-0 z-60 ' + (isOpen ? 'pointer-events-auto' : 'pointer-events-none')
+          'fixed inset-0 z-[85] font-body ' + (isOpen ? 'pointer-events-auto' : 'pointer-events-none')
         }
         aria-hidden={!isOpen}
         onClick={onClose}
@@ -52,7 +52,7 @@ export const CartOverlay = ({
         {/* Expanding circle background */}
         <div
           className={
-            'fixed bottom-4 right-4 h-14 w-14 rounded-full bg-main-700 transition-transform duration-500 ease-in-out ' +
+            'fixed bottom-5 right-5 h-14 w-14 rounded-full bg-primary transition-transform duration-500 ease-in-out ' +
             (isOpen ? 'scale-[50]' : 'scale-0')
           }
         />
@@ -66,7 +66,7 @@ export const CartOverlay = ({
           onClick={(e) => e.stopPropagation()}
         >
           <div className="text-center">
-            <div className="text-3xl font-bold text-light-200">Tu carrito</div>
+            <div className="font-display text-4xl font-semibold text-light-200">Tu pedido</div>
             <div className="mt-2 text-sm text-light-200/70">
               {cartCount > 0
                 ? `Tienes ${cartCount} artículo${cartCount === 1 ? '' : 's'}.`
@@ -74,9 +74,9 @@ export const CartOverlay = ({
             </div>
           </div>
 
-          <div className="mt-4 w-full max-w-md rounded-2xl bg-white/10 p-5 text-light-200">
+          <div className="mt-4 w-full max-w-md rounded-[1.75rem] bg-white/10 p-5 text-light-200">
             {cartCount === 0 ? (
-              <div className="text-sm text-light-200/80">🧺 Carrito vacío</div>
+              <div className="py-4 text-center text-sm text-light-200/80">Aún no hay nada por aquí. ¡Elige algo rico del menú!</div>
             ) : (
               <>
                 <ul className="max-h-72 overflow-auto pr-1 space-y-3">
@@ -92,7 +92,7 @@ export const CartOverlay = ({
                     return (
                       <li
                         key={item.cartItemId}
-                        className="flex items-start justify-between gap-3 rounded-xl bg-white/10 p-3"
+                        className="flex items-start justify-between gap-3 rounded-2xl bg-white/10 p-3"
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export const CartOverlay = ({
                             <button
                               type="button"
                               onClick={() => onChangeQty(item.cartItemId, -1)}
-                              className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-light-200 hover:bg-white/20"
+                              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-lg text-light-200 hover:bg-white/20"
                               aria-label={`Quitar ${item.name}`}
                             >
                               -
@@ -188,7 +188,7 @@ export const CartOverlay = ({
                     rows={3}
                     maxLength={240}
                     placeholder="Ej. sin cebolla, salsa aparte..."
-                    className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-light-100 placeholder:text-light-200/40 focus:outline-none focus:ring-2 focus:ring-light-400/40"
+                    className="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-light-100 placeholder:text-light-200/40 focus:outline-none focus:ring-2 focus:ring-light-400/40"
                   />
                   <span className="mt-1 block text-xs text-light-200/50">
                     {orderNotes.length}/240
@@ -206,7 +206,7 @@ export const CartOverlay = ({
                   type="button"
                   onClick={onOrder}
                   disabled={cartCount === 0}
-                  className="mt-4 w-full rounded-xl bg-main-700 px-4 py-2 text-sm font-semibold text-light-100 transition hover:bg-main-800"
+                  className="mt-4 w-full min-h-[52px] rounded-full bg-light-200 px-4 py-3 font-display text-lg font-semibold text-primary transition hover:bg-accent"
                 >
                   Realizar pedido
                 </button>
@@ -214,7 +214,7 @@ export const CartOverlay = ({
                 <button
                   type="button"
                   onClick={() => setIsClearConfirmOpen(true)}
-                  className="mt-2 w-full rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-light-100 transition hover:bg-white/20"
+                  className="mt-2 w-full min-h-[44px] rounded-full border border-white/20 px-4 py-2 text-sm font-bold text-light-100 transition hover:bg-white/10"
                 >
                   Limpiar carrito
                 </button>
@@ -235,7 +235,7 @@ export const CartOverlay = ({
       {/* Clear cart confirmation */}
       {isClearConfirmOpen && (
         <div
-          className="fixed inset-0 z-80 flex items-center justify-center px-6"
+          className="fixed inset-0 z-[95] flex items-center justify-center px-6"
           role="dialog"
           aria-modal="true"
           aria-label="Confirmar limpiar carrito"
@@ -244,7 +244,7 @@ export const CartOverlay = ({
           <div className="absolute inset-0 bg-black/60" />
 
           <div
-            className="relative w-full max-w-sm rounded-2xl bg-light-200 p-6 text-main-800 shadow-2xl"
+            className="relative w-full max-w-sm rounded-[1.75rem] bg-surface p-6 text-ink shadow-2xl font-body"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-lg font-semibold">¿Limpiar carrito?</div>

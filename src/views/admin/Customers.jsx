@@ -89,13 +89,13 @@ const BalanceModal = ({ customer, onClose }) => {
       <div className="bg-main-900 border border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-bold text-light-100">Ajustar Saldo</h3>
-          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/50 cursor-pointer transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/70 cursor-pointer transition-colors">
             <X size={18} />
           </button>
         </div>
 
         <p className="text-sm text-light-200/60 mb-1">{customer.name}</p>
-        <p className="text-xs text-light-200/40 mb-4">Saldo actual: {formatMoney(customer.loyaltyBalance || 0)}</p>
+        <p className="text-xs text-light-200/65 mb-4">Saldo actual: {formatMoney(customer.loyaltyBalance || 0)}</p>
 
         <div className="flex gap-2 mb-4">
           {['add', 'subtract'].map((m) => (
@@ -107,7 +107,7 @@ const BalanceModal = ({ customer, onClose }) => {
                   ? m === 'add'
                     ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
                     : 'bg-rose-500/20 border-rose-500/40 text-rose-400'
-                  : 'bg-white/5 border-white/5 text-light-200/40 hover:bg-white/10'
+                  : 'bg-white/5 border-white/10 text-light-200/65 hover:bg-white/10'
               }`}
             >
               {m === 'add' ? <Plus size={14} /> : <Minus size={14} />}
@@ -117,7 +117,7 @@ const BalanceModal = ({ customer, onClose }) => {
         </div>
 
         <div className="relative mb-4">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/40 text-sm">$</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/65 text-sm">$</span>
           <input
             type="number"
             min="0"
@@ -132,7 +132,7 @@ const BalanceModal = ({ customer, onClose }) => {
         <button
           onClick={handleSave}
           disabled={saving || done || !amount || parseFloat(amount) <= 0}
-          className="w-full py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-main-500 hover:bg-main-400 text-white flex items-center justify-center gap-2"
+          className="w-full py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-main-500 hover:bg-main-400 text-snow flex items-center justify-center gap-2"
         >
           {done ? <><Check size={16} /> Guardado</> : saving ? 'Guardando…' : 'Confirmar'}
         </button>
@@ -180,31 +180,31 @@ const EditCustomerModal = ({ customer, onClose }) => {
       <div className="bg-main-900 border border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-base font-bold text-light-100">Editar Cliente</h3>
-          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/50 cursor-pointer transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/70 cursor-pointer transition-colors">
             <X size={18} />
           </button>
         </div>
 
         <div className="space-y-3 mb-5">
           <div>
-            <label className="text-xs text-light-200/50 mb-1.5 block">Nombre</label>
+            <label className="text-xs text-light-200/70 mb-1.5 block">Nombre</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Nombre del cliente"
               autoFocus
-              className="w-full px-3 py-2.5 bg-main-800 border border-white/10 rounded-xl text-sm text-light-100 placeholder:text-light-200/30 outline-none focus:border-main-500/60 transition-colors"
+              className="w-full px-3 py-2.5 bg-main-800 border border-white/10 rounded-xl text-sm text-light-100 placeholder:text-light-200/55 outline-none focus:border-main-500/60 transition-colors"
             />
           </div>
           <div>
-            <label className="text-xs text-light-200/50 mb-1.5 block">Teléfono</label>
+            <label className="text-xs text-light-200/70 mb-1.5 block">Teléfono</label>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="Número de teléfono"
-              className="w-full px-3 py-2.5 bg-main-800 border border-white/10 rounded-xl text-sm text-light-100 placeholder:text-light-200/30 outline-none focus:border-main-500/60 transition-colors"
+              className="w-full px-3 py-2.5 bg-main-800 border border-white/10 rounded-xl text-sm text-light-100 placeholder:text-light-200/55 outline-none focus:border-main-500/60 transition-colors"
             />
           </div>
         </div>
@@ -212,7 +212,7 @@ const EditCustomerModal = ({ customer, onClose }) => {
         <button
           onClick={handleSave}
           disabled={saving || done || !name.trim()}
-          className="w-full py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-main-500 hover:bg-main-400 text-white flex items-center justify-center gap-2"
+          className="w-full py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-main-500 hover:bg-main-400 text-snow flex items-center justify-center gap-2"
         >
           {done ? <><Check size={16} /> Guardado</> : saving ? 'Guardando…' : 'Guardar cambios'}
         </button>
@@ -270,17 +270,17 @@ const VisitHistoryModal = ({ customer, onClose }) => {
       <div className="bg-main-900 border border-white/10 rounded-3xl w-full max-w-lg shadow-2xl max-h-[85vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0 border-b border-white/5">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0 border-b border-white/10">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-2xl bg-main-500/10 flex items-center justify-center text-main-400 shrink-0">
               <History size={16} />
             </div>
             <div>
               <h3 className="text-base font-bold text-light-100">Historial de visitas</h3>
-              <p className="text-xs text-light-200/40 mt-0.5">{customer.name} · {customer.visitCount || 0} visitas registradas</p>
+              <p className="text-xs text-light-200/65 mt-0.5">{customer.name} · {customer.visitCount || 0} visitas registradas</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/50 cursor-pointer transition-colors shrink-0">
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/70 cursor-pointer transition-colors shrink-0">
             <X size={18} />
           </button>
         </div>
@@ -293,15 +293,15 @@ const VisitHistoryModal = ({ customer, onClose }) => {
             </div>
           ) : visits.length === 0 ? (
             <div className="py-16 text-center">
-              <ShoppingBag size={36} className="text-light-200/10 mx-auto mb-3" />
-              <p className="text-sm text-light-200/30 italic">Sin visitas registradas.</p>
-              <p className="text-xs text-light-200/20 mt-1">Las compras vinculadas a este cliente aparecerán aquí.</p>
+              <ShoppingBag size={36} className="text-light-200/25 mx-auto mb-3" />
+              <p className="text-sm text-light-200/55 italic">Sin visitas registradas.</p>
+              <p className="text-xs text-light-200/45 mt-1">Las compras vinculadas a este cliente aparecerán aquí.</p>
             </div>
           ) : visits.map((visit, idx) => {
             const isOpen = openIdx === idx
             const items = getVisitItems(visit)
             return (
-              <div key={visit.id} className="rounded-2xl border border-white/5 overflow-hidden">
+              <div key={visit.id} className="rounded-2xl border border-white/10 overflow-hidden">
                 {/* Row header */}
                 <button
                   onClick={() => setOpenIdx(isOpen ? null : idx)}
@@ -315,7 +315,7 @@ const VisitHistoryModal = ({ customer, onClose }) => {
                       <p className="text-sm font-semibold text-light-100">
                         {visit.createdAt.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
                       </p>
-                      <p className="text-xs text-light-200/40 flex items-center gap-1">
+                      <p className="text-xs text-light-200/65 flex items-center gap-1">
                         <Clock size={10} />
                         {visit.createdAt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
                         {items.length > 0 && <span>· {items.length} producto{items.length !== 1 ? 's' : ''}</span>}
@@ -326,27 +326,27 @@ const VisitHistoryModal = ({ customer, onClose }) => {
                     <span className="text-sm font-bold text-emerald-400 tabular-nums">
                       {formatMoney(Number(visit.total || 0))}
                     </span>
-                    <ChevronRight size={14} className={`text-light-200/30 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+                    <ChevronRight size={14} className={`text-light-200/55 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
                   </div>
                 </button>
 
                 {/* Expanded body */}
                 {isOpen && (
-                  <div className="border-t border-white/5 px-4 py-3 bg-white/2 space-y-3">
+                  <div className="border-t border-white/10 px-4 py-3 bg-white/2 space-y-3">
                     {items.length > 0 ? (
                       <ul className="space-y-1.5">
                         {items.map((it, i) => (
                           <li key={i} className="flex items-baseline gap-2 text-sm text-light-200/70">
-                            {it.qty > 1 && <span className="text-xs text-light-200/40 shrink-0">{it.qty}×</span>}
+                            {it.qty > 1 && <span className="text-xs text-light-200/65 shrink-0">{it.qty}×</span>}
                             <span>{it.name}</span>
                           </li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-xs text-light-200/30 italic">Sin detalle de productos.</p>
+                      <p className="text-xs text-light-200/55 italic">Sin detalle de productos.</p>
                     )}
                     {visit.paymentMethods && (
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 border-t border-white/5 text-xs text-light-200/40">
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2 border-t border-white/10 text-xs text-light-200/65">
                         {(visit.paymentMethods.cash ?? 0) > 0 && (
                           <span>Efectivo: <span className="text-light-200/60">{formatMoney(visit.paymentMethods.cash)}</span></span>
                         )}
@@ -387,14 +387,14 @@ const CustomerRow = ({ customer, onSelectAdjust, onSelectEdit, onSelectHistory }
         onClick={() => setOpen(v => !v)}
       >
         {/* Avatar */}
-        <div className="h-10 w-10 rounded-2xl bg-main-800 border border-white/5 flex items-center justify-center text-main-400 font-bold text-sm shrink-0 select-none">
+        <div className="h-10 w-10 rounded-2xl bg-main-800 border border-white/10 flex items-center justify-center text-main-400 font-bold text-sm shrink-0 select-none">
           {(customer.name || '?')[0].toUpperCase()}
         </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-light-100 truncate">{customer.name || 'Sin nombre'}</p>
-          <p className="text-xs text-light-200/40 flex items-center gap-1 mt-0.5">
+          <p className="text-xs text-light-200/65 flex items-center gap-1 mt-0.5">
             <Phone size={10} />
             {customer.phone || '—'}
           </p>
@@ -403,28 +403,28 @@ const CustomerRow = ({ customer, onSelectAdjust, onSelectEdit, onSelectHistory }
         {/* Stats */}
         <div className="hidden sm:flex items-center gap-6 shrink-0">
           <div className="text-right">
-            <p className="text-xs text-light-200/40">Visitas</p>
+            <p className="text-xs text-light-200/65">Visitas</p>
             <p className="text-sm font-bold text-light-100 flex items-center gap-1 justify-end">
               <ShoppingBag size={12} className="text-main-400" />
               {customer.visitCount || 0}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-light-200/40">Saldo</p>
+            <p className="text-xs text-light-200/65">Saldo</p>
             <p className="text-sm font-bold text-emerald-400">{formatMoney(customer.loyaltyBalance || 0)}</p>
           </div>
         </div>
 
         <ChevronRight
           size={16}
-          className={`text-light-200/30 shrink-0 transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
+          className={`text-light-200/55 shrink-0 transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
         />
       </div>
 
       {/* Expanded detail */}
       {open && (
-        <div className="px-5 pb-4 border-t border-white/5 bg-white/2">
-          <div className="flex flex-wrap gap-4 mt-3 text-xs text-light-200/50">
+        <div className="px-5 pb-4 border-t border-white/10 bg-white/2">
+          <div className="flex flex-wrap gap-4 mt-3 text-xs text-light-200/70">
             <span>Cliente desde: <span className="text-light-200/70">{joinedStr}</span></span>
             <span>Última visita: <span className="text-light-200/70">{lastVisitStr}</span></span>
             <span className="sm:hidden">Visitas: <span className="text-light-200/70">{customer.visitCount || 0}</span></span>
@@ -440,14 +440,14 @@ const CustomerRow = ({ customer, onSelectAdjust, onSelectEdit, onSelectHistory }
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onSelectHistory(customer) }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-light-200/50 text-xs font-semibold hover:bg-white/10 hover:text-light-100 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-light-200/70 text-xs font-semibold hover:bg-white/10 hover:text-light-100 transition-colors cursor-pointer"
             >
               <History size={12} />
               Ver historial
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onSelectEdit(customer) }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-light-200/50 text-xs font-semibold hover:bg-white/10 hover:text-light-100 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-light-200/70 text-xs font-semibold hover:bg-white/10 hover:text-light-100 transition-colors cursor-pointer"
             >
               <Pencil size={12} />
               Editar
@@ -520,32 +520,32 @@ export const Customers = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-main-900/50 border border-white/5 rounded-3xl p-5">
-          <p className="text-xs text-light-200/40 uppercase tracking-wider">Clientes Registrados</p>
+        <div className="bg-main-900 border border-white/10 rounded-3xl p-5">
+          <p className="text-xs text-light-200/65 uppercase tracking-wider">Clientes Registrados</p>
           <p className="text-3xl font-bold text-light-100 mt-2">{loading ? '—' : customers.length}</p>
         </div>
-        <div className="bg-main-900/50 border border-white/5 rounded-3xl p-5">
-          <p className="text-xs text-light-200/40 uppercase tracking-wider">Saldo Loyalty Total</p>
+        <div className="bg-main-900 border border-white/10 rounded-3xl p-5">
+          <p className="text-xs text-light-200/65 uppercase tracking-wider">Saldo Loyalty Total</p>
           <p className="text-3xl font-bold text-emerald-400 mt-2">{loading ? '—' : formatMoney(totalBalance)}</p>
         </div>
-        <div className="bg-main-900/50 border border-white/5 rounded-3xl p-5">
-          <p className="text-xs text-light-200/40 uppercase tracking-wider">Total Visitas</p>
+        <div className="bg-main-900 border border-white/10 rounded-3xl p-5">
+          <p className="text-xs text-light-200/65 uppercase tracking-wider">Total Visitas</p>
           <p className="text-3xl font-bold text-light-100 mt-2">{loading ? '—' : totalVisits.toLocaleString()}</p>
         </div>
       </div>
 
       {/* Search + list */}
-      <div className="bg-main-900/30 border border-white/5 rounded-3xl overflow-hidden">
+      <div className="bg-main-900 border border-white/10 rounded-3xl overflow-hidden">
         {/* Search bar + sort */}
-        <div className="p-4 border-b border-white/5 flex gap-2">
+        <div className="p-4 border-b border-white/10 flex gap-2">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/30" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/55" />
             <input
               type="text"
               placeholder="Buscar por nombre o teléfono…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-main-800/60 border border-white/5 rounded-xl text-sm text-light-100 placeholder:text-light-200/30 outline-none focus:border-main-500/40 transition-colors"
+              className="w-full pl-9 pr-4 py-2.5 bg-main-800/60 border border-white/10 rounded-xl text-sm text-light-100 placeholder:text-light-200/55 outline-none focus:border-main-500/40 transition-colors"
             />
           </div>
 
@@ -556,7 +556,7 @@ export const Customers = () => {
               className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors cursor-pointer ${
                 sortKey
                   ? 'bg-main-500/20 border-main-500/40 text-main-400'
-                  : 'bg-main-800/60 border-white/5 text-light-200/50 hover:bg-white/5 hover:text-light-100'
+                  : 'bg-main-800/60 border-white/10 text-light-200/70 hover:bg-white/5 hover:text-light-100'
               }`}
             >
               <ChevronsUpDown size={15} />
@@ -587,7 +587,7 @@ export const Customers = () => {
 
         {/* List */}
         {loading ? (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-white/10">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="px-5 py-4 flex items-center gap-4">
                 <div className="h-10 w-10 rounded-2xl bg-white/5 animate-pulse shrink-0" />
@@ -599,14 +599,14 @@ export const Customers = () => {
             ))}
           </div>
         ) : sorted.length === 0 ? (
-          <div className="py-16 flex flex-col items-center gap-3 text-light-200/30">
+          <div className="py-16 flex flex-col items-center gap-3 text-light-200/55">
             <Users size={40} />
             <p className="text-sm italic">
               {search ? 'Sin resultados para esa búsqueda.' : 'No hay clientes registrados aún.'}
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-white/10">
             {sorted.map((c) => (
               <CustomerRow key={c.id} customer={c} onSelectAdjust={setAdjustTarget} onSelectEdit={setEditTarget} onSelectHistory={setHistoryTarget} />
             ))}

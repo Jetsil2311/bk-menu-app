@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 
 const STATION_PILL_STYLES = {
-  pending: 'bg-white/5 text-light-200/40 border-white/10',
+  pending: 'bg-white/5 text-light-200/65 border-white/10',
   preparando: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   listo: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
 }
@@ -41,10 +41,10 @@ const STATUS_COLORS = {
   preparando:       'bg-blue-500/10 text-blue-400 border-blue-500/20',
   'en preparación': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
   listo:            'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  pagado:           'bg-light-200/5 text-light-200/30 border-light-200/10',
-  entregado:        'bg-light-200/5 text-light-200/30 border-light-200/10',
+  pagado:           'bg-light-200/5 text-light-200/55 border-light-200/10',
+  entregado:        'bg-light-200/5 text-light-200/55 border-light-200/10',
   reembolsado:      'bg-rose-500/10 text-rose-400 border-rose-500/20',
-  cancelado:        'bg-light-200/5 text-light-200/30 border-light-200/10',
+  cancelado:        'bg-light-200/5 text-light-200/55 border-light-200/10',
 }
 
 const ACTION_LABELS = {
@@ -135,9 +135,9 @@ const renderItemList = (order) => {
         <li key={i} className="flex items-baseline justify-between gap-3 text-sm text-light-200/80">
           <span className="truncate">
             {it.qty}× <span className="font-medium">{it.name}</span>
-            <span className="text-light-200/40 text-xs">{optTxt}{topTxt}{noteTxt}</span>
+            <span className="text-light-200/65 text-xs">{optTxt}{topTxt}{noteTxt}</span>
           </span>
-          <span className="text-light-200/40 tabular-nums text-xs shrink-0">
+          <span className="text-light-200/65 tabular-nums text-xs shrink-0">
             {formatMoney(itemLineTotal(it))}
           </span>
         </li>
@@ -150,7 +150,7 @@ const renderItemList = (order) => {
     .filter(l => /^\d+\./.test(l.trim()))
     .map(l => l.replace(/^\d+\.\s*/, '').trim())
   if (items.length === 0) {
-    return [<li key="raw" className="text-sm text-light-200/30 italic">{order.content || 'Sin detalle.'}</li>]
+    return [<li key="raw" className="text-sm text-light-200/55 italic">{order.content || 'Sin detalle.'}</li>]
   }
   return items.map((line, i) => (
     <li key={i} className="text-sm text-light-200/80">{line}</li>
@@ -204,16 +204,16 @@ const RefundModal = ({ order, onClose, onConfirm, isProcessing }) => {
             </div>
             <div>
               <h3 className="text-base font-bold text-light-100">Confirmar reembolso</h3>
-              <p className="text-xs text-light-200/40 mt-0.5">Orden #{shortId}</p>
+              <p className="text-xs text-light-200/65 mt-0.5">Orden #{shortId}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/50 cursor-pointer transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/70 cursor-pointer transition-colors">
             <X size={18} />
           </button>
         </div>
 
         {/* Amount breakdown */}
-        <div className="rounded-2xl border border-white/5 bg-main-950/60 divide-y divide-white/5 overflow-hidden">
+        <div className="rounded-2xl border border-white/10 bg-main-950/60 divide-y divide-white/10 overflow-hidden">
           {cashRefund > 0 && (
             <div className="flex items-center justify-between px-4 py-3">
               <span className="text-sm text-light-200/60 flex items-center gap-2">
@@ -247,21 +247,21 @@ const RefundModal = ({ order, onClose, onConfirm, isProcessing }) => {
           </div>
         </div>
 
-        <p className="text-xs text-light-200/30 text-center">
+        <p className="text-xs text-light-200/55 text-center">
           Estos montos se descontarán de las ventas de caja del día de hoy.
         </p>
 
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 py-3 rounded-2xl border border-white/10 text-sm font-semibold text-light-200/50 hover:bg-white/5 hover:text-light-100 transition cursor-pointer"
+            className="flex-1 py-3 rounded-2xl border border-white/10 text-sm font-semibold text-light-200/70 hover:bg-white/5 hover:text-light-100 transition cursor-pointer"
           >
             Cancelar
           </button>
           <button
             onClick={onConfirm}
             disabled={isProcessing}
-            className="flex-1 py-3 rounded-2xl bg-rose-700 hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-bold text-white transition cursor-pointer"
+            className="flex-1 py-3 rounded-2xl bg-rose-700 hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-bold text-snow transition cursor-pointer"
           >
             {isProcessing ? 'Procesando…' : 'Confirmar reembolso'}
           </button>
@@ -431,7 +431,7 @@ export const Orders = () => {
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-light-100">Pedidos</h2>
+        <h2 className="sr-only">Pedidos</h2>
         <div className="flex items-center gap-3">
           {activeCount > 0 && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs font-semibold text-amber-400">
@@ -439,7 +439,7 @@ export const Orders = () => {
               {activeCount} activo{activeCount !== 1 ? 's' : ''}
             </div>
           )}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-main-900/40 border border-white/5 rounded-xl text-xs font-medium text-light-200/60">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-main-900 border border-white/10 rounded-xl text-xs font-medium text-light-200/60">
             <Clock size={14} />
             Hoy: {todayCount} pedidos
           </div>
@@ -450,18 +450,18 @@ export const Orders = () => {
       <div className="flex flex-col md:flex-row gap-3">
         {/* Search — full width on mobile */}
         <div className="relative flex-1 min-w-0 md:min-w-[200px] order-first md:order-last">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/30" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/55" />
           <input
             type="text"
             placeholder="Buscar por ID, cliente o contenido..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-white/8 bg-main-900/30 pl-8 pr-9 py-2.5 md:py-2 text-sm text-light-100 placeholder-light-200/30 outline-none transition focus:border-main-500/40 min-h-11"
+            className="w-full rounded-xl border border-white/10 bg-main-900 pl-8 pr-9 py-2.5 md:py-2 text-sm text-light-100 placeholder-light-200/55 outline-none transition focus:border-main-500/40 min-h-11"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-light-200/30 hover:text-light-100 cursor-pointer transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-light-200/55 hover:text-light-100 cursor-pointer transition-colors"
             >
               <X size={14} />
             </button>
@@ -471,7 +471,7 @@ export const Orders = () => {
         {/* Status pills + sort button */}
         <div className="flex items-center gap-2 shrink-0">
           <div
-            className="flex items-center gap-1 p-1 rounded-xl bg-main-900/30 border border-white/5 overflow-x-auto"
+            className="flex items-center gap-1 p-1 rounded-xl bg-main-900 border border-white/10 overflow-x-auto"
             style={{ scrollbarWidth: 'none' }}
           >
             {['Activos', ...STATUSES, 'Reembolsado', 'Cancelado'].map(s => (
@@ -480,8 +480,8 @@ export const Orders = () => {
                 onClick={() => setFilterStatus(s)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap cursor-pointer min-h-9 ${
                   filterStatus === s
-                    ? 'bg-main-500 text-white'
-                    : 'text-light-200/50 hover:text-light-100'
+                    ? 'bg-main-500 text-snow'
+                    : 'text-light-200/70 hover:text-light-100'
                 }`}
               >
                 {s}
@@ -497,7 +497,7 @@ export const Orders = () => {
               className={`flex items-center gap-1.5 px-3 rounded-xl border text-xs font-medium transition-colors cursor-pointer min-h-11 ${
                 sortMode !== null
                   ? 'bg-main-500/20 border-main-500/40 text-main-300'
-                  : 'bg-main-900/30 border-white/5 hover:border-white/10 text-light-200/50 hover:text-light-100'
+                  : 'bg-main-900 border-white/10 hover:border-white/10 text-light-200/70 hover:text-light-100'
               }`}
             >
               <ArrowUpDown size={13} />
@@ -517,7 +517,7 @@ export const Orders = () => {
                       className={`w-full text-left px-4 py-3 text-xs font-medium transition-colors cursor-pointer ${
                         effectiveSort === opt.key
                           ? 'bg-main-500/20 text-main-300'
-                          : 'text-light-200/50 hover:bg-white/5 hover:text-light-100'
+                          : 'text-light-200/70 hover:bg-white/5 hover:text-light-100'
                       }`}
                     >
                       {opt.label}
@@ -534,12 +534,12 @@ export const Orders = () => {
       {loading ? (
         <div className="p-20 text-center">
           <RefreshCcw size={32} className="mx-auto text-main-500 animate-spin mb-4" />
-          <p className="text-light-200/40">Cargando pedidos...</p>
+          <p className="text-light-200/65">Cargando pedidos...</p>
         </div>
       ) : sorted.length === 0 ? (
-        <div className="bg-main-900/20 border border-white/5 rounded-3xl p-20 text-center">
-          <Package size={48} className="mx-auto text-light-200/10 mb-4" />
-          <p className="text-light-200/40 italic">
+        <div className="bg-main-900 border border-white/10 rounded-3xl p-20 text-center">
+          <Package size={48} className="mx-auto text-light-200/25 mb-4" />
+          <p className="text-light-200/65 italic">
             {orders.length === 0 ? 'Aún no hay pedidos.' : 'No hay pedidos con este filtro.'}
           </p>
         </div>
@@ -576,15 +576,15 @@ export const Orders = () => {
                   isReembolsado
                     ? 'bg-rose-950/10 border-rose-500/10 opacity-70 hover:opacity-90 hover:border-rose-500/20'
                     : isCancelado || isPagado
-                    ? 'bg-main-950/20 border-white/3 opacity-70 hover:opacity-90 hover:border-white/5'
-                    : 'bg-main-900/30 border-white/5 hover:border-white/10'
+                    ? 'bg-main-950/20 border-white/10 opacity-70 hover:opacity-90 hover:border-white/10'
+                    : 'bg-main-900 border-white/10 hover:border-white/10'
                 }`}
               >
                 {/* Card header row */}
                 <div className="p-4 flex flex-wrap items-center gap-4">
 
                   {/* ID badge */}
-                  <div className="h-11 w-11 shrink-0 rounded-xl bg-main-800 flex items-center justify-center text-main-400 font-bold text-xs border border-white/5 select-none">
+                  <div className="h-11 w-11 shrink-0 rounded-xl bg-main-800 flex items-center justify-center text-main-400 font-bold text-xs border border-white/10 select-none">
                     #{shortId}
                   </div>
 
@@ -595,15 +595,15 @@ export const Orders = () => {
                         {order.status}
                       </span>
                       {order.customerName && (
-                        <span className="text-xs font-medium text-light-200/50 truncate max-w-[120px]">
+                        <span className="text-xs font-medium text-light-200/70 truncate max-w-[120px]">
                           {order.customerName}
                         </span>
                       )}
-                      <span className="text-xs text-light-200/40 cursor-default" title={timeTooltip}>
+                      <span className="text-xs text-light-200/65 cursor-default" title={timeTooltip}>
                         {timeAgo}
                       </span>
                     </div>
-                    <p className="text-xs text-light-200/40 mt-0.5 truncate max-w-[280px]">
+                    <p className="text-xs text-light-200/65 mt-0.5 truncate max-w-[280px]">
                       {itemPreview}
                     </p>
                     {hasStations && (
@@ -614,7 +614,7 @@ export const Orders = () => {
                           </span>
                         )}
                         {order.source === 'pos' && (
-                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-light-200/40 border border-white/10">
+                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-light-200/65 border border-white/10">
                             <ShoppingCart size={9} /> POS
                           </span>
                         )}
@@ -643,7 +643,7 @@ export const Orders = () => {
                         Reembolsado
                       </span>
                     ) : isCancelado ? (
-                      <span className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-light-200/35">
+                      <span className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-light-200/60">
                         <X size={13} />
                         Cancelada
                       </span>
@@ -651,19 +651,19 @@ export const Orders = () => {
                       allStationsDone ? (
                         <button
                           onClick={() => navigate('/admin/pos', { state: { chargeOrderId: order.id } })}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-main-500 hover:bg-main-400 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-main-500/10 cursor-pointer"
+                          className="flex items-center gap-1.5 px-3 py-2 bg-main-500 hover:bg-main-400 text-snow rounded-xl text-xs font-bold transition-all shadow-lg shadow-main-500/10 cursor-pointer"
                         >
                           <CheckCircle2 size={14} />
                           Marcar como entregado
                         </button>
                       ) : (
-                        <span className="px-3 py-2 text-xs font-medium text-light-200/35">En preparación…</span>
+                        <span className="px-3 py-2 text-xs font-medium text-light-200/60">En preparación…</span>
                       )
                     ) : actionLabel ? (
                       <button
                         onClick={() => updateStatus(order, next)}
                         disabled={isUpdating}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-main-500 hover:bg-main-400 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-main-500/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-main-500 hover:bg-main-400 text-snow rounded-xl text-xs font-bold transition-all shadow-lg shadow-main-500/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       >
                         <CheckCircle2 size={14} />
                         {actionLabel}
@@ -682,7 +682,7 @@ export const Orders = () => {
                           onClick={() => handleReprint(order)}
                           disabled={printingId === order.id}
                           title="Reimprimir ticket"
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/8 text-xs font-medium text-light-200/40 hover:text-light-100 hover:bg-white/10 transition-colors disabled:opacity-40 cursor-pointer"
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-medium text-light-200/65 hover:text-light-100 hover:bg-white/10 transition-colors disabled:opacity-40 cursor-pointer"
                         >
                           <Printer size={13} />
                           <span className="hidden sm:inline">
@@ -694,7 +694,7 @@ export const Orders = () => {
 
                     <button
                       onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                      className="p-2 rounded-xl bg-white/5 text-light-200/40 hover:text-light-100 hover:bg-white/10 transition-colors cursor-pointer"
+                      className="p-2 rounded-xl bg-white/5 text-light-200/65 hover:text-light-100 hover:bg-white/10 transition-colors cursor-pointer"
                       aria-label="Ver detalle"
                     >
                       <ChevronDown
@@ -707,11 +707,11 @@ export const Orders = () => {
 
                 {/* Expanded detail */}
                 {isExpanded && (
-                  <div className="border-t border-white/5 px-4 py-4 bg-main-950/30 space-y-4">
+                  <div className="border-t border-white/10 px-4 py-4 bg-main-950/30 space-y-4">
 
                     {/* Items */}
                     <div>
-                      <p className="text-xs font-semibold text-light-200/40 uppercase tracking-wider mb-2">
+                      <p className="text-xs font-semibold text-light-200/65 uppercase tracking-wider mb-2">
                         Productos
                       </p>
                       <ul className="space-y-2">
@@ -728,7 +728,7 @@ export const Orders = () => {
 
                     {/* Payment breakdown */}
                     {order.paymentMethods && (
-                      <div className="flex flex-wrap gap-3 text-xs text-light-200/40">
+                      <div className="flex flex-wrap gap-3 text-xs text-light-200/65">
                         {order.paymentMethods.cash   > 0 && <span>Efectivo: {formatMoney(order.paymentMethods.cash)}</span>}
                         {order.paymentMethods.card   > 0 && <span>Tarjeta: {formatMoney(order.paymentMethods.card)}</span>}
                         {order.paymentMethods.loyalty > 0 && <span>Loyalty: {formatMoney(order.paymentMethods.loyalty)}</span>}
@@ -742,13 +742,13 @@ export const Orders = () => {
                         Esta orden fue reembolsada y descontada de caja
                       </div>
                     ) : isCancelado ? (
-                      <div className="flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 text-xs text-light-200/40">
+                      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5 text-xs text-light-200/65">
                         <X size={13} className="shrink-0" />
                         Esta orden fue cancelada antes de cobrarse — no afectó la caja
                       </div>
                     ) : (
                       <div>
-                        <p className="text-xs font-semibold text-light-200/40 uppercase tracking-wider mb-2">
+                        <p className="text-xs font-semibold text-light-200/65 uppercase tracking-wider mb-2">
                           Progreso
                         </p>
                         <div className="flex items-center gap-1">
@@ -760,10 +760,10 @@ export const Orders = () => {
                                 <div
                                   className={`flex-1 text-[10px] font-semibold py-1.5 rounded-lg text-center select-none transition-colors ${
                                     isCurrent
-                                      ? 'bg-main-500 text-white ring-1 ring-main-400/30'
+                                      ? 'bg-main-500 text-snow ring-1 ring-main-400/30'
                                       : isDone
                                       ? 'bg-main-700/50 text-main-300/60'
-                                      : 'bg-white/5 text-light-200/20'
+                                      : 'bg-white/5 text-light-200/45'
                                   }`}
                                 >
                                   {s}

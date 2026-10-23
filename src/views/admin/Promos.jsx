@@ -95,7 +95,7 @@ export const Promos = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Form */}
-        <div className="bg-main-900/30 border border-white/5 rounded-3xl p-8 shadow-sm">
+        <div className="bg-main-900 border border-white/10 rounded-3xl p-8 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
             <div className="h-10 w-10 rounded-2xl bg-main-500/10 flex items-center justify-center text-main-400">
               <Plus size={24} />
@@ -111,7 +111,7 @@ export const Promos = () => {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Ej: 2x1 en Frappés"
-                className="w-full rounded-2xl border border-white/10 bg-main-900/50 px-4 py-3 text-light-100 outline-none transition focus:border-main-500/50"
+                className="w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-100 outline-none transition focus:border-main-500/50"
                 required
               />
             </div>
@@ -123,7 +123,7 @@ export const Promos = () => {
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Ej: Válido solo de 2pm a 5pm"
                 rows={3}
-                className="w-full rounded-2xl border border-white/10 bg-main-900/50 px-4 py-3 text-light-100 outline-none transition focus:border-main-500/50 resize-none"
+                className="w-full rounded-2xl border border-white/10 bg-main-900 px-4 py-3 text-light-100 outline-none transition focus:border-main-500/50 resize-none"
               />
             </div>
 
@@ -144,7 +144,7 @@ export const Promos = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-main-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-main-400 disabled:opacity-50 shadow-lg shadow-main-500/10"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-main-500 px-4 py-3 text-sm font-bold text-snow transition hover:bg-main-400 disabled:opacity-50 shadow-lg shadow-main-500/10"
             >
               {isSubmitting ? 'Guardando...' : 'Activar Promoción'}
             </button>
@@ -160,26 +160,26 @@ export const Promos = () => {
 
           <div className="space-y-3">
             {loading ? (
-              <p className="text-center text-light-200/20 py-10">Cargando...</p>
+              <p className="text-center text-light-200/45 py-10">Cargando...</p>
             ) : promos.length === 0 ? (
-              <div className="bg-main-900/10 border border-white/5 rounded-3xl p-10 text-center">
-                <p className="text-light-200/30 italic">No hay promociones registradas.</p>
+              <div className="bg-main-900 border border-white/10 rounded-3xl p-10 text-center">
+                <p className="text-light-200/55 italic">No hay promociones registradas.</p>
               </div>
             ) : promos.map((promo) => (
               <div 
                 key={promo.id} 
-                className={`bg-main-900/30 border border-white/5 rounded-3xl p-5 flex items-center justify-between transition-all ${promo.isActive ? 'border-main-500/30 bg-main-500/5' : ''}`}
+                className={`bg-main-900 border border-white/10 rounded-3xl p-5 flex items-center justify-between transition-all ${promo.isActive ? 'border-main-500/30 bg-main-500/5' : ''}`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`h-10 w-10 rounded-2xl flex items-center justify-center ${promo.isActive ? 'bg-main-500/20 text-main-400' : 'bg-white/5 text-light-200/20'}`}>
+                  <div className={`h-10 w-10 rounded-2xl flex items-center justify-center ${promo.isActive ? 'bg-main-500/20 text-main-400' : 'bg-white/5 text-light-200/45'}`}>
                     <Tag size={20} />
                   </div>
                   <div>
-                    <h4 className={`text-sm font-bold ${promo.isActive ? 'text-light-100' : 'text-light-200/40'}`}>
+                    <h4 className={`text-sm font-bold ${promo.isActive ? 'text-light-100' : 'text-light-200/65'}`}>
                       {promo.title}
                     </h4>
-                    {promo.message && <p className="text-[10px] text-light-200/40 mt-0.5">{promo.message}</p>}
-                    <p className="text-[9px] text-light-200/20 mt-1 uppercase tracking-tighter">
+                    {promo.message && <p className="text-[10px] text-light-200/65 mt-0.5">{promo.message}</p>}
+                    <p className="text-[9px] text-light-200/45 mt-1 uppercase tracking-tighter">
                       {promo.createdAt?.toDate().toLocaleDateString('es-MX')}
                     </p>
                   </div>
@@ -187,7 +187,7 @@ export const Promos = () => {
 
                 <button 
                   onClick={() => togglePromo(promo.id, promo.isActive)}
-                  className={`transition-colors ${promo.isActive ? 'text-main-400' : 'text-light-200/20'}`}
+                  className={`transition-colors ${promo.isActive ? 'text-main-400' : 'text-light-200/45'}`}
                 >
                   {promo.isActive ? <ToggleRight size={32} /> : <ToggleLeft size={32} />}
                 </button>

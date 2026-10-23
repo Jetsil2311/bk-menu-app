@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import { NavLink } from 'react-router'
-import { ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ExternalLink, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import PropTypes from 'prop-types'
-import { SIDEBAR_ORDER, navItem } from '../../config/adminNav'
+import Logo from '../../assets/bklogo.svg'
+import { SIDEBAR_GROUPS, navItem } from '../../config/adminNav'
 import { useStationContext } from '../../context/StationContext'
 
 export const Sidebar = ({ isCollapsed, onToggle }) => {
@@ -14,7 +15,9 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
   const { selectedStation } = useStationContext()
   const disabledRoutes = selectedStation?.disabledRoutes || []
 
-  const navItems = SIDEBAR_ORDER.map(navItem)
+  const itemBase = `relative flex items-center gap-3 rounded-xl min-h-[44px] px-3 text-[0.925rem] font-semibold transition-colors duration-150 group ${
+    isCollapsed ? 'justify-center' : ''
+  }`
 
   return (
     /*
@@ -27,100 +30,116 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
       className={`
         fixed inset-y-0 left-0 z-50
         hidden md:flex flex-col
-        bg-main-950 text-light-200
-        border-r border-white/5
-        transition-all duration-300 overflow-hidden
+        bg-main-900 text-light-100
+        border-r border-white/10
+        transition-[width] duration-300 overflow-hidden
         ${isCollapsed ? 'w-20' : 'w-60'}
       `}
     >
-      {/* ── Brand header — flex-shrink-0 keeps it always visible ── */}
-      <div className="flex-shrink-0 h-16 flex items-center px-4 border-b border-white/5">
-        {!isCollapsed && (
-          <span className="flex-1 text-lg font-bold tracking-tight text-light-100 truncate">
-            Bubble Kaapeh
-          </span>
-        )}
-        <button
-          onClick={onToggle}
-          aria-label={isCollapsed ? 'Expandir menú' : 'Colapsar menú'}
-          className={`
-            p-1.5 rounded-lg
-            hover:bg-white/5 text-light-200/60
-            transition-colors cursor-pointer
-            ${isCollapsed ? 'mx-auto' : 'ml-auto'}
-          `}
+      {/* ── Brand ── */}
+      <div className="shrink-0 p-3">
+        <NavLink
+          to="/admin"
+          end
+          aria-label="Bubble Kaapeh — Inicio"
+          className={`flex items-center rounded-2xl bg-primary px-3 h-14 ${isCollapsed ? 'justify-center' : 'gap-3'}`}
         >
-          {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-        </button>
+          <img src={Logo} alt="" className={isCollapsed ? 'h-6 w-auto' : 'h-8 w-auto'} />
+          {!isCollapsed && (
+            <span className="ml-auto rounded-full bg-snow/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-snow/90">
+              Panel
+            </span>
+          )}
+        </NavLink>
       </div>
 
-      {/* ── Nav links — flex-1 + overflow-y-auto in case of many items ── */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {navItems.map((item) => {
-          const isDisabled = disabledRoutes.includes(item.routeKey)
+      {/* ── Grouped nav ── */}
+      <nav className="flex-1 overflow-y-auto px-3 pb-4" aria-label="Secciones del panel">
+        {SIDEBAR_GROUPS.map((group) => (
+          <div key={group.label} className="mt-4 first:mt-1">
+            {isCollapsed ? (
+              <div className="mx-auto mb-2 h-px w-8 bg-white/10" aria-hidden="true" />
+            ) : (
+              <p className="px-3 mb-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-light-200/55">
+                {group.label}
+              </p>
+            )}
+            <div className="space-y-0.5">
+              {group.items.map(navItem).map((item) => {
+                const isDisabled = disabledRoutes.includes(item.routeKey)
+                const Icon = item.icon
 
-          if (isDisabled) {
-            return (
-              <div
-                key={item.routeKey}
-                aria-disabled="true"
-                title="No disponible para esta estación"
-                className={`
-                  relative flex items-center gap-3 px-3 py-2.5 rounded-xl
-                  text-light-200/25 opacity-40 pointer-events-none select-none
-                `}
-              >
-                <item.icon size={22} className={`shrink-0 ${isCollapsed ? 'mx-auto' : ''}`} />
-                {!isCollapsed && <span className="font-medium">{item.name}</span>}
-              </div>
-            )
-          }
+                if (isDisabled) {
+                  return (
+                    <div
+                      key={item.routeKey}
+                      aria-disabled="true"
+                      title="No disponible para esta estación"
+                      className={`${itemBase} text-light-200/45 opacity-50 pointer-events-none select-none`}
+                    >
+                      <Icon size={20} className="shrink-0" />
+                      {!isCollapsed && <span>{item.name}</span>}
+                    </div>
+                  )
+                }
 
-          return (
-            <NavLink
-              key={item.routeKey}
-              to={item.path}
-              end={item.end}
-              className={({ isActive }) => `
-                relative flex items-center gap-3 px-3 py-2.5 rounded-xl
-                transition-all duration-200 group
-                ${isActive
-                  ? 'bg-main-500 text-white shadow-lg shadow-main-500/20'
-                  : 'text-light-200/60 hover:bg-white/5 hover:text-light-100'}
-              `}
-            >
-              <item.icon size={22} className={`shrink-0 ${isCollapsed ? 'mx-auto' : ''}`} />
-              {!isCollapsed && <span className="font-medium">{item.name}</span>}
+                return (
+                  <NavLink
+                    key={item.routeKey}
+                    to={item.path}
+                    end={item.end}
+                    title={isCollapsed ? item.name : undefined}
+                    className={({ isActive }) => `${itemBase} ${
+                      isActive
+                        ? 'bg-primary/10 text-primary dark:text-main-300'
+                        : 'text-light-200/80 hover:bg-white/5 hover:text-light-100'
+                    }`}
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {isActive && !isCollapsed && (
+                          <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary" aria-hidden="true" />
+                        )}
+                        <Icon size={20} strokeWidth={isActive ? 2.4 : 2} className="shrink-0" />
+                        {!isCollapsed && <span>{item.name}</span>}
 
-              {/* Tooltip shown in icon-only mode */}
-              {isCollapsed && (
-                <span className="
-                  absolute left-full ml-3 px-2 py-1
-                  bg-main-800 border border-white/10
-                  text-xs text-light-200 rounded-lg
-                  opacity-0 pointer-events-none
-                  group-hover:opacity-100
-                  transition-opacity whitespace-nowrap z-[60]
-                ">
-                  {item.name}
-                </span>
-              )}
-            </NavLink>
-          )
-        })}
+                        {/* Tooltip shown in icon-only mode */}
+                        {isCollapsed && (
+                          <span className="absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-light-100 text-xs font-semibold text-main-900 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-[60]">
+                            {item.name}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </NavLink>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
-      {/* ── Footer link — flex-shrink-0 keeps it pinned to the bottom ── */}
-      <div className="flex-shrink-0 p-3 border-t border-white/5">
+      {/* ── Footer ── */}
+      <div className="shrink-0 p-3 border-t border-white/10 space-y-0.5">
         <a
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-light-200/40 hover:bg-white/5 hover:text-light-100 transition-all duration-200"
+          title={isCollapsed ? 'Ver menú público' : undefined}
+          className={`${itemBase} text-light-200/70 hover:bg-white/5 hover:text-light-100`}
         >
-          <ExternalLink size={22} className={`shrink-0 ${isCollapsed ? 'mx-auto' : ''}`} />
-          {!isCollapsed && <span className="font-medium text-sm">Ver menú</span>}
+          <ExternalLink size={20} className="shrink-0" />
+          {!isCollapsed && <span>Ver menú público</span>}
         </a>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={isCollapsed ? 'Expandir menú lateral' : 'Colapsar menú lateral'}
+          className={`${itemBase} w-full text-light-200/70 hover:bg-white/5 hover:text-light-100 cursor-pointer`}
+        >
+          {isCollapsed ? <PanelLeftOpen size={20} className="shrink-0" /> : <PanelLeftClose size={20} className="shrink-0" />}
+          {!isCollapsed && <span>Colapsar</span>}
+        </button>
       </div>
     </aside>
   )

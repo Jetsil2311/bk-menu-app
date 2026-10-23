@@ -1,23 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import PropTypes from 'prop-types'
+import { Check, Coffee, Info, Plus, SlidersHorizontal, Star } from 'lucide-react'
+import { getSectionTone } from '../utils/menuTheme'
 
 const BASE_URL = import.meta.env.BASE_URL
-
-// ─── SVG icons (no emojis as icons per design system) ────────────────────────
-const InfoIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 20 20"
-    fill="currentColor"
-    className="w-4 h-4"
-  >
-    <path
-      fillRule="evenodd"
-      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z"
-      clipRule="evenodd"
-    />
-  </svg>
-)
 
 export const MenuCard = ({
   name,
@@ -33,9 +19,11 @@ export const MenuCard = ({
   featured = false,
   popular = false,
   onAddToCart,
+  tone = getSectionTone(0),
 }) => {
   const [isInfoOpen, setIsInfoOpen] = useState(false)
   const [added, setAdded] = useState(false)
+  const [imgFailed, setImgFailed] = useState(false)
   const addedTimerRef = useRef(null)
   const wrapperRef = useRef(null)
   const imgRef = useRef(null)
@@ -125,63 +113,60 @@ export const MenuCard = ({
     }
   }
 
+  // Short, plain-language hint of what can be customized on this product.
+  const customizeHint = hasOptions
+    ? optionGroups.slice(0, 2).map((g) => g.name).filter(Boolean).join(' · ') || 'Opciones'
+    : availableToppings.length > 0
+    ? `${availableToppings[0].name} +$${availableToppings[0].price}${extraToppings > 0 ? ` · +${extraToppings}` : ''}`
+    : ''
+  const extraGroups = hasOptions && optionGroups.length > 2 ? optionGroups.length - 2 : 0
+
   return (
     <li
       ref={wrapperRef}
       role="button"
       tabIndex={isDisabled ? -1 : 0}
+      aria-label={`${name}, $${price}${hasOptions ? ', personalizable' : ''}`}
       onClick={handleAddClick}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleAddClick(e) }
       }}
-      className={`relative overflow-visible flex flex-col rounded-2xl border bg-light-100 shadow-md transition-all duration-200 hover:-translate-y-1 hover:shadow-xl cursor-pointer ${
+      className={`group relative flex sm:flex-col gap-3 sm:gap-0 rounded-[1.75rem] bg-surface p-2.5 sm:p-3 shadow-[0_10px_30px_-18px_var(--color-ink)] ring-1 transition-all duration-200 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
         isInfoOpen ? 'z-999' : 'z-0'
-      } ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''} ${
-        added ? 'border-main-400 ring-2 ring-main-400/40 scale-[1.02]' : 'border-amber-50'
-      }`}
+      } ${isDisabled
+        ? 'opacity-60 cursor-not-allowed ring-primary/5'
+        : 'cursor-pointer active:scale-[0.98] sm:hover:-translate-y-1.5 sm:hover:shadow-[0_22px_40px_-20px_var(--color-ink)]'
+      } ${added ? 'ring-2 ring-primary/50 scale-[1.02]' : 'ring-primary/5'}`}
     >
-      {/* ── Image area ─────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-t-2xl bg-main-200/40">
-        <img
-          ref={imgRef}
-          src={imageUrl || `${BASE_URL}products/${id}${image ?? ''}`}
-          alt={name}
-          loading="lazy"
-          className="w-full aspect-[4/3] object-cover"
-          onError={(e) => {
-            e.currentTarget.onerror = null
-            e.currentTarget.src = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='112' height='112' viewBox='0 0 112 112'><rect width='112' height='112' fill='%23e6c5be'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='32' fill='%23743121'>☕</text></svg>`
-          }}
-        />
+      {/* ── Image: squircle on mobile, inset rounded photo on desktop ──── */}
+      <div className={`relative h-28 w-28 sm:h-auto sm:w-full shrink-0 overflow-hidden rounded-[1.4rem] sm:aspect-[4/3] ${tone.bg}`}>
+        {imgFailed ? (
+          <div className={`flex h-full w-full items-center justify-center ${tone.ink}`} aria-hidden="true">
+            <Coffee size={36} strokeWidth={1.75} />
+          </div>
+        ) : (
+          <img
+            ref={imgRef}
+            src={imageUrl || `${BASE_URL}products/${id}${image ?? ''}`}
+            alt={name}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 ease-out sm:group-hover:scale-105"
+            onError={() => setImgFailed(true)}
+          />
+        )}
 
-        {/* Warm gradient at bottom */}
-        <div
-          className="absolute inset-x-0 bottom-0 h-1/3 pointer-events-none"
-          style={{
-            background:
-              'linear-gradient(to top, rgba(26,10,0,0.15), transparent)',
-          }}
-        />
-
-        {/* Popular / featured badge */}
+        {/* Popular sticker */}
         {showBadge && (
-          <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-main-600/90 backdrop-blur-sm px-2.5 py-1 text-[11px] font-semibold text-light-200 shadow-sm">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              className="w-3 h-3 text-amber-300"
-            >
-              <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.872 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z" />
-            </svg>
+          <span className="absolute top-1.5 left-1.5 sm:top-2.5 sm:left-2.5 -rotate-6 inline-flex items-center gap-1 rounded-full bg-mango px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wide text-mango-ink shadow-[0_4px_10px_-4px_var(--color-ink)]">
+            <Star size={11} strokeWidth={0} fill="currentColor" aria-hidden="true" />
             Popular
           </span>
         )}
 
-        {/* Agotado overlay */}
+        {/* Agotado sticker */}
         {isDisabled && (
-          <div className="absolute inset-0 flex items-center justify-center bg-main-950/40 rounded-t-2xl">
-            <span className="rounded-full bg-main-800/80 px-3 py-1 text-xs font-semibold text-light-200 shadow">
+          <div className="absolute inset-0 flex items-center justify-center bg-ink/40">
+            <span className="rotate-[-8deg] rounded-full bg-surface px-3 py-1 text-xs font-extrabold uppercase tracking-wide text-primary shadow">
               Agotado
             </span>
           </div>
@@ -190,130 +175,109 @@ export const MenuCard = ({
         {/* Added confirmation flash */}
         {added && (
           <div
-            className="absolute inset-0 flex items-center justify-center rounded-t-2xl pointer-events-none"
-            style={{ background: 'rgba(116,49,33,0.30)', animation: 'cardCheckIn 0.65s ease-out forwards' }}
+            className="absolute inset-0 flex items-center justify-center bg-primary/35 pointer-events-none"
+            style={{ animation: 'cardCheckIn 0.65s ease-out forwards' }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12 drop-shadow-lg">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <Check size={44} strokeWidth={3} className="text-surface drop-shadow-lg" aria-hidden="true" />
           </div>
         )}
       </div>
       <style>{`@keyframes cardCheckIn{0%{opacity:0;transform:scale(0.6)}40%{opacity:1;transform:scale(1.08)}70%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1)}}`}</style>
 
       {/* ── Card body ──────────────────────────────────────────────────── */}
-      <div className="flex flex-col px-4 pb-4 pt-3 flex-1">
+      <div className="flex min-w-0 flex-1 flex-col py-1 pr-1 sm:px-2 sm:pt-3 sm:pb-1">
 
         {/* 1. Product name */}
-        <h4 className="text-base font-semibold text-[#1a0a00] truncate leading-snug">
+        <h3 className="font-display text-lg sm:text-xl font-semibold leading-tight text-ink line-clamp-2">
           {name}
-        </h4>
+        </h3>
 
         {/* 2. Short description */}
         {desc && (
-          <p className="mt-1 text-sm italic text-[#6b5c52] line-clamp-2 leading-relaxed">
+          <p className="mt-0.5 text-[0.85rem] sm:text-sm text-ink-soft line-clamp-1 sm:line-clamp-2 leading-snug">
             {desc}
           </p>
         )}
 
-        {/* 3. Option group hint / toppings badge */}
-        {(hasOptions || availableToppings.length > 0) && (
-          <div className="border-t border-amber-100 mt-2.5 pt-2">
-            <div className="flex flex-wrap items-center gap-1.5">
-              {hasOptions && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-main-300/30 bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-main-600">
-                  ✦ {optionGroups[0]?.name ?? 'Opciones'}{' '}
-                  {optionGroups.length > 1 && `+${optionGroups.length - 1} más`}
-                </span>
-              )}
-              {!hasOptions && availableToppings.length > 0 && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-main-300/30 bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-main-600">
-                  ✦ Agrega {availableToppings[0].name} +$
-                  {availableToppings[0].price}
-                </span>
-              )}
-              {!hasOptions && extraToppings > 0 && (
-                <span className="inline-flex items-center rounded-full border border-main-200/40 bg-amber-50 px-2 py-0.5 text-[11px] text-main-500">
-                  +{extraToppings} más
-                </span>
-              )}
-            </div>
+        {/* 3. Customization hint */}
+        {customizeHint && (
+          <div className="mt-2 flex min-w-0 items-center gap-1.5">
+            <span className={`inline-flex min-w-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${tone.bg} ${tone.ink}`}>
+              {hasOptions
+                ? <SlidersHorizontal size={12} strokeWidth={2.5} className="shrink-0" aria-hidden="true" />
+                : <Plus size={12} strokeWidth={3} className="shrink-0" aria-hidden="true" />}
+              <span className="truncate">{hasOptions ? `Elige ${customizeHint}` : customizeHint}</span>
+            </span>
+            {extraGroups > 0 && (
+              <span className="shrink-0 text-[11px] font-bold text-ink-soft">+{extraGroups}</span>
+            )}
           </div>
         )}
 
-        {/* 3b. Options hint */}
-        {hasOptions && (
-          <p className="mt-1.5 text-[11px] font-serif italic text-brand/70 leading-snug">
-            Haz click para ver opciones →
-          </p>
-        )}
-
         {/* 4. Price + actions row — pinned to bottom */}
-        <div className="mt-auto pt-3 flex items-center justify-between gap-2">
+        <div className="mt-auto pt-2 sm:pt-4 flex items-center justify-between gap-2">
 
           {/* Price */}
-          <span className="text-xl font-bold text-[#1a0a00]">${price}</span>
+          <span className="font-display text-xl sm:text-2xl font-semibold text-primary tabular-nums">
+            <span className="text-sm sm:text-base align-top mr-0.5">$</span>{price}
+          </span>
 
-          {/* Info button + Agregar button */}
-          <div className="flex items-center gap-1.5">
+          {/* Info button + add bubble */}
+          <div className="flex items-center gap-1">
 
             {/* Info button */}
-            <div className="relative">
-              <button
-                type="button"
-                data-menu-btn
-                onClick={(e) => {
-                  e.stopPropagation()
-                  document.dispatchEvent(
-                    new CustomEvent('bk-menu:open', {
-                      detail: { sourceId: cardInstanceId.current },
-                    })
-                  )
-                  setIsInfoOpen((v) => !v)
-                }}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-main-500/60 transition-colors duration-200 hover:bg-amber-100/70 hover:text-main-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-main-400/50 cursor-pointer"
-                aria-label="Más información"
-                aria-expanded={isInfoOpen}
-              >
-                <InfoIcon />
-              </button>
-
-              {isInfoOpen && (
-                <div
-                  data-menu="popover"
-                  onClick={(e) => e.stopPropagation()}
-                  className="absolute bottom-full right-0 mb-2 z-[1000] w-72 rounded-xl border border-amber-100 bg-[#faf6f0] p-4 text-sm text-[#1a0a00] shadow-xl"
+            {long_desc && (
+              <div className="relative">
+                <button
+                  type="button"
+                  data-menu-btn
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    document.dispatchEvent(
+                      new CustomEvent('bk-menu:open', {
+                        detail: { sourceId: cardInstanceId.current },
+                      })
+                    )
+                    setIsInfoOpen((v) => !v)
+                  }}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full text-ink-soft/70 transition-colors duration-200 hover:bg-bg hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 cursor-pointer"
+                  aria-label={`Más información de ${name}`}
+                  aria-expanded={isInfoOpen}
                 >
-                  <p className="whitespace-pre-line leading-relaxed text-[#6b5c52]">
-                    {long_desc ?? ''}
-                  </p>
-                  <div className="mt-2.5 text-xs text-main-400">
-                    Toca afuera para cerrar
-                  </div>
-                </div>
-              )}
-            </div>
+                  <Info size={18} strokeWidth={2.25} aria-hidden="true" />
+                </button>
 
-            {/* Visual add indicator — the whole card is the tap target */}
+                {isInfoOpen && (
+                  <div
+                    data-menu="popover"
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute bottom-full right-0 mb-2 z-[1000] w-72 max-w-[80vw] rounded-3xl rounded-br-md bg-ink p-4 text-sm text-surface shadow-xl"
+                  >
+                    <p className="whitespace-pre-line leading-relaxed text-surface/90">
+                      {long_desc}
+                    </p>
+                    <div className="mt-2.5 text-xs text-accent/80">
+                      Toca afuera para cerrar
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Visual add bubble — the whole card is the tap target */}
             <span
               aria-hidden="true"
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-full shadow-sm transition-all duration-200 select-none ${
+              className={`inline-flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full transition-all duration-200 select-none ${
                 isDisabled
-                  ? 'bg-main-300/40 text-main-400'
+                  ? 'bg-primary/15 text-primary/50'
                   : added
-                  ? 'bg-main-400 text-white scale-110'
-                  : 'bg-main-500 text-white'
+                  ? 'bg-secondary text-surface scale-110'
+                  : 'bg-primary text-surface shadow-[0_6px_14px_-6px_var(--color-primary)] group-hover:rotate-90'
               }`}
             >
-              {added ? (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                  <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                  <path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z" />
-                </svg>
-              )}
+              {added
+                ? <Check size={20} strokeWidth={3} />
+                : <Plus size={22} strokeWidth={2.75} />}
             </span>
 
           </div>
@@ -357,4 +321,5 @@ MenuCard.propTypes = {
     })
   ),
   onAddToCart: PropTypes.func,
+  tone: PropTypes.shape({ bg: PropTypes.string, ink: PropTypes.string, ring: PropTypes.string }),
 }

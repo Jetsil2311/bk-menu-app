@@ -2,7 +2,7 @@
 
 Base template: https://github.com/Jetsil2311/menu-demo
 Client: Bubble Kaapeh (BK)
-Last updated: 2026-09-05 (Fixed kitchen routing fallback bug, added order cancellation, station switcher on navbar)
+Last updated: 2026-10-23 (Admin light/dark theme switch)
 
 ---
 
@@ -11,10 +11,13 @@ Last updated: 2026-09-05 (Fixed kitchen routing fallback bug, added order cancel
 - Primary color: `--color-main-500: #743121` (dark terracotta/brown)
 - Dark bg: `--color-main-900: #26100b`, `--color-main-950: #1a0a07`
 - Light: `--color-light-100: #fffbed` (cream)
-- Heading font: (serif — confirm from index.css)
-- Body font: (sans — confirm from index.css)
+- Semantic tokens (src/index.css @theme, added 2026-10-23): `--color-primary` #743121, `--color-secondary` #a34d3b, `--color-accent` #fbe594, `--color-bg` #fef8e1, `--color-surface` #fffdf5, `--color-ink` #26100b, `--color-ink-soft` #6b4a3f
+- Section "boba flavor" tones (customer menu only, cycled per section): taro (lilac), matcha (green), mango (yellow), fresa (pink), latte (tan) — each with a matching `-ink` text color
+- Heading font: Fredoka (Google Fonts) — `font-display`, customer menu only
+- Body font: Nunito (Google Fonts) — `font-body`. Customer menu and (since 2026-10-23) the admin panel; Fredoka used for admin page titles.
+- Admin themes (2026-10-23): **light** (default) — canvas `#f3ece3`, white cards, ink `#26100b`, primary `#743121`; **dark** — canvas `#140b08`, cards `#21130e`, text `#f7eee3`, primary fill `#9a4630`, accent text `#e3a592` (`dark:text-main-300`). Both are CSS-variable token sets in src/index.css (`html.admin-theme:not(.dark)` / `html.admin-theme.dark`); Tailwind `dark:` variant is class-based (`@custom-variant dark`). `--color-snow` (#fff) = text on solid buttons. Chart colors are tokens (`--color-chart-*`). Customer menu is never themed by these.
 - Logo: `/public/bklogo.svg` + `/src/assets/bklogo.svg`
-- Vibe: Warm, dark, cozy coffee shop. Deep browns and cream.
+- Vibe: Warm, dark, cozy coffee shop. Deep browns and cream. Customer menu (since 2026-10-23): playful, rounded, bubbly — wavy edges, blob icons, pastel boba-flavor accents.
 
 ---
 
@@ -450,9 +453,113 @@ Verified: `npm run build`, `vitest run` (17 tests, including the 8 new ones targ
 
 ---
 
+### 2026-10-23 — Customer menu redesign: playful "Bubble Café" UI
+What changed: The customer-facing menu (`/`, `/bebidas`, `/alimentos`) was redesigned to feel less square and more fun, matching the boba café vibe. In plain terms:
+- **New welcome header on phones** (`MenuHero`): logo, a time-of-day greeting ("Buenos días / Buenas tardes / Buenas noches"), the headline "¿Qué se te antoja hoy?", a one-line how-to ("Toca cualquier producto para agregarlo…"), a Todo / Bebidas / Alimentos pill filter, floating boba bubbles and a wavy bottom edge. This **replaces the old floating hamburger button + full-screen bubble menu on mobile** (it only offered Bebidas/Alimentos, which the hero filter now covers).
+- **Desktop navbar**: icon-only Boba/Croissant links replaced by a labeled pill switcher (Todo el menú / Bebidas / Alimentos) with a wavy bottom edge. Height kept at 104px so all existing offsets still line up.
+- **Category bar**: chips now have an icon per section (star, cup, coffee, milk, gift, croissant, sandwich — picked from keywords in the section name, see `src/utils/menuTheme.js`), 44px tap targets, cream glass background, and the active chip auto-scrolls into view.
+- **Section headers**: each section gets a pastel "flavor" color (mango, taro, matcha, fresa, latte — cycled), a tilted blob icon, a big rounded title, an "N opciones" count and a hand-drawn squiggle underline.
+- **Product cards**: on phones they are now horizontal (rounded photo left, info right) so more items fit per screen; on desktop they're rounded "inset photo" cards that lift on hover. Price uses the display font, the + button is a round bubble (spins on hover), "Popular" is a tilted sticker. The old "✦ Sabores +1 más" chip + "Haz click para ver opciones →" text were merged into one colored chip: "Elige Sabores · Estilo" (or "Mitad de hielo +$5 · +3" for toppings-only products). The info (i) button only appears when the product has a long description, and is now 44px.
+- **Cart button**: mobile full-width square bar → floating rounded pill ("Ver mi pedido" + total, or "Tu pedido está vacío / Toca un producto para empezar"); desktop → pill with total + bag bubble.
+- **Option sheet (BottomSheet)**: switched from dark brown to the cream theme, all hardcoded hex replaced by tokens, round pill options, filled +/− qty buttons, pill "Agregar · $X" button. Open/close/drag logic untouched.
+- **Toppings overlay, cart overlay, promo banner, promo carousel**: rounded corners, display font, pill buttons, 44px qty buttons in the cart; promo banner is now a floating mango "sticker" card instead of a full-width bottom bar; carousel hardcoded hex → tokens, bigger arrows, wavy edge on desktop, image width capped so arrows no longer overflow on ~360–390px phones.
+- **Page**: soft dotted "boba pearl" cream background, wavy-topped footer ("Hecho con cariño y mucha tapioca").
+- **Layering fixes** (pre-existing bugs found while testing): the promo banner and the sticky category bar used to render *on top of* the open cart overlay — cart overlay is now `z-[85]`, the promo banner hides while the cart is open, and the clear-cart confirm dialog moved to `z-[95]`. The "¡Agregado!" toast was off-center; now centered.
+No changes to cart logic, price calculation, option/topping flow, WhatsApp order, Firestore reads/writes, routes or admin screens.
+Files affected: index.html (Google Fonts Fredoka + Nunito, `lang="es"`, theme-color), src/index.css (semantic tokens, flavor tones, fonts, `.menu-bg`, `.bubble`, `.blob`, wobble, reduced-motion, scroll-margin 72px/176px), src/utils/menuTheme.js (new), src/components/MenuHero.jsx (new), src/components/MaskIcon.jsx (new), src/components/Navbar.jsx, src/components/CategoryTabs.jsx, src/components/SectionBanner.jsx, src/components/SectionsList.jsx, src/components/MenuSection.jsx, src/components/MenuCard.jsx, src/components/CartButton.jsx, src/components/CartOverlay.jsx, src/components/BottomSheet.jsx, src/components/ToppingsOverlay.jsx, src/components/PromoBanner.jsx, src/components/PromoCarousel.jsx, src/views/Home.jsx
+Reason: Owner felt the menu looked boring and "all square". Goal: friendlier, easier to understand (labeled nav, clear "toca para agregar" guidance, customization chips), and on-brand with the boba café vibe.
+
+---
+
+### 2026-10-23 — Promo carousel: no more black bars (9:16 story frames)
+What changed: Carousel slides showed black bars because the frames weren't 9:16 (center was 390×680, sides 268×428) and images used "fit inside" (`contain`). Now every frame is exactly 9:16, since all carousel images are Instagram stories, and images fill the frame (`cover`). Frame size scales with the screen height (center 360–600px tall) so the whole carousel fits on screen, and wide screens (xl) show 7 stories instead of 5. Side stories no longer get a name/gradient overlay. The center one has a single compact bar (name, price, + button) covering the bottom ~28%, so less of the story art is hidden.
+The two current stories ALSO had ~93–113px of solid black baked into the top of the image files. New `storyImageUrl()` helper (src/utils/cloudinary.js) adds a Cloudinary transform to every carousel image: `e_trim:10` (removes solid-color borders), `c_fill,ar_9:16` (re-crops to exactly 9:16), `w_720,f_auto,q_auto` (smaller and compressed: ~49 KB instead of ~1.6 MB per slide). This is applied at display time only. The original uploads are untouched, and future stories with baked-in borders are cleaned up automatically.
+Mobile popup also switched to `cover` + trimmed URL; its bottom gradient was shortened from 45% to 32%.
+Files affected: src/components/PromoCarousel.jsx, src/utils/cloudinary.js
+Reason: Owner disliked the black bars ("choppy"). All carousel images are 9:16 Instagram stories, so frames are locked to that ratio.
+
+---
+
+### 2026-10-23 — Admin panel redesign: light theme, clearer navigation, useless fields removed
+What changed (plain language):
+- **New look for the whole admin** (all screens, drawers and pop-ups): light and warm instead of dark brown — white cards on a cream background, brown accents, the same Nunito/Fredoka fonts as the customer menu, bigger readable text (faint grey text was darkened everywhere), 44px touch targets on the redesigned parts. Done with a scoped theme layer (`html.admin-light` in src/index.css, switched on by AdminLayout) that re-points the existing palette classes, so every screen changed consistently without rewriting each one. Charts (Métricas, Finanzas) now use color tokens so they read on light backgrounds.
+- **Navigation**: sidebar grouped into Operación (Inicio, Cobrar, Pedidos, Caja) · Menú y clientes · Negocio · Ajustes, with the logo on top. Renamed for staff: Overview → **Inicio**, POS → **Cobrar**, Stock → **Inventario**. Phone bottom bar: Inicio, Cobrar, Pedidos, Caja + Más (Caja replaced Clientes as a main tab). Route keys/URLs unchanged, so station permissions keep working.
+- **Top bar**: every screen now shows its name + a one-line "what this screen is for" (fixes the bug where Inventario/Finanzas/Estaciones showed the title "Admin"). Caja abierta/cerrada pill. Avatar falls back to an initial when the Google photo fails to load (it showed broken alt text).
+- **Ajustes** (gear button, Administración station only, every screen) replaces the four tiny 10px chips that only appeared on Overview. One panel with: WhatsApp para pedidos, Correos con acceso, Impresora de tickets (same printer controls, now inline), and a link to Estaciones for PINs.
+- **Login, station picker and PIN keypad** restyled ("¿Quién usa este dispositivo?", each station card says what it can do).
+- **Inicio**: stat cards renamed (Pedidos hoy / Ventas de hoy / Ticket promedio), quick actions replaced with task tiles: Cobrar un pedido, Caja del día, Marcar agotados, Nuevo producto, Promoción.
+- **Menú editor rebuilt**: search box; product rows show price + "N preguntas · N extras · Agotado"; a real on/off switch for Disponible/Agotado and edit/delete buttons are **always visible** (before they only appeared on mouse hover — invisible on phones); tap a row to edit; "Agregar producto a [sección]" inside each section; hide/show section with an eye icon. Product drawer is organized in blocks (Información, Foto, Personalización, ¿Quién lo prepara?, Disponible) with a helper sentence under each field, a sticky Guardar button, and a **live preview of the exact customer card** ("Así se verá en el menú"). Option groups: "Elige 1 / Elige varias" selector + a labeled "Obligatorio" switch (was a cryptic "* req" button). Toppings tab renamed **Extras**. Carousel tab: 9:16 thumbnails, up/down arrows to reorder, linked product chosen from a list grouped by section, and the slide's edit drawer can now change the linked product (it couldn't before).
+- **Estaciones editor**: Tipo as a selector, product tags as one-tap chips, and "Pantallas deshabilitadas" flipped to **"Pantallas que puede usar"** (on = allowed; still saved as `disabledRoutes`). Cocina stations hide that list (they only see the kitchen board).
+- **Confirm dialogs** explain the safer alternative ("si solo se acabó, márcalo como agotado", "ocúltala con el ojo").
+
+Useless / broken inputs found and fixed:
+- **"Sabores (separados por comas)" in the product form — removed.** It wrote a `flavors` list nothing reads anymore (the menu and POS use option groups). The `flavors` field is still written as before (empty for new products, existing values preserved on edit), so the document structure is unchanged.
+- **"Cambiar PIN de acceso" (Ajustes) and the topbar "PIN" chip — removed.** They wrote `settings.adminPin`, which nothing reads since stations got their own PINs; changing it did nothing. `PinChip` deleted from SettingsChips.jsx. PINs are changed in Estaciones.
+- **"Teléfono de notificaciones" did nothing — now wired.** The customer menu used a hardcoded WhatsApp number in Home.jsx. It now uses `settings.orderNotificationPhone` (digits only) and falls back to the original number while the setting is empty (it was empty at the time of the change, so live orders keep going to the same number until someone sets it).
+- **Section "Categoría (ruta URL)" free-text → a Bebidas / Alimentos selector** ("¿En qué botón del menú aparece?"). Typos there silently hid sections from the Bebidas/Alimentos pages. Any other category already in use is kept as an extra option.
+- **Section "Orden (número)" — removed.** Drag-to-reorder already existed; new sections defaulted to order 0 (jumped to the top). New sections are now appended after the last one (useAdminData.handleAddSection).
+- **Carousel "Orden" and "Texto alternativo" — removed.** The grip icon on slides was decorative (no reorder); now arrows call the existing `handleSlideReorder`. New slides are appended last; alt text is filled with the linked product's name automatically. "Tipo de enlace" (Producto/Combo) removed from the form — it's set automatically (combo when the product is in a "Combos" section), same stored values as before.
+- **Inventario showed raw floating-point numbers** (e.g. "0.9010000000000034 litro") — now formatted with the existing `formatQuantity` helper. "Nivel de reorden" had `step="1"` while real levels are decimals (0.2 litro) → browser could reject the form; now `step="any"`. Relabeled: "Avisar cuando queden", "Cantidad que tienes hoy", KPI "Por acabarse".
+- Duplicate page titles under the top bar removed (Pedidos, Estaciones).
+
+Files affected: src/index.css, src/config/adminNav.jsx, src/views/admin/AdminLayout.jsx, src/components/admin/Sidebar.jsx, src/components/admin/Topbar.jsx, src/components/admin/BottomTabBar.jsx, src/components/admin/MobileSettingsSheet.jsx (now the Ajustes panel for all sizes), src/components/admin/SettingsChips.jsx, src/components/admin/StationGate.jsx, src/components/admin/PinKeypad.jsx, src/components/admin/ConfirmDialog.jsx, src/components/admin/ui.jsx (new: shared Field/Toggle/Segmented/Drawer…), src/views/admin/MenuEditor.jsx (rewritten UI, same handlers), src/views/admin/StationsManager.jsx, src/views/admin/Overview.jsx, src/views/admin/Orders.jsx, src/views/admin/Stock.jsx, src/views/admin/Metrics.jsx, src/components/admin/finance/DailyTrendChart.jsx, src/components/admin/finance/ProfitByDayOfWeek.jsx, src/hooks/useAdminData.js (auto order + alt text only), src/utils/recipeCalculations.js (text contrast), src/views/Home.jsx (WhatsApp number from settings), plus a mechanical contrast/white-text pass over every other admin view and component (text-light-200/xx alphas raised, `text-white` → `text-snow` on solid buttons, solid white cards, no hardcoded hex left in admin files).
+Reason: Owner asked to remove useless forms/inputs and make the admin organized, easy for employees and the owner, and professional-looking (chose the light, warm option).
+
+---
+
+### 2026-10-23 — Local test environment (edit freely without touching café data)
+What changed: Added a "modo prueba" that runs the app against a local copy of Firestore + Auth (Firebase Local Emulator Suite) instead of the real database.
+- `npm run dev:test` starts the emulators + the app (Vite `--mode emulator`, config in `.env.emulator`) and the Emulator UI (http://127.0.0.1:4000) to see/edit raw data. First run seeds data automatically. Changes are saved to `./emulator-data` on Ctrl+C and reloaded next time. `npm run test:reset` starts over.
+- Data: by default a demo menu built from `src/assets/sections.js` + `products.js` (flavors converted to a "Sabor" option group, 2 demo extras). Optional `npm run test:pull` makes a read-only copy of production (needs a service-account key the owner downloads; only `.get()` calls) into `emulator-seed/production.json`, which `test:reset` then loads.
+- Safety: test mode uses the project ID `demo-bubblekaapeh` (Firebase "demo" projects cannot reach real projects); the seed script refuses to run unless pointed at the emulators; test orders open WhatsApp with no recipient (seed removes `orderNotificationPhone`, Home has no fallback number in test mode); Cloudinary uploads go to a `test/` folder; a yellow "MODO PRUEBA · datos locales" badge shows on every screen.
+- Login: "Entrar como usuario de prueba" button on the admin login (test mode only). The account exists only in the Auth emulator; credentials in `.env.emulator` (committed on purpose — not a real account). Station PINs are the usual defaults (stations auto-seed).
+- The emulator enforces the repo's `firestore.rules`, so test mode also checks those (never-deployed) rules. All 15 collections the app uses have a rule.
+Files affected: src/firebase.js (emulator switch, exports `isTestEnv`), .env.emulator (new), .gitignore (`!.env.emulator`, `/emulator-data/`, `/emulator-seed/`, emulator logs), firebase.json (firestore 8080, auth 9099, UI 4000), package.json (`dev:test`, `test:reset`, `test:pull`), scripts/test-env/{run,seed,pull-production,shared}.mjs (new), src/components/TestModeBadge.jsx (new), src/main.jsx, src/views/Home.jsx, src/views/admin/AdminLayout.jsx, src/hooks/useAdminData.js (test login allowed past the hardcoded allowlist in test mode only), src/utils/cloudinary.js, README.md.
+Reason: Owner wanted to edit freely in development without changing the real café data.
+
+---
+
+### 2026-10-23 — Fixed: POS stayed "Caja cerrada" after opening the register
+What changed / bug: Opening the register saved the session correctly, but the POS (and the "Caja abierta/cerrada" badge) never noticed. Two causes in `RegisterContext`:
+1. The live listener on `register_sessions` started once at app load, before anyone signed in. `register_sessions` is admin-only in `firestore.rules`, so that first listen got "permission denied", Firestore cancelled it, and it never restarted after login. Showed up in the test environment (which enforces the repo rules); production only worked because the live rules are apparently looser — it would have broken there too once `firestore.rules` is deployed.
+2. The listener watched the day's document chosen at load time, so a POS opened before midnight kept watching yesterday's session while "Abrir caja" created today's.
+Fix: the listener now starts after sign-in (same pattern as StationContext), stops on sign-out, and re-subscribes when the date changes (checked every minute). Also removes the "Error listening to register session" console error on the public menu.
+Files affected: src/context/RegisterContext.jsx
+Reason: Reported by owner while using the new test environment.
+
+---
+
+### 2026-10-23 — Admin light / dark theme switch
+What changed: A sun/moon switch in the admin top bar toggles between the light theme and a new dark "espresso" theme. The choice is saved on each device (localStorage `bk_admin_theme`) and applied before the page paints (small script in index.html), so there's no flash. Only the admin is affected — the customer menu never gets the theme classes.
+How it's built (Tailwind v4):
+- `@custom-variant dark (&:where(.dark, .dark *))` → Tailwind's `dark:` utilities follow a `.dark` class on <html> (set by the switch) instead of the OS setting.
+- The two themes are CSS-variable token sets: `html.admin-theme:not(.dark)` (the light palette from the redesign) and `html.admin-theme.dark` (surfaces, text and brand fill for dark; status and chart colors use their dark-surface defaults). Every existing palette utility recolors automatically.
+- `dark:` utilities only where a token can't cover both themes: brand-colored text got `dark:text-main-300` (18 places), and the switch icon animates with `dark:` classes.
+- The product editor's "Así se verá en el menú" preview is wrapped in `.customer-preview`, so it always shows the real customer colors.
+- Theme changes cross-fade in 200 ms (disabled for reduced motion). Leaving the admin removes the classes.
+Files affected: src/index.css, src/hooks/useAdminTheme.js (new), index.html, src/views/admin/AdminLayout.jsx, src/components/admin/Topbar.jsx, src/views/admin/MenuEditor.jsx, src/views/admin/Overview.jsx, src/components/admin/{ui,MobileSettingsSheet,Sidebar,StationGate,BottomTabBar}.jsx
+Reason: Owner asked for a light/dark switch in the admin only, implemented with Tailwind.
+
+---
+
 ## Known Issues / Follow-ups
 
-- **NEW (2026-09-05): `register_sessions` listener runs unauthenticated on the public Home page and fails permission-denied** (see the change entry above) — harmless today (swallowed silently, Caja UI isn't shown to customers anyway) but worth either gating `RegisterContext`'s subscription on `auth.currentUser` (matching the pattern `StationContext`/`WhatsAppOrdersContext` already use) or confirming `register_sessions` really should stay admin-only in the rules and this is just log noise to silence.
+- **NEW (2026-10-23): two different admin email allowlists.** `useAdminData.js` (used by the Menú editor) and the legacy `Admin.jsx` have a hardcoded `ALLOWED_EMAILS = ['jethrosiloe26@gmail.com']` and sign out any other account; the rest of the panel uses `settings/general.authorizedEmails` (Ajustes → "Correos con acceso", currently empty = open). So any staff account other than the owner's gets signed out when opening Menú, no matter what Ajustes says. Found while building the test environment; left unchanged in production pending owner decision (suggest: make useAdminData use the same `checkEmailAuthorized` as useAdminAuth).
+- **NEW (2026-10-23): `emulator-seed/production.json` (from `npm run test:pull`) contains real customer names/phones** — it is git-ignored; don't share it. Delete it when not needed.
+
+- **NEW (2026-10-23): the old "Menu Editor (Legacy)" screen (`/admin/legacy`, src/views/Admin.jsx, 2,811 lines) still exists** — not in the navigation, but reachable by URL. It duplicates the Menú editor and still has the removed "Sabores" field and numeric "Orden" fields. Recommend deleting the route + file once the owner confirms nobody uses it (left in place because routing changes need explicit approval).
+- **NEW (2026-10-23): admin redesign was browser-checked on desktop and a 390px frame for Inicio, Menú (products, drawers, carousel), Ajustes, Inventario, Pedidos, Clientes, Finanzas, Métricas, Promociones, Estaciones, login/station/PIN.** Not exercised: **Cobrar (POS) and Caja with the register open** (opening the real register would write to production), the **Cocina** kitchen board (no kitchen PIN available), and actually saving products/sections/slides (avoided writing to production data). These screens got the theme + contrast pass but no structural redesign — please click through once, especially the POS payment flow on the cashier device.
+- **NEW (2026-10-23): POS has two separate "register new customer" forms** (inside the ticket panel and in the loyalty lookup modal). Both work; consolidating them would simplify the cashier flow.
+- **NEW (2026-10-23): `settings.adminPin` is still written by nothing and read by nothing** — the field may still exist in Firestore from before; harmless, can be deleted from the document manually.
+
+- **NEW (2026-10-23): carousel images must stay 9:16.** A non-9:16 image will be center-cropped to 9:16 (no bars, but edges get cut). `e_trim` also trims any genuinely solid-colored edge of a story (e.g. a flat cream background touching the border), which can crop slightly more than expected. If a story ever looks over-cropped, drop `e_trim:10/` from `storyImageUrl()`.
+
+- **NEW (2026-10-23): menu redesign verified in desktop Chrome and a 390px-wide frame, not on a real phone** — please check on an actual iPhone/Android: floating cart pill vs. home indicator (safe-area), hero bubbles performance, and the category bar auto-scroll.
+- **NEW (2026-10-23): section icons are picked by keyword from the section name** (`src/utils/menuTheme.js`). A new section with an unusual name falls back to a generic fork/knife icon — add a keyword there if needed. Section colors cycle by position, so reordering sections in the admin changes their colors.
+- **NEW (2026-10-23): on first load on mobile, the promo carousel popup and the promo banner can show at the same time.** Pre-existing behavior, left as-is; consider showing the banner only after the popup is dismissed.
+- **NEW (2026-10-23): carousel still has a couple of `rgba(...)` gradient values and MenuCard/BottomSheet use `rgba(0,0,0,…)` shadows** — no raw hex remains in the customer menu components, but these aren't tokens either.
+
+- **RESOLVED 2026-10-23 (see change entry "POS stayed Caja cerrada")** — ~~`register_sessions` listener runs unauthenticated on the public Home page and fails permission-denied~~ (see the change entry above) — harmless today (swallowed silently, Caja UI isn't shown to customers anyway) but worth either gating `RegisterContext`'s subscription on `auth.currentUser` (matching the pattern `StationContext`/`WhatsAppOrdersContext` already use) or confirming `register_sessions` really should stay admin-only in the rules and this is just log noise to silence.
 - **NEW (2026-09-05): `firestore.rules` exists now but has NOT been deployed** — confirm the classification above (especially that `orders` being fully public is intentional/already-true) before running `firebase deploy --only firestore:rules`, since that command overwrites whatever rules are actually live right now with this file's contents.
 - **NEW (2026-09-04): the new `stations` collection almost certainly needs its own Firestore rule block**, same gap already hit by `rawMaterials`/`recipes`/`stockMovements`/`expenses` below — it wasn't in the live ruleset before this feature existed, so it will default-deny until added. **Resolved by the `firestore.rules` file added 2026-09-05** (see above) — still needs an actual deploy to take effect.
 - **NEW (2026-09-04): apartados (Apartar/Retomar/Descartar, `parked_orders`) was intentionally removed**, replaced by the "En curso" flow described above, per explicit owner decision. Any orders that were sitting in `parked_orders` before this deploy are permanently unreachable from the POS UI now — no migration was built. The `parked_orders` collection itself was left in place (orphaned, harmless) rather than deleted.

@@ -22,11 +22,11 @@ const CustomTooltip = ({ active, payload }) => {
     <div className="rounded-xl border border-white/10 bg-main-950 px-3 py-2.5 shadow-xl text-xs space-y-1.5 min-w-[9rem]">
       <p className="font-semibold text-light-100 capitalize">{fullLabel}</p>
       <div className="flex items-center justify-between gap-4">
-        <span className="text-light-200/50 flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-400" />Ingresos</span>
+        <span className="text-light-200/70 flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-400" />Ingresos</span>
         <span className="font-bold text-light-100 tabular-nums">{formatMoney(revenue)}</span>
       </div>
       <div className="flex items-center justify-between gap-4">
-        <span className="text-light-200/50 flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-400" />Ganancia</span>
+        <span className="text-light-200/70 flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-400" />Ganancia</span>
         <span className="font-bold text-light-100 tabular-nums">{formatMoney(profit)}</span>
       </div>
     </div>
@@ -40,16 +40,16 @@ const DayOrdersModal = ({ day, orders, onClose }) => {
         className="bg-main-900 border border-white/10 rounded-3xl w-full max-w-sm max-h-[80vh] shadow-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
           <div>
             <h3 className="text-sm font-bold text-light-100 capitalize">{day.fullLabel}</h3>
-            <p className="text-xs text-light-200/40 mt-0.5">{orders.length} pedido{orders.length !== 1 ? 's' : ''} · {formatMoney(day.revenue)}</p>
+            <p className="text-xs text-light-200/65 mt-0.5">{orders.length} pedido{orders.length !== 1 ? 's' : ''} · {formatMoney(day.revenue)}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/50 cursor-pointer transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/70 cursor-pointer transition-colors">
             <X size={18} />
           </button>
         </div>
-        <div className="overflow-y-auto divide-y divide-white/5">
+        <div className="overflow-y-auto divide-y divide-white/10">
           {orders.map((order) => {
             const shortId = order.orderId ? order.orderId.slice(-6) : order.id.slice(-4).toUpperCase()
             const d = orderDate(order)
@@ -65,7 +65,7 @@ const DayOrdersModal = ({ day, orders, onClose }) => {
                   </span>
                   <span className="text-sm font-bold text-light-100 tabular-nums">{formatMoney(Number(order.revenue || order.total || 0))}</span>
                 </div>
-                <p className="text-xs text-light-200/40 flex items-center gap-1.5 mb-1">
+                <p className="text-xs text-light-200/65 flex items-center gap-1.5 mb-1">
                   <Clock size={11} /> {time}
                 </p>
                 <p className="text-xs text-light-200/60 truncate">{preview}</p>
@@ -111,19 +111,19 @@ export const DailyTrendChart = ({ orders }) => {
   const selectedDay = selectedKey ? dailyData.find((d) => d.key === selectedKey) : null
 
   return (
-    <div className="bg-main-900/30 border border-white/5 rounded-3xl p-5 sm:p-6 shadow-sm">
+    <div className="bg-main-900 border border-white/10 rounded-3xl p-5 sm:p-6 shadow-sm">
       <div className="flex items-center gap-2 mb-4">
         <div className="h-9 w-9 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
           <LineChartIcon size={18} />
         </div>
         <div>
           <h3 className="text-sm font-bold text-light-100">Tendencia Diaria</h3>
-          <p className="text-xs text-light-200/40">Ingresos y ganancia por día — toca un punto para ver los pedidos</p>
+          <p className="text-xs text-light-200/65">Ingresos y ganancia por día — toca un punto para ver los pedidos</p>
         </div>
       </div>
 
       {dailyData.length === 0 ? (
-        <div className="py-16 flex flex-col items-center gap-2 text-light-200/30">
+        <div className="py-16 flex flex-col items-center gap-2 text-light-200/55">
           <LineChartIcon size={32} />
           <p className="text-sm italic">No hay datos en este período.</p>
         </div>
@@ -136,17 +136,17 @@ export const DailyTrendChart = ({ orders }) => {
                 margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
                 onClick={(state) => { if (state?.activePayload?.[0]?.payload?.key) setSelectedKey(state.activePayload[0].payload.key) }}
               >
-                <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
-                <XAxis dataKey="key" tickFormatter={(key) => dailyData.find((d) => d.key === key)?.label ?? key} tick={{ fill: 'rgba(254,248,225,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={compactPeso} tick={{ fill: 'rgba(254,248,225,0.4)', fontSize: 11 }} axisLine={false} tickLine={false} width={44} />
-                <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.15)' }} />
+                <CartesianGrid stroke="var(--color-chart-grid)" vertical={false} />
+                <XAxis dataKey="key" tickFormatter={(key) => dailyData.find((d) => d.key === key)?.label ?? key} tick={{ fill: 'var(--color-chart-tick)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={compactPeso} tick={{ fill: 'var(--color-chart-tick)', fontSize: 11 }} axisLine={false} tickLine={false} width={44} />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'var(--color-chart-grid)' }} />
                 <Legend
                   formatter={(value) => <span className="text-light-200/60 text-xs">{value}</span>}
                   iconType="circle"
                   iconSize={8}
                 />
-                <Line type="monotone" dataKey="revenue" name="Ingresos" stroke="#10b981" strokeWidth={2} dot={{ r: 3, cursor: 'pointer' }} activeDot={{ r: 5, cursor: 'pointer' }} />
-                <Line type="monotone" dataKey="profit" name="Ganancia" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3, cursor: 'pointer' }} activeDot={{ r: 5, cursor: 'pointer' }} />
+                <Line type="monotone" dataKey="revenue" name="Ingresos" stroke="var(--color-chart-revenue)" strokeWidth={2} dot={{ r: 3, cursor: 'pointer' }} activeDot={{ r: 5, cursor: 'pointer' }} />
+                <Line type="monotone" dataKey="profit" name="Ganancia" stroke="var(--color-chart-profit)" strokeWidth={2} dot={{ r: 3, cursor: 'pointer' }} activeDot={{ r: 5, cursor: 'pointer' }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

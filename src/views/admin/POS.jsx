@@ -40,7 +40,7 @@ const DRAFT_KEY = 'pos_draft_v1'
 // sent to one or more kitchen stations and hasn't been charged yet.
 
 const STATION_PILL_STYLES = {
-  pending: 'bg-white/5 text-light-200/40 border-white/10',
+  pending: 'bg-white/5 text-light-200/65 border-white/10',
   preparando: 'bg-amber-500/15 text-amber-400 border-amber-500/25',
   listo: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
 }
@@ -71,7 +71,7 @@ const EnCursoCard = ({ order, stations, onAgregar, onCobrar, onCancel, hasActive
               </span>
             )}
           </div>
-          <p className="text-xs text-light-200/35 flex items-center gap-1 mt-0.5 flex-wrap">
+          <p className="text-xs text-light-200/60 flex items-center gap-1 mt-0.5 flex-wrap">
             <Clock size={10} className="shrink-0" />
             <span>{timeStr}</span>
             <span className="opacity-40">·</span>
@@ -102,7 +102,7 @@ const EnCursoCard = ({ order, stations, onAgregar, onCobrar, onCancel, hasActive
             Sí, cancelar
           </button>
           <button onClick={() => setConfirmAction(null)}
-            className="px-3 py-1.5 rounded-lg hover:bg-white/5 text-xs text-light-200/40 hover:text-light-200/70 transition cursor-pointer min-h-[36px]">
+            className="px-3 py-1.5 rounded-lg hover:bg-white/5 text-xs text-light-200/65 hover:text-light-200/70 transition cursor-pointer min-h-[36px]">
             Volver
           </button>
         </div>
@@ -114,7 +114,7 @@ const EnCursoCard = ({ order, stations, onAgregar, onCobrar, onCancel, hasActive
             Sí, continuar
           </button>
           <button onClick={() => setConfirmAction(null)}
-            className="px-3 py-1.5 rounded-lg hover:bg-white/5 text-xs text-light-200/40 hover:text-light-200/70 transition cursor-pointer min-h-[36px]">
+            className="px-3 py-1.5 rounded-lg hover:bg-white/5 text-xs text-light-200/65 hover:text-light-200/70 transition cursor-pointer min-h-[36px]">
             Volver
           </button>
         </div>
@@ -122,7 +122,7 @@ const EnCursoCard = ({ order, stations, onAgregar, onCobrar, onCancel, hasActive
         <div className="mt-2.5 space-y-1.5">
           <div className="flex gap-2">
             <button onClick={() => handleClick('agregar', onAgregar)}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/8 text-xs font-semibold text-light-200/60 hover:bg-white/[0.08] transition-all cursor-pointer min-h-[44px]">
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-semibold text-light-200/60 hover:bg-white/[0.08] transition-all cursor-pointer min-h-[44px]">
               <Plus size={13} />
               Agregar
             </button>
@@ -169,21 +169,21 @@ const PaymentModal = ({
   return (
     <div className="fixed inset-0 z-[9100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-main-900 border border-white/8 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div className="relative bg-main-900 border border-white/10 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
 
-        <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
           <h3 className="text-lg font-bold text-light-100 flex items-center gap-2">
             <Receipt size={20} className="text-main-400" />
             Cobrar orden
           </h3>
-          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/50 cursor-pointer transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/70 cursor-pointer transition-colors">
             <X size={20} />
           </button>
         </div>
 
         <div className="p-6 space-y-5 max-h-[65vh] overflow-y-auto">
-          <div className="flex items-baseline justify-between rounded-2xl bg-main-950 border border-white/5 px-5 py-4">
-            <span className="text-sm text-light-200/50">Total a cobrar</span>
+          <div className="flex items-baseline justify-between rounded-2xl bg-main-950 border border-white/10 px-5 py-4">
+            <span className="text-sm text-light-200/70">Total a cobrar</span>
             <span className="text-3xl font-bold text-light-100 tabular-nums">{formatMoney(effectiveTotal)}</span>
           </div>
 
@@ -197,7 +197,7 @@ const PaymentModal = ({
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-light-200/50 shrink-0">Redimir:</span>
+                <span className="text-xs text-light-200/70 shrink-0">Redimir:</span>
                 <MoneyInput
                   value={loyaltyRedeemed}
                   onChange={v => setLoyaltyRedeemed(Math.min(loyaltyMax, v))}
@@ -222,7 +222,7 @@ const PaymentModal = ({
             <MoneyInput
               value={cashAmount}
               onChange={setCashAmount}
-              inputClassName="rounded-2xl border border-white/10 bg-main-950 py-3 text-lg text-light-200 placeholder-light-200/25 outline-none focus:border-emerald-700/40 transition"
+              inputClassName="rounded-2xl border border-white/10 bg-main-950 py-3 text-lg text-light-200 placeholder-light-200/50 outline-none focus:border-emerald-700/40 transition"
             />
             {cashAmount > 0 && change > 0.005 && (
               <p className="text-sm font-semibold text-emerald-400 tabular-nums">Cambio: {formatMoney(change)}</p>
@@ -238,7 +238,7 @@ const PaymentModal = ({
             <MoneyInput
               value={cardAmount}
               onChange={setCardAmount}
-              inputClassName="rounded-2xl border border-white/10 bg-main-950 py-3 text-lg text-light-200 placeholder-light-200/25 outline-none focus:border-blue-700/40 transition"
+              inputClassName="rounded-2xl border border-white/10 bg-main-950 py-3 text-lg text-light-200 placeholder-light-200/50 outline-none focus:border-blue-700/40 transition"
             />
           </div>
 
@@ -250,9 +250,9 @@ const PaymentModal = ({
           )}
         </div>
 
-        <div className="px-6 py-5 border-t border-white/5">
+        <div className="px-6 py-5 border-t border-white/10">
           <button onClick={onConfirm} disabled={!canConfirm || isProcessing}
-            className="w-full rounded-2xl bg-main-500 hover:bg-main-400 disabled:opacity-40 disabled:cursor-not-allowed py-4 text-base font-bold text-white transition-all cursor-pointer shadow-lg shadow-main-500/20">
+            className="w-full rounded-2xl bg-main-500 hover:bg-main-400 disabled:opacity-40 disabled:cursor-not-allowed py-4 text-base font-bold text-snow transition-all cursor-pointer shadow-lg shadow-main-500/20">
             {isProcessing ? 'Procesando...' : `Confirmar · ${formatMoney(effectiveTotal)}`}
           </button>
         </div>
@@ -319,20 +319,20 @@ const LoyaltyLookupModal = ({ allCustomers, onSelect, onSkip, onClose }) => {
   return (
     <div className="fixed inset-0 z-[9150] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full sm:max-w-md bg-main-900 border border-white/8 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+      <div className="relative w-full sm:max-w-md bg-main-900 border border-white/10 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-white/5">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-2xl bg-amber-500/15 border border-amber-500/20 flex items-center justify-center shrink-0">
               <User size={17} className="text-amber-400" />
             </div>
             <div>
               <h3 className="text-base font-bold text-light-100 leading-tight">¿Con quién es?</h3>
-              <p className="text-xs text-light-200/40 mt-0.5">Vincula un cliente para acumular loyalty</p>
+              <p className="text-xs text-light-200/65 mt-0.5">Vincula un cliente para acumular loyalty</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/50 cursor-pointer transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/70 cursor-pointer transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -340,40 +340,40 @@ const LoyaltyLookupModal = ({ allCustomers, onSelect, onSkip, onClose }) => {
         <div className="p-5 space-y-3 max-h-[55vh] overflow-y-auto">
           {/* Search */}
           <div className="relative">
-            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-light-200/30 pointer-events-none" />
+            <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-light-200/55 pointer-events-none" />
             <input
               type="text"
               placeholder="Nombre o teléfono…"
               value={searchQuery}
               onChange={e => { setSearchQuery(e.target.value); if (showNew) setShowNew(false) }}
               autoFocus
-              className="w-full pl-10 pr-4 py-3 rounded-2xl border border-white/10 bg-main-800/60 text-sm text-light-100 placeholder:text-light-200/30 outline-none focus:border-main-500/40 transition"
+              className="w-full pl-10 pr-4 py-3 rounded-2xl border border-white/10 bg-main-800/60 text-sm text-light-100 placeholder:text-light-200/55 outline-none focus:border-main-500/40 transition"
             />
           </div>
 
           {/* Results */}
           {searchQuery.trim() && (
-            <div className="rounded-2xl border border-white/5 bg-main-950/80 overflow-hidden">
+            <div className="rounded-2xl border border-white/10 bg-main-950/80 overflow-hidden">
               {results.length > 0 ? (
                 results.map(c => (
                   <button
                     key={c.id}
                     onClick={() => onSelect(c)}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.06] border-b border-white/5 last:border-0 transition-colors cursor-pointer text-left min-h-[52px]"
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.06] border-b border-white/10 last:border-0 transition-colors cursor-pointer text-left min-h-[52px]"
                   >
-                    <div className="h-8 w-8 rounded-xl bg-main-800 border border-white/5 flex items-center justify-center text-main-400 font-bold text-xs shrink-0 select-none">
+                    <div className="h-8 w-8 rounded-xl bg-main-800 border border-white/10 flex items-center justify-center text-main-400 font-bold text-xs shrink-0 select-none">
                       {(c.name || '?')[0].toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-light-100 truncate">{c.name}</p>
-                      <p className="text-xs text-light-200/35 truncate">{c.phone} · {c.visitCount || 0} visitas · {formatMoney(c.loyaltyBalance || 0)}</p>
+                      <p className="text-xs text-light-200/60 truncate">{c.phone} · {c.visitCount || 0} visitas · {formatMoney(c.loyaltyBalance || 0)}</p>
                     </div>
-                    <ChevronRight size={14} className="text-light-200/20 shrink-0" />
+                    <ChevronRight size={14} className="text-light-200/45 shrink-0" />
                   </button>
                 ))
               ) : (
                 <div className="px-4 py-4 space-y-3">
-                  <p className="text-sm text-light-200/30">Sin resultados para &ldquo;{searchQuery}&rdquo;</p>
+                  <p className="text-sm text-light-200/55">Sin resultados para &ldquo;{searchQuery}&rdquo;</p>
                   {!showNew && (
                     <button
                       onClick={openNewForm}
@@ -392,7 +392,7 @@ const LoyaltyLookupModal = ({ allCustomers, onSelect, onSkip, onClose }) => {
           {!searchQuery.trim() && !showNew && (
             <button
               onClick={() => setShowNew(true)}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-dashed border-white/10 text-sm font-medium text-light-200/40 hover:text-light-200/70 hover:border-white/20 hover:bg-white/[0.02] transition-all cursor-pointer min-h-[52px]"
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-dashed border-white/10 text-sm font-medium text-light-200/65 hover:text-light-200/70 hover:border-white/20 hover:bg-white/[0.02] transition-all cursor-pointer min-h-[52px]"
             >
               <UserPlus size={15} />
               Registrar nuevo cliente
@@ -409,7 +409,7 @@ const LoyaltyLookupModal = ({ allCustomers, onSelect, onSkip, onClose }) => {
                 value={newName}
                 onChange={e => setNewName(e.target.value)}
                 autoFocus
-                className="w-full rounded-xl border border-white/10 bg-main-800/60 px-3 py-2.5 text-sm text-light-200 placeholder:text-light-200/25 outline-none focus:border-amber-500/40 transition"
+                className="w-full rounded-xl border border-white/10 bg-main-800/60 px-3 py-2.5 text-sm text-light-200 placeholder:text-light-200/50 outline-none focus:border-amber-500/40 transition"
               />
               <input
                 type="tel"
@@ -417,19 +417,19 @@ const LoyaltyLookupModal = ({ allCustomers, onSelect, onSkip, onClose }) => {
                 value={newPhone}
                 onChange={e => setNewPhone(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleSaveNew() }}
-                className="w-full rounded-xl border border-white/10 bg-main-800/60 px-3 py-2.5 text-sm text-light-200 placeholder:text-light-200/25 outline-none focus:border-amber-500/40 transition"
+                className="w-full rounded-xl border border-white/10 bg-main-800/60 px-3 py-2.5 text-sm text-light-200 placeholder:text-light-200/50 outline-none focus:border-amber-500/40 transition"
               />
               <div className="flex gap-2 pt-0.5">
                 <button
                   onClick={() => { setShowNew(false); setNewName(''); setNewPhone('') }}
-                  className="flex-none px-4 py-2.5 rounded-xl border border-white/10 text-xs text-light-200/40 hover:bg-white/5 transition cursor-pointer min-h-[40px]"
+                  className="flex-none px-4 py-2.5 rounded-xl border border-white/10 text-xs text-light-200/65 hover:bg-white/5 transition cursor-pointer min-h-[40px]"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSaveNew}
                   disabled={saving || !newName.trim() || !newPhone.trim()}
-                  className="flex-1 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed py-2.5 text-sm font-bold text-white transition cursor-pointer min-h-[40px]"
+                  className="flex-1 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed py-2.5 text-sm font-bold text-snow transition cursor-pointer min-h-[40px]"
                 >
                   {saving ? 'Guardando…' : 'Guardar y asociar'}
                 </button>
@@ -439,14 +439,14 @@ const LoyaltyLookupModal = ({ allCustomers, onSelect, onSkip, onClose }) => {
         </div>
 
         {/* Footer: skip action */}
-        <div className="px-5 pb-5 pt-3 border-t border-white/5 space-y-2">
+        <div className="px-5 pb-5 pt-3 border-t border-white/10 space-y-2">
           <button
             onClick={onSkip}
-            className="w-full py-3.5 rounded-2xl border border-white/8 bg-white/[0.03] hover:bg-white/[0.06] text-sm font-semibold text-light-200/60 hover:text-light-100 transition-all cursor-pointer min-h-[52px]"
+            className="w-full py-3.5 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] text-sm font-semibold text-light-200/60 hover:text-light-100 transition-all cursor-pointer min-h-[52px]"
           >
             Continuar sin cliente
           </button>
-          <p className="text-center text-[11px] text-light-200/20">La compra no quedará registrada en loyalty</p>
+          <p className="text-center text-[11px] text-light-200/45">La compra no quedará registrada en loyalty</p>
         </div>
       </div>
     </div>
@@ -1156,7 +1156,7 @@ export const POS = () => {
           className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
             ticketTab === tab.key
               ? 'bg-main-500/20 text-main-300 border border-main-500/30'
-              : 'text-light-200/40 hover:text-light-200/70 hover:bg-white/5'
+              : 'text-light-200/65 hover:text-light-200/70 hover:bg-white/5'
           }`}>
           {tab.label}
         </button>
@@ -1166,7 +1166,7 @@ export const POS = () => {
 
   // ── Customer section (compact) ────────────────────────────────────────────
   const customerSection = (
-    <div className="px-4 py-2.5 border-b border-white/5 shrink-0">
+    <div className="px-4 py-2.5 border-b border-white/10 shrink-0">
       {customer ? (
         <div className="flex items-center gap-3 rounded-2xl bg-amber-500/[0.08] border border-amber-500/20 px-3 py-2.5">
           <div className="h-8 w-8 rounded-full bg-amber-500/15 flex items-center justify-center shrink-0">
@@ -1174,10 +1174,10 @@ export const POS = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-amber-200 truncate">{customer.name}</p>
-            <p className="text-xs text-light-200/40 truncate">{customer.phone} · Saldo: {formatMoney(customer.loyaltyBalance || 0)}</p>
+            <p className="text-xs text-light-200/65 truncate">{customer.phone} · Saldo: {formatMoney(customer.loyaltyBalance || 0)}</p>
           </div>
           <button onClick={() => { setCustomer(null); setLoyaltyRedeemed(0) }}
-            className="text-light-200/25 hover:text-rose-400 cursor-pointer transition-colors shrink-0">
+            className="text-light-200/50 hover:text-rose-400 cursor-pointer transition-colors shrink-0">
             <X size={15} />
           </button>
         </div>
@@ -1185,7 +1185,7 @@ export const POS = () => {
         <>
           <button
             onClick={() => setCustomerPanelOpen(v => !v)}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 text-sm text-light-200/40 hover:text-light-200/70 transition-all cursor-pointer"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-white/10 text-sm text-light-200/65 hover:text-light-200/70 transition-all cursor-pointer"
           >
             <User size={13} className="shrink-0" />
             <span>Vincular cliente</span>
@@ -1195,26 +1195,26 @@ export const POS = () => {
           {customerPanelOpen && (
             <div className="mt-2 space-y-2">
               <div className="relative">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/25" />
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/50" />
                 <input type="text" placeholder="Buscar por nombre o teléfono..."
                   value={customerSearch} onChange={e => { setCustomerSearch(e.target.value); setShowNewCustomer(false) }}
                   autoFocus
-                  className="w-full rounded-xl border border-white/8 bg-main-800/50 pl-8 pr-3 py-2 text-sm text-light-200 placeholder-light-200/25 outline-none focus:border-main-500/40 transition" />
+                  className="w-full rounded-xl border border-white/10 bg-main-800/50 pl-8 pr-3 py-2 text-sm text-light-200 placeholder-light-200/50 outline-none focus:border-main-500/40 transition" />
               </div>
 
               {customerSearch.trim() && (
-                <div className="rounded-xl border border-white/5 bg-main-900/80 overflow-hidden">
+                <div className="rounded-xl border border-white/10 bg-main-900 overflow-hidden">
                   {searchResults.length > 0 ? (
                     searchResults.slice(0, 4).map(c => (
                       <button key={c.id} onClick={() => selectCustomer(c)}
-                        className="w-full text-left px-3 py-2.5 hover:bg-white/5 border-b border-white/5 last:border-0 transition-colors cursor-pointer">
+                        className="w-full text-left px-3 py-2.5 hover:bg-white/5 border-b border-white/10 last:border-0 transition-colors cursor-pointer">
                         <p className="text-sm font-medium text-light-100">{c.name}</p>
-                        <p className="text-xs text-light-200/35">{c.phone} · {c.visitCount || 0} visitas · {formatMoney(c.loyaltyBalance || 0)}</p>
+                        <p className="text-xs text-light-200/60">{c.phone} · {c.visitCount || 0} visitas · {formatMoney(c.loyaltyBalance || 0)}</p>
                       </button>
                     ))
                   ) : (
                     <div className="px-3 py-2.5 space-y-1.5">
-                      <p className="text-xs text-light-200/30">Sin resultados.</p>
+                      <p className="text-xs text-light-200/55">Sin resultados.</p>
                       <button onClick={() => { setShowNewCustomer(true); setNewCustPhone(customerSearch) }}
                         className="flex items-center gap-1 text-xs text-main-400 hover:text-main-300 font-medium cursor-pointer transition-colors">
                         <UserPlus size={12} /> Registrar nuevo cliente
@@ -1225,19 +1225,19 @@ export const POS = () => {
               )}
 
               {showNewCustomer && (
-                <div className="rounded-xl border border-white/10 bg-main-900/60 p-3 space-y-2">
-                  <p className="text-[11px] font-semibold text-light-200/40 uppercase tracking-wider">Nuevo cliente</p>
+                <div className="rounded-xl border border-white/10 bg-main-900 p-3 space-y-2">
+                  <p className="text-[11px] font-semibold text-light-200/65 uppercase tracking-wider">Nuevo cliente</p>
                   <input type="text" placeholder="Nombre completo" value={newCustName} onChange={e => setNewCustName(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-main-800/60 px-3 py-2 text-sm text-light-200 placeholder-light-200/25 outline-none focus:border-main-500/40 transition" />
+                    className="w-full rounded-xl border border-white/10 bg-main-800/60 px-3 py-2 text-sm text-light-200 placeholder-light-200/50 outline-none focus:border-main-500/40 transition" />
                   <input type="tel" placeholder="Teléfono" value={newCustPhone} onChange={e => setNewCustPhone(e.target.value)}
-                    className="w-full rounded-xl border border-white/10 bg-main-800/60 px-3 py-2 text-sm text-light-200 placeholder-light-200/25 outline-none focus:border-main-500/40 transition" />
+                    className="w-full rounded-xl border border-white/10 bg-main-800/60 px-3 py-2 text-sm text-light-200 placeholder-light-200/50 outline-none focus:border-main-500/40 transition" />
                   <div className="flex gap-2">
                     <button onClick={() => { setShowNewCustomer(false); setNewCustName(''); setNewCustPhone('') }}
-                      className="flex-1 rounded-xl border border-white/10 py-1.5 text-xs text-light-200/40 hover:bg-white/5 transition cursor-pointer">
+                      className="flex-1 rounded-xl border border-white/10 py-1.5 text-xs text-light-200/65 hover:bg-white/5 transition cursor-pointer">
                       Cancelar
                     </button>
                     <button onClick={saveNewCustomer} disabled={savingCust || !newCustName.trim() || !newCustPhone.trim()}
-                      className="flex-1 rounded-xl bg-main-500 hover:bg-main-400 disabled:opacity-40 py-1.5 text-xs font-semibold text-white transition cursor-pointer">
+                      className="flex-1 rounded-xl bg-main-500 hover:bg-main-400 disabled:opacity-40 py-1.5 text-xs font-semibold text-snow transition cursor-pointer">
                       {savingCust ? 'Guardando...' : 'Guardar'}
                     </button>
                   </div>
@@ -1278,7 +1278,7 @@ export const POS = () => {
 
       <div className="flex-1 overflow-y-auto">
         {orderItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-44 text-light-200/20">
+          <div className="flex flex-col items-center justify-center h-44 text-light-200/45">
             <ShoppingCart size={32} className="mb-2" />
             <p className="text-sm">Sin productos aún</p>
           </div>
@@ -1289,18 +1289,18 @@ export const POS = () => {
         )}
       </div>
 
-      <div className="px-4 py-2.5 border-t border-white/5 shrink-0">
+      <div className="px-4 py-2.5 border-t border-white/10 shrink-0">
         <input type="text" placeholder="Nota general del pedido..."
           value={generalNote} onChange={e => setGeneralNote(e.target.value)}
-          className="w-full rounded-xl border border-white/8 bg-main-800/50 px-3 py-2 text-sm text-light-200 placeholder-light-200/25 outline-none focus:border-main-500/40 transition" />
+          className="w-full rounded-xl border border-white/10 bg-main-800/50 px-3 py-2 text-sm text-light-200 placeholder-light-200/50 outline-none focus:border-main-500/40 transition" />
       </div>
 
       <div
-        className="shrink-0 px-4 pt-3 border-t border-white/8 bg-main-950/80 space-y-3"
+        className="shrink-0 px-4 pt-3 border-t border-white/10 bg-main-950/80 space-y-3"
         style={{ paddingBottom: 'max(1rem, calc(1rem + env(safe-area-inset-bottom, 0px)))' }}
       >
         <div className="flex items-baseline justify-between">
-          <span className="text-sm text-light-200/40">{itemCount} {itemCount === 1 ? 'producto' : 'productos'}</span>
+          <span className="text-sm text-light-200/65">{itemCount} {itemCount === 1 ? 'producto' : 'productos'}</span>
           <span className="text-2xl font-bold text-light-100 tabular-nums">{formatMoney(subtotal)}</span>
         </div>
 
@@ -1316,7 +1316,7 @@ export const POS = () => {
             <button
               onClick={sendWhatsAppOrderToKitchen}
               disabled={orderItems.length === 0 || isSendingToKitchen}
-              className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl bg-main-500 hover:bg-main-400 disabled:opacity-30 disabled:cursor-not-allowed py-3.5 text-sm font-bold text-white transition-all shadow-lg shadow-main-500/20 cursor-pointer min-h-[44px]"
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl bg-main-500 hover:bg-main-400 disabled:opacity-30 disabled:cursor-not-allowed py-3.5 text-sm font-bold text-snow transition-all shadow-lg shadow-main-500/20 cursor-pointer min-h-[44px]"
             >
               <Send size={15} />
               {isSendingToKitchen ? 'Enviando…' : 'Enviar a cocina'}
@@ -1336,7 +1336,7 @@ export const POS = () => {
             <button
               onClick={handleCobrarClick}
               disabled={orderItems.length === 0}
-              className="flex-1 rounded-2xl bg-main-500 hover:bg-main-400 disabled:opacity-30 disabled:cursor-not-allowed py-3.5 text-sm font-bold text-white transition-all shadow-lg shadow-main-500/20 cursor-pointer min-h-[44px]"
+              className="flex-1 rounded-2xl bg-main-500 hover:bg-main-400 disabled:opacity-30 disabled:cursor-not-allowed py-3.5 text-sm font-bold text-snow transition-all shadow-lg shadow-main-500/20 cursor-pointer min-h-[44px]"
             >
               Cobrar · {formatMoney(subtotal)}
             </button>
@@ -1350,12 +1350,12 @@ export const POS = () => {
   const enCursoTicketContent = (
     <div className="flex-1 overflow-y-auto">
       {enCursoOrders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-44 text-light-200/20 gap-3">
+        <div className="flex flex-col items-center justify-center h-44 text-light-200/45 gap-3">
           <ChefHat size={32} />
           <p className="text-sm">Sin órdenes en curso</p>
         </div>
       ) : (
-        <div className="divide-y divide-white/5">
+        <div className="divide-y divide-white/10">
           {enCursoOrders.map(order => (
             <EnCursoCard key={order.id} order={order} stations={stations} onAgregar={loadEnCursoOrder} onCobrar={chargeEnCursoOrder} onCancel={cancelEnCursoOrder} hasActiveItems={orderItems.length > 0} />
           ))}
@@ -1366,7 +1366,7 @@ export const POS = () => {
 
   // ─────────────────────────────────────────────────────────────────────────
   if (registerLoading) return (
-    <div className="flex items-center justify-center h-full bg-main-950 text-light-200/30 text-sm animate-pulse">
+    <div className="flex items-center justify-center h-full bg-main-950 text-light-200/55 text-sm animate-pulse">
       Verificando estado de caja…
     </div>
   )
@@ -1387,17 +1387,17 @@ export const POS = () => {
           {/* Product search bar */}
           <div className="shrink-0 px-4 pt-3 pb-2">
             <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/30 pointer-events-none" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/55 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Buscar producto..."
                 value={productSearch}
                 onChange={e => setProductSearch(e.target.value)}
-                className="w-full pl-8 pr-8 py-2 rounded-xl border border-white/5 bg-main-900/50 text-sm text-light-100 placeholder:text-light-200/25 outline-none focus:border-main-500/40 transition"
+                className="w-full pl-8 pr-8 py-2 rounded-xl border border-white/10 bg-main-900 text-sm text-light-100 placeholder:text-light-200/50 outline-none focus:border-main-500/40 transition"
               />
               {productSearch && (
                 <button onClick={() => setProductSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-light-200/30 hover:text-light-200/60 cursor-pointer transition-colors">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-light-200/55 hover:text-light-200/60 cursor-pointer transition-colors">
                   <X size={14} />
                 </button>
               )}
@@ -1406,15 +1406,15 @@ export const POS = () => {
 
           {/* Section tabs — hidden while searching */}
           {!productSearch.trim() && (
-            <div className="shrink-0 flex items-center gap-1.5 px-4 pb-3 border-b border-white/5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+            <div className="shrink-0 flex items-center gap-1.5 px-4 pb-3 border-b border-white/10 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
               {catalogLoading
                 ? [1, 2, 3, 4].map(i => <div key={i} className="h-7 w-20 rounded-full bg-white/5 animate-pulse shrink-0" />)
                 : sections.map(sec => (
                   <button key={sec.id} onClick={() => setActiveSection(sec.name)}
                     className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                       activeSection === sec.name
-                        ? 'bg-main-500 text-white shadow-lg shadow-main-500/20'
-                        : 'text-light-200/50 hover:text-light-100 hover:bg-white/5'
+                        ? 'bg-main-500 text-snow shadow-lg shadow-main-500/20'
+                        : 'text-light-200/70 hover:text-light-100 hover:bg-white/5'
                     }`}>
                     {sec.name}
                   </button>
@@ -1425,8 +1425,8 @@ export const POS = () => {
 
           {/* Search result count */}
           {productSearch.trim() && !catalogLoading && (
-            <div className="shrink-0 px-4 pb-2 border-b border-white/5">
-              <p className="text-xs text-light-200/30">
+            <div className="shrink-0 px-4 pb-2 border-b border-white/10">
+              <p className="text-xs text-light-200/55">
                 {displayedProducts.length} resultado{displayedProducts.length !== 1 ? 's' : ''} para &ldquo;{productSearch}&rdquo;
               </p>
             </div>
@@ -1437,7 +1437,7 @@ export const POS = () => {
             {catalogLoading ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                 {[1, 2, 3, 4, 5, 6].map(i => (
-                  <div key={i} className="rounded-2xl bg-main-900/30 border border-white/5 overflow-hidden">
+                  <div key={i} className="rounded-2xl bg-main-900 border border-white/10 overflow-hidden">
                     <div className="aspect-[4/3] bg-white/5 animate-pulse" />
                     <div className="p-3 space-y-1.5">
                       <div className="h-3 w-3/4 rounded bg-white/5 animate-pulse" />
@@ -1447,7 +1447,7 @@ export const POS = () => {
                 ))}
               </div>
             ) : displayedProducts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-48 text-light-200/20 text-sm gap-2">
+              <div className="flex flex-col items-center justify-center h-48 text-light-200/45 text-sm gap-2">
                 <Package size={28} />
                 {productSearch.trim() ? 'Sin resultados.' : 'Sin productos en esta sección.'}
               </div>
@@ -1458,10 +1458,10 @@ export const POS = () => {
                   const hasTop  = Array.isArray(product.toppingIds) && product.toppingIds.length > 0
                   return (
                     <button key={product.docId} type="button" onClick={() => addToOrder(product)}
-                      className="text-left rounded-2xl bg-main-900/40 border border-white/5 hover:border-main-500/30 hover:bg-main-800/60 transition-all duration-200 overflow-hidden cursor-pointer group active:scale-[0.97]">
+                      className="text-left rounded-2xl bg-main-900 border border-white/10 hover:border-main-500/30 hover:bg-main-800/60 transition-all duration-200 overflow-hidden cursor-pointer group active:scale-[0.97]">
                       <div className="aspect-[4/3] bg-main-800/50 relative overflow-hidden">
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <Package size={24} className="text-light-200/10" />
+                          <Package size={24} className="text-light-200/25" />
                         </div>
                         {(product.imageUrl || product.image) && (
                           <img
@@ -1490,12 +1490,12 @@ export const POS = () => {
         </div>
 
         {/* ── Right: Ticket — desktop ────────────────────────────────────── */}
-        <div className="hidden lg:flex flex-col w-[380px] xl:w-[420px] shrink-0 bg-main-950 border-l border-white/5 overflow-hidden">
-          <div className="shrink-0 flex items-center gap-2 px-4 py-3 border-b border-white/5">
+        <div className="hidden lg:flex flex-col w-[380px] xl:w-[420px] shrink-0 bg-main-950 border-l border-white/10 overflow-hidden">
+          <div className="shrink-0 flex items-center gap-2 px-4 py-3 border-b border-white/10">
             <ShoppingCart size={17} className="text-main-400 shrink-0" />
             {ticketTabBar}
             {ticketTab === 'active' && itemCount > 0 && (
-              <span className="ml-1 h-5 min-w-[20px] px-1 rounded-full bg-main-500 text-[11px] font-bold text-white flex items-center justify-center shrink-0">
+              <span className="ml-1 h-5 min-w-[20px] px-1 rounded-full bg-main-500 text-[11px] font-bold text-snow flex items-center justify-center shrink-0">
                 {itemCount}
               </span>
             )}
@@ -1510,7 +1510,7 @@ export const POS = () => {
           {!isTicketOpen && (
             <button
               onClick={() => setIsTicketOpen(true)}
-              className="fixed right-4 z-[65] flex items-center gap-2 px-4 py-3 rounded-2xl bg-main-500 text-white shadow-2xl shadow-main-500/30 font-semibold hover:bg-main-400 cursor-pointer transition-all min-h-[44px]"
+              className="fixed right-4 z-[65] flex items-center gap-2 px-4 py-3 rounded-2xl bg-main-500 text-snow shadow-2xl shadow-main-500/30 font-semibold hover:bg-main-400 cursor-pointer transition-all min-h-[44px]"
               style={{ bottom: 'calc(64px + env(safe-area-inset-bottom, 0px) + 16px)' }}
             >
               <ShoppingCart size={18} />
@@ -1526,15 +1526,15 @@ export const POS = () => {
           {isTicketOpen && (
             <div className="fixed inset-0 z-[9050] flex flex-col justify-end">
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsTicketOpen(false)} />
-              <div className="relative flex flex-col bg-main-950 rounded-t-3xl border-t border-white/5 overflow-hidden" style={{ maxHeight: '85vh' }}>
-                <div className="shrink-0 flex items-center gap-2 px-5 py-4 border-b border-white/5">
+              <div className="relative flex flex-col bg-main-950 rounded-t-3xl border-t border-white/10 overflow-hidden" style={{ maxHeight: '85vh' }}>
+                <div className="shrink-0 flex items-center gap-2 px-5 py-4 border-b border-white/10">
                   <ShoppingCart size={17} className="text-main-400 shrink-0" />
                   {ticketTabBar}
                   {ticketTab === 'active' && itemCount > 0 && (
-                    <span className="h-5 min-w-[20px] px-1 rounded-full bg-main-500 text-[11px] font-bold text-white flex items-center justify-center shrink-0">{itemCount}</span>
+                    <span className="h-5 min-w-[20px] px-1 rounded-full bg-main-500 text-[11px] font-bold text-snow flex items-center justify-center shrink-0">{itemCount}</span>
                   )}
                   <button onClick={() => setIsTicketOpen(false)}
-                    className="ml-2 p-1.5 rounded-xl hover:bg-white/5 text-light-200/50 cursor-pointer transition-colors shrink-0">
+                    className="ml-2 p-1.5 rounded-xl hover:bg-white/5 text-light-200/70 cursor-pointer transition-colors shrink-0">
                     <X size={19} />
                   </button>
                 </div>
@@ -1578,15 +1578,15 @@ export const POS = () => {
                 <CheckCircle2 size={32} className="text-emerald-400" />
               </div>
               <h3 className="text-xl font-bold text-light-100">¡Orden confirmada!</h3>
-              <p className="mt-1 text-xs text-light-200/35 font-mono">#{orderSuccess.orderId?.slice(-8)}</p>
+              <p className="mt-1 text-xs text-light-200/60 font-mono">#{orderSuccess.orderId?.slice(-8)}</p>
               {orderSuccess.change > 0.005 && (
-                <div className="mt-5 rounded-2xl bg-main-950 border border-white/5 px-6 py-4">
-                  <p className="text-xs text-light-200/40 uppercase tracking-wider">Cambio a entregar</p>
+                <div className="mt-5 rounded-2xl bg-main-950 border border-white/10 px-6 py-4">
+                  <p className="text-xs text-light-200/65 uppercase tracking-wider">Cambio a entregar</p>
                   <p className="text-4xl font-bold text-emerald-400 mt-1 tabular-nums">{formatMoney(orderSuccess.change)}</p>
                 </div>
               )}
               <button onClick={() => setOrderSuccess(null)}
-                className="mt-6 w-full rounded-2xl bg-main-500 hover:bg-main-400 py-3 text-sm font-semibold text-white transition cursor-pointer">
+                className="mt-6 w-full rounded-2xl bg-main-500 hover:bg-main-400 py-3 text-sm font-semibold text-snow transition cursor-pointer">
                 Nueva orden
               </button>
             </div>

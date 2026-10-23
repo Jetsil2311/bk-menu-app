@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:test": "node scripts/test-env/run.mjs dev",
+    "test:reset": "node scripts/test-env/run.mjs reset",
+    "test:pull": "node scripts/test-env/pull-production.mjs",
     "build": "vite build",
     "lint": "eslint .",
     "test": "vitest run",

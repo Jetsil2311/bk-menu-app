@@ -93,6 +93,7 @@ web_modules/
 .env
 .env.*
 !.env.example
+!.env.emulator
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -165,3 +166,10 @@ vite.config.ts.timestamp-*
 .vite/
 
 serviceAccountKey.json
+# Local test environment (Firebase emulators) — may contain copies of real
+# customer data, never commit
+/emulator-data/
+/emulator-seed/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

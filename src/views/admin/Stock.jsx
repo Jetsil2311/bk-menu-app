@@ -34,7 +34,7 @@ const buildGroupsDraft = buildOptionGroupsDraft
 
 
 const inputCls =
-  'w-full rounded-xl border border-white/10 bg-main-900/60 px-3 py-2.5 text-sm text-light-100 placeholder-light-200/30 outline-none transition focus:border-main-500/50 focus:ring-1 focus:ring-main-500/20'
+  'w-full rounded-xl border border-white/10 bg-main-900 px-3 py-2.5 text-sm text-light-100 placeholder-light-200/55 outline-none transition focus:border-main-500/50 focus:ring-1 focus:ring-main-500/20'
 const labelCls = 'block text-xs font-medium text-light-200/60 mb-1.5'
 
 // Relative time in Spanish, matching the rest of the admin panel's locale.
@@ -130,7 +130,7 @@ const MaterialModal = ({ material, onClose }) => {
           <button
             onClick={onClose}
             aria-label="Cerrar"
-            className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/50 cursor-pointer transition-colors"
+            className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/70 cursor-pointer transition-colors"
           >
             <X size={18} />
           </button>
@@ -153,7 +153,7 @@ const MaterialModal = ({ material, onClose }) => {
             <div>
               <label className={labelCls}>Costo por unidad *</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/40 text-sm">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/65 text-sm">$</span>
                 <input
                   type="number"
                   min="0"
@@ -177,11 +177,12 @@ const MaterialModal = ({ material, onClose }) => {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Nivel de reorden</label>
+              <label className={labelCls}>Avisar cuando queden</label>
               <input
                 type="number"
                 min="0"
-                step="1"
+                step="any"
+                inputMode="decimal"
                 value={reorderLevel}
                 onChange={(e) => setReorderLevel(e.target.value)}
                 placeholder="0"
@@ -190,11 +191,12 @@ const MaterialModal = ({ material, onClose }) => {
             </div>
             {!isEdit && (
               <div>
-                <label className={labelCls}>Stock inicial</label>
+                <label className={labelCls}>Cantidad que tienes hoy</label>
                 <input
                   type="number"
                   min="0"
-                  step="0.01"
+                  step="any"
+                  inputMode="decimal"
                   value={initialStock}
                   onChange={(e) => setInitialStock(e.target.value)}
                   placeholder="0"
@@ -243,7 +245,7 @@ const MaterialModal = ({ material, onClose }) => {
           <button
             onClick={handleSave}
             disabled={saving || done}
-            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-main-500 hover:bg-main-400 text-white flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-main-500 hover:bg-main-400 text-snow flex items-center justify-center gap-2"
           >
             {done ? <><Check size={16} /> Guardado</> : saving ? 'Guardando…' : 'Guardar'}
           </button>
@@ -378,7 +380,7 @@ const AddStockPurchaseModal = ({ materials, onClose, onSuccess }) => {
           <button
             onClick={onClose}
             aria-label="Cerrar"
-            className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/50 cursor-pointer transition-colors"
+            className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/70 cursor-pointer transition-colors"
           >
             <X size={18} />
           </button>
@@ -388,7 +390,7 @@ const AddStockPurchaseModal = ({ materials, onClose, onSuccess }) => {
           <div ref={comboRef} className="relative">
             <label htmlFor="purchase-material" className={labelCls}>Material *</label>
             <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/30" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/55" />
               <input
                 id="purchase-material"
                 type="text"
@@ -406,7 +408,7 @@ const AddStockPurchaseModal = ({ materials, onClose, onSuccess }) => {
                 placeholder="Buscar material…"
                 className={inputCls + ' pl-8 pr-8'}
               />
-              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-light-200/30 pointer-events-none" />
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-light-200/55 pointer-events-none" />
             </div>
 
             {comboOpen && (
@@ -416,7 +418,7 @@ const AddStockPurchaseModal = ({ materials, onClose, onSuccess }) => {
                 className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-main-800 shadow-2xl"
               >
                 {filteredMaterials.length === 0 ? (
-                  <p className="px-3 py-2.5 text-xs text-light-200/40 italic">Sin materiales encontrados.</p>
+                  <p className="px-3 py-2.5 text-xs text-light-200/65 italic">Sin materiales encontrados.</p>
                 ) : (
                   filteredMaterials.map((m) => (
                     <button
@@ -427,7 +429,7 @@ const AddStockPurchaseModal = ({ materials, onClose, onSuccess }) => {
                       onClick={() => selectMaterial(m)}
                       className="w-full text-left px-3 py-2.5 text-sm text-light-100 hover:bg-white/10 transition-colors cursor-pointer"
                     >
-                      {m.name} <span className="text-light-200/40">({unitLabel(m.unit)})</span>
+                      {m.name} <span className="text-light-200/65">({unitLabel(m.unit)})</span>
                     </button>
                   ))
                 )}
@@ -454,7 +456,7 @@ const AddStockPurchaseModal = ({ materials, onClose, onSuccess }) => {
             <div>
               <label htmlFor="purchase-cost" className={labelCls}>Costo total *</label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/40 text-sm">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/65 text-sm">$</span>
                 <input
                   id="purchase-cost"
                   type="number"
@@ -535,7 +537,7 @@ const AddStockPurchaseModal = ({ materials, onClose, onSuccess }) => {
           <button
             onClick={handleSave}
             disabled={!canSave}
-            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-main-500 hover:bg-main-400 text-white flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-main-500 hover:bg-main-400 text-snow flex items-center justify-center gap-2"
           >
             {saving ? <><Loader2 size={16} className="animate-spin" /> Guardando…</> : 'Guardar'}
           </button>
@@ -585,11 +587,11 @@ const IngredientRow = ({ index, ingredient, materials, onChange, onRemove }) => 
   const totalCost = quantityInMaterialUnit > 0 ? quantityInMaterialUnit * unitCost : 0
 
   return (
-    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-3 space-y-2.5">
+    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3 space-y-2.5">
       <div className="flex items-start gap-2">
         <div ref={ref} className="relative flex-1 min-w-0">
           <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/30" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/55" />
             <input
               type="text"
               role="combobox"
@@ -602,12 +604,12 @@ const IngredientRow = ({ index, ingredient, materials, onChange, onRemove }) => 
               placeholder="Buscar material…"
               className={inputCls + ' pl-8 pr-8'}
             />
-            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-light-200/30 pointer-events-none" />
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-light-200/55 pointer-events-none" />
           </div>
           {open && (
             <div role="listbox" className="absolute z-20 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-main-800 shadow-2xl">
               {filtered.length === 0 ? (
-                <p className="px-3 py-2.5 text-xs text-light-200/40 italic">Sin materiales encontrados.</p>
+                <p className="px-3 py-2.5 text-xs text-light-200/65 italic">Sin materiales encontrados.</p>
               ) : (
                 filtered.map((m) => (
                   <button
@@ -617,7 +619,7 @@ const IngredientRow = ({ index, ingredient, materials, onChange, onRemove }) => 
                     onClick={() => selectMaterial(m)}
                     className="w-full text-left px-3 py-2.5 text-sm text-light-100 hover:bg-white/10 transition-colors cursor-pointer"
                   >
-                    {m.name} <span className="text-light-200/40">({unitLabel(m.unit)})</span>
+                    {m.name} <span className="text-light-200/65">({unitLabel(m.unit)})</span>
                   </button>
                 ))
               )}
@@ -627,7 +629,7 @@ const IngredientRow = ({ index, ingredient, materials, onChange, onRemove }) => 
         <button
           onClick={() => onRemove(index)}
           aria-label={`Quitar ingrediente ${index + 1}`}
-          className="h-10 w-10 shrink-0 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-light-200/50 hover:text-red-400 transition-colors cursor-pointer"
+          className="h-10 w-10 shrink-0 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-light-200/70 hover:text-red-400 transition-colors cursor-pointer"
         >
           <Trash2 size={14} />
         </button>
@@ -660,12 +662,12 @@ const IngredientRow = ({ index, ingredient, materials, onChange, onRemove }) => 
               ))}
             </select>
           ) : (
-            <div className={inputCls + ' bg-main-800/40 text-light-200/50 flex items-center'}>—</div>
+            <div className={inputCls + ' bg-main-800/40 text-light-200/70 flex items-center'}>—</div>
           )}
         </div>
         <div>
           <label className={labelCls}>Costo unitario</label>
-          <div className={inputCls + ' bg-main-800/40 text-light-200/50 flex items-center tabular-nums'}>
+          <div className={inputCls + ' bg-main-800/40 text-light-200/70 flex items-center tabular-nums'}>
             {material ? `${formatMoney(unitCost)}/${unitShort(material.unit) || unitLabel(material.unit)}` : '—'}
           </div>
         </div>
@@ -723,12 +725,12 @@ const VariationTabs = ({ options, activeKey, completedKeys, onSelect }) => {
             onKeyDown={(e) => handleKeyDown(e, idx)}
             className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
               isActive
-                ? 'bg-main-500 text-white'
+                ? 'bg-main-500 text-snow'
                 : 'bg-white/5 text-light-200/60 hover:bg-white/10 hover:text-light-100'
             }`}
           >
             {isDone ? (
-              <CheckCircle2 size={13} className={isActive ? 'text-white' : 'text-emerald-400'} />
+              <CheckCircle2 size={13} className={isActive ? 'text-snow' : 'text-emerald-400'} />
             ) : (
               <Circle size={13} className="opacity-50" />
             )}
@@ -763,23 +765,23 @@ const OptionGroupEditor = ({ group, groupDraft, materials, onSelectOption, onUpd
   }, [groupDraft, options])
 
   return (
-    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4 space-y-3">
+    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-light-100">{group.name || 'Grupo sin nombre'}</h4>
-        <span className="text-xs text-light-200/30">
+        <span className="text-xs text-light-200/55">
           {group.type === 'multi' ? 'Selección múltiple' : 'Selección única'}{group.required ? ' · requerido' : ''}
         </span>
       </div>
 
       <VariationTabs options={options} activeKey={activeOptionId} completedKeys={completedKeys} onSelect={(id) => onSelectOption(group.id, id)} />
 
-      <p className="text-xs text-light-200/40">
+      <p className="text-xs text-light-200/65">
         Ingredientes extra para: <span className="text-light-200/70 font-medium">{activeName}</span>
       </p>
 
       <div className="space-y-2">
         {computedRows.length === 0 ? (
-          <p className="text-xs text-light-200/30 italic py-2">Sin ingredientes extra para esta opción.</p>
+          <p className="text-xs text-light-200/55 italic py-2">Sin ingredientes extra para esta opción.</p>
         ) : (
           computedRows.map((row, idx) => (
             <IngredientRow
@@ -797,13 +799,13 @@ const OptionGroupEditor = ({ group, groupDraft, materials, onSelectOption, onUpd
       <button
         type="button"
         onClick={() => onAddIngredient(group.id, activeOptionId)}
-        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-white/15 text-light-200/50 hover:text-light-100 hover:border-white/30 hover:bg-white/5 text-xs font-medium transition-colors cursor-pointer"
+        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-white/15 text-light-200/70 hover:text-light-100 hover:border-white/30 hover:bg-white/5 text-xs font-medium transition-colors cursor-pointer"
       >
         <Plus size={13} />
         Agregar ingrediente extra
       </button>
 
-      <p className="text-xs text-light-200/40 text-right">
+      <p className="text-xs text-light-200/65 text-right">
         Costo extra con {activeName}: <span className="font-semibold text-light-100">{formatMoney(activeCost)}</span>
       </p>
     </div>
@@ -999,12 +1001,12 @@ const RecipeEditorModal = ({ product, existingRecipe, materials, onClose, onSucc
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-base font-bold text-light-100">{product.name}</h3>
-            <p className="text-xs text-light-200/40 mt-0.5">Precio de venta: {formatMoney(sellingPrice)}</p>
+            <p className="text-xs text-light-200/65 mt-0.5">Precio de venta: {formatMoney(sellingPrice)}</p>
           </div>
           <button
             onClick={onClose}
             aria-label="Cerrar"
-            className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/50 cursor-pointer transition-colors"
+            className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/70 cursor-pointer transition-colors"
           >
             <X size={18} />
           </button>
@@ -1012,10 +1014,10 @@ const RecipeEditorModal = ({ product, existingRecipe, materials, onClose, onSucc
 
         <div className="mb-5">
           <h4 className="text-sm font-semibold text-light-100 mb-1">Ingredientes Fijos</h4>
-          <p className="text-xs text-light-200/40 mb-3">Aplican a todas las variaciones de este producto.</p>
+          <p className="text-xs text-light-200/65 mb-3">Aplican a todas las variaciones de este producto.</p>
           <div className="space-y-2.5 mb-3">
             {fixedComputed.length === 0 ? (
-              <p className="text-sm text-light-200/30 italic text-center py-4">Agrega el primer ingrediente fijo.</p>
+              <p className="text-sm text-light-200/55 italic text-center py-4">Agrega el primer ingrediente fijo.</p>
             ) : (
               fixedComputed.map((row, idx) => (
                 <IngredientRow key={idx} index={idx} ingredient={row} materials={materials} onChange={handleFixedUpdate} onRemove={handleFixedRemove} />
@@ -1051,21 +1053,21 @@ const RecipeEditorModal = ({ product, existingRecipe, materials, onClose, onSucc
 
         <div className="rounded-2xl border border-main-500/20 bg-main-500/5 p-4 space-y-1.5 mb-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-light-200/50">Costo Base (fijo)</span>
+            <span className="text-light-200/70">Costo Base (fijo)</span>
             <span className="font-semibold text-light-100 tabular-nums">{formatMoney(fixedCogs)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-light-200/50">{hasRange ? 'Rango de COGS Total' : 'COGS Total'}</span>
+            <span className="text-light-200/70">{hasRange ? 'Rango de COGS Total' : 'COGS Total'}</span>
             <span className="font-semibold text-light-100 tabular-nums">
               {hasRange ? `${formatMoney(totalMinCogs)} – ${formatMoney(totalMaxCogs)}` : formatMoney(totalMinCogs)}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-light-200/50">Precio de Venta</span>
+            <span className="text-light-200/70">Precio de Venta</span>
             <span className="font-semibold text-light-100 tabular-nums">{formatMoney(sellingPrice)}</span>
           </div>
-          <div className="flex items-center justify-between text-sm pt-1.5 border-t border-white/5">
-            <span className="text-light-200/50">{hasRange ? 'Rango de Margen' : 'Margen de Ganancia'}</span>
+          <div className="flex items-center justify-between text-sm pt-1.5 border-t border-white/10">
+            <span className="text-light-200/70">{hasRange ? 'Rango de Margen' : 'Margen de Ganancia'}</span>
             <span className={`font-bold tabular-nums ${marginColor(minMarginPercent)}`}>
               {hasRange ? `${minMarginPercent.toFixed(1)}% – ${maxMarginPercent.toFixed(1)}%` : `${maxMarginPercent.toFixed(1)}%`}
             </span>
@@ -1088,7 +1090,7 @@ const RecipeEditorModal = ({ product, existingRecipe, materials, onClose, onSucc
           <button
             onClick={handleSave}
             disabled={!isValid || saving}
-            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-main-500 hover:bg-main-400 text-white flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed bg-main-500 hover:bg-main-400 text-snow flex items-center justify-center gap-2"
           >
             {saving ? <><Loader2 size={16} className="animate-spin" /> Guardando…</> : 'Guardar Receta'}
           </button>
@@ -1114,29 +1116,29 @@ const ViewRecipeModal = ({ product, recipe, onClose, onEdit }) => {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-base font-bold text-light-100">{product.name}</h3>
-            <p className="text-xs text-light-200/40 mt-0.5">Precio de venta: {formatMoney(product.price || 0)}</p>
+            <p className="text-xs text-light-200/65 mt-0.5">Precio de venta: {formatMoney(product.price || 0)}</p>
           </div>
           <button
             onClick={onClose}
             aria-label="Cerrar"
-            className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/50 cursor-pointer transition-colors"
+            className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/70 cursor-pointer transition-colors"
           >
             <X size={18} />
           </button>
         </div>
 
         {!hasRecipe ? (
-          <p className="text-sm text-light-200/30 italic text-center py-8">Este producto no tiene receta.</p>
+          <p className="text-sm text-light-200/55 italic text-center py-8">Este producto no tiene receta.</p>
         ) : (
           <>
             <div className="mb-4">
               <h4 className="text-sm font-semibold text-light-100 mb-2">Ingredientes Fijos</h4>
               <div className="space-y-2">
                 {recipe.fixedIngredients.map((ing, idx) => (
-                  <div key={idx} className="rounded-2xl border border-white/5 bg-white/[0.02] p-3 flex items-center justify-between gap-3">
+                  <div key={idx} className="rounded-2xl border border-white/10 bg-white/[0.02] p-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-light-100 truncate">{ing.materialName}</p>
-                      <p className="text-xs text-light-200/40 mt-0.5">
+                      <p className="text-xs text-light-200/65 mt-0.5">
                         {ing.quantity} {unitLabel(ing.unit)}
                         {ing.materialUnit && ing.unit !== ing.materialUnit && (
                           <> ({formatQty(ing.quantityInMaterialUnit)} {unitLabel(ing.materialUnit)})</>
@@ -1159,7 +1161,7 @@ const ViewRecipeModal = ({ product, recipe, onClose, onEdit }) => {
                   .map((o) => o.id)
               )
               return (
-                <div key={g.id} className="mb-4 rounded-2xl border border-white/5 bg-white/[0.02] p-4">
+                <div key={g.id} className="mb-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
                   <h4 className="text-sm font-semibold text-light-100 mb-2">{g.name || 'Grupo sin nombre'}</h4>
                   <VariationTabs
                     options={g.options || []}
@@ -1168,14 +1170,14 @@ const ViewRecipeModal = ({ product, recipe, onClose, onEdit }) => {
                     onSelect={(id) => setActiveByGroup((prev) => ({ ...prev, [g.id]: id }))}
                   />
                   {!optionData || optionData.ingredients.length === 0 ? (
-                    <p className="text-xs text-light-200/30 italic py-2">Sin ingredientes extra para esta opción.</p>
+                    <p className="text-xs text-light-200/55 italic py-2">Sin ingredientes extra para esta opción.</p>
                   ) : (
                     <div className="space-y-2">
                       {optionData.ingredients.map((ing, idx) => (
-                        <div key={idx} className="rounded-xl border border-white/5 bg-white/[0.02] p-2.5 flex items-center justify-between gap-3">
+                        <div key={idx} className="rounded-xl border border-white/10 bg-white/[0.02] p-2.5 flex items-center justify-between gap-3">
                           <div className="min-w-0">
                             <p className="text-xs font-medium text-light-100 truncate">{ing.materialName}</p>
-                            <p className="text-[11px] text-light-200/40">
+                            <p className="text-[11px] text-light-200/65">
                               {ing.quantity} {unitLabel(ing.unit)}
                               {ing.materialUnit && ing.unit !== ing.materialUnit && (
                                 <> ({formatQty(ing.quantityInMaterialUnit)} {unitLabel(ing.materialUnit)})</>
@@ -1194,13 +1196,13 @@ const ViewRecipeModal = ({ product, recipe, onClose, onEdit }) => {
 
             <div className="rounded-2xl border border-main-500/20 bg-main-500/5 p-4 space-y-1.5 mb-4">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-light-200/50">{hasRange ? 'Rango de COGS' : 'Total COGS'}</span>
+                <span className="text-light-200/70">{hasRange ? 'Rango de COGS' : 'Total COGS'}</span>
                 <span className="font-semibold text-light-100 tabular-nums">
                   {hasRange ? `${formatMoney(recipe.minCogs)} – ${formatMoney(recipe.maxCogs)}` : formatMoney(recipe.minCogs)}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-sm pt-1.5 border-t border-white/5">
-                <span className="text-light-200/50">{hasRange ? 'Rango de Margen' : 'Margen de Ganancia'}</span>
+              <div className="flex items-center justify-between text-sm pt-1.5 border-t border-white/10">
+                <span className="text-light-200/70">{hasRange ? 'Rango de Margen' : 'Margen de Ganancia'}</span>
                 <span className={`font-bold tabular-nums ${marginColor(recipe.minMarginPercent)}`}>
                   {hasRange ? `${recipe.minMarginPercent.toFixed(1)}% – ${recipe.maxMarginPercent.toFixed(1)}%` : `${recipe.maxMarginPercent.toFixed(1)}%`}
                 </span>
@@ -1218,7 +1220,7 @@ const ViewRecipeModal = ({ product, recipe, onClose, onEdit }) => {
           </button>
           <button
             onClick={onEdit}
-            className="flex-1 rounded-xl bg-main-500 hover:bg-main-400 py-2.5 text-sm font-bold text-white transition-colors cursor-pointer"
+            className="flex-1 rounded-xl bg-main-500 hover:bg-main-400 py-2.5 text-sm font-bold text-snow transition-colors cursor-pointer"
           >
             Editar
           </button>
@@ -1234,13 +1236,13 @@ const RecipeRow = ({ product, recipe, onEdit, onView, onDelete }) => {
 
   return (
     <div className="px-4 sm:px-5 py-3.5 flex items-center gap-3 hover:bg-white/5 transition-colors">
-      <div className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 border border-white/5 bg-main-800 text-main-400">
+      <div className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 border border-white/10 bg-main-800 text-main-400">
         <BookOpen size={16} />
       </div>
 
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-light-100 truncate">{product.name}</p>
-        <p className="text-xs text-light-200/40 mt-0.5 truncate">
+        <p className="text-xs text-light-200/65 mt-0.5 truncate">
           {product.section || 'Sin sección'}
           {!summary.hasRecipe && <span className="text-amber-400"> · Sin receta</span>}
         </p>
@@ -1248,17 +1250,17 @@ const RecipeRow = ({ product, recipe, onEdit, onView, onDelete }) => {
 
       <div className="hidden sm:flex items-center gap-5 shrink-0 text-right">
         <div className="w-20">
-          <p className="text-xs text-light-200/40">Precio</p>
+          <p className="text-xs text-light-200/65">Precio</p>
           <p className="text-sm font-bold text-light-100 tabular-nums">{formatMoney(product.price || 0)}</p>
         </div>
         <div className="w-28">
-          <p className="text-xs text-light-200/40">{summary.hasRange ? 'COGS (rango)' : 'COGS'}</p>
+          <p className="text-xs text-light-200/65">{summary.hasRange ? 'COGS (rango)' : 'COGS'}</p>
           <p className="text-sm font-semibold text-light-200/70 tabular-nums">
             {!summary.hasRecipe ? '—' : summary.hasRange ? `${formatMoney(summary.minCogs)}–${formatMoney(summary.maxCogs)}` : formatMoney(summary.minCogs)}
           </p>
         </div>
         <div className="w-24">
-          <p className="text-xs text-light-200/40">{summary.hasRange ? 'Margen (rango)' : 'Margen'}</p>
+          <p className="text-xs text-light-200/65">{summary.hasRange ? 'Margen (rango)' : 'Margen'}</p>
           <p className={`text-sm font-bold tabular-nums flex items-center justify-end gap-1 ${marginColor(summary.hasRecipe ? summary.minMargin : null)}`}>
             {summary.hasRecipe && summary.minMargin < 0 && <AlertTriangle size={11} />}
             {!summary.hasRecipe ? '—' : summary.hasRange ? `${summary.minMargin.toFixed(1)}–${summary.maxMargin.toFixed(1)}%` : `${summary.maxMargin.toFixed(1)}%`}
@@ -1272,21 +1274,21 @@ const RecipeRow = ({ product, recipe, onEdit, onView, onDelete }) => {
             <button
               onClick={onView}
               aria-label={`Ver receta de ${product.name}`}
-              className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-white/10 text-light-200/50 hover:text-light-100 transition-colors cursor-pointer"
+              className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-white/10 text-light-200/70 hover:text-light-100 transition-colors cursor-pointer"
             >
               <Eye size={14} />
             </button>
             <button
               onClick={onEdit}
               aria-label={`Editar receta de ${product.name}`}
-              className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-white/10 text-light-200/50 hover:text-light-100 transition-colors cursor-pointer"
+              className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-white/10 text-light-200/70 hover:text-light-100 transition-colors cursor-pointer"
             >
               <Pencil size={14} />
             </button>
             <button
               onClick={onDelete}
               aria-label={`Eliminar receta de ${product.name}`}
-              className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-light-200/50 hover:text-red-400 transition-colors cursor-pointer"
+              className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-light-200/70 hover:text-red-400 transition-colors cursor-pointer"
             >
               <Trash2 size={14} />
             </button>
@@ -1294,7 +1296,7 @@ const RecipeRow = ({ product, recipe, onEdit, onView, onDelete }) => {
         ) : (
           <button
             onClick={onEdit}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-main-500 hover:bg-main-400 text-white text-xs font-semibold transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-main-500 hover:bg-main-400 text-snow text-xs font-semibold transition-colors cursor-pointer"
           >
             <Plus size={13} />
             Crear receta
@@ -1399,12 +1401,12 @@ const RecipesSection = ({ materials }) => {
   return (
     <div className="space-y-4">
       <div className="flex items-start gap-3">
-        <div className="h-10 w-10 rounded-2xl bg-main-800 border border-white/5 flex items-center justify-center text-main-400 shrink-0">
+        <div className="h-10 w-10 rounded-2xl bg-main-800 border border-white/10 flex items-center justify-center text-main-400 shrink-0">
           <BookOpen size={18} />
         </div>
         <div>
           <h2 className="text-base font-bold text-light-100">Recetas</h2>
-          <p className="text-xs text-light-200/40 mt-0.5">
+          <p className="text-xs text-light-200/65 mt-0.5">
             Define el costo de cada producto. Los datos de receta se usan para calcular ganancia y deducir stock automáticamente.
           </p>
         </div>
@@ -1422,16 +1424,16 @@ const RecipesSection = ({ materials }) => {
         </div>
       )}
 
-      <div className="bg-main-900/30 border border-white/5 rounded-3xl overflow-hidden">
-        <div className="p-4 border-b border-white/5 flex gap-2">
+      <div className="bg-main-900 border border-white/10 rounded-3xl overflow-hidden">
+        <div className="p-4 border-b border-white/10 flex gap-2">
           <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/30" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/55" />
             <input
               type="text"
               placeholder="Buscar producto por nombre…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-main-800/60 border border-white/5 rounded-xl text-sm text-light-100 placeholder:text-light-200/30 outline-none focus:border-main-500/40 transition-colors"
+              className="w-full pl-9 pr-4 py-2.5 bg-main-800/60 border border-white/10 rounded-xl text-sm text-light-100 placeholder:text-light-200/55 outline-none focus:border-main-500/40 transition-colors"
             />
           </div>
           <div className="relative shrink-0" ref={sortRef}>
@@ -1440,7 +1442,7 @@ const RecipesSection = ({ materials }) => {
               className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors cursor-pointer ${
                 sortKey
                   ? 'bg-main-500/20 border-main-500/40 text-main-400'
-                  : 'bg-main-800/60 border-white/5 text-light-200/50 hover:bg-white/5 hover:text-light-100'
+                  : 'bg-main-800/60 border-white/10 text-light-200/70 hover:bg-white/5 hover:text-light-100'
               }`}
             >
               <ChevronsUpDown size={15} />
@@ -1468,7 +1470,7 @@ const RecipesSection = ({ materials }) => {
         </div>
 
         {loading ? (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-white/10">
             {[1, 2, 3].map((i) => (
               <div key={i} className="px-5 py-4 flex items-center gap-4">
                 <div className="h-10 w-10 rounded-2xl bg-white/5 animate-pulse shrink-0" />
@@ -1480,14 +1482,14 @@ const RecipesSection = ({ materials }) => {
             ))}
           </div>
         ) : sorted.length === 0 ? (
-          <div className="py-16 flex flex-col items-center gap-3 text-light-200/30">
+          <div className="py-16 flex flex-col items-center gap-3 text-light-200/55">
             <BookOpen size={40} />
             <p className="text-sm italic">
               {search ? 'Sin resultados para esa búsqueda.' : 'No hay recetas creadas. Crea la primera seleccionando un producto abajo.'}
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-white/10">
             {sorted.map(({ product, recipe }) => (
               <RecipeRow
                 key={product.docId}
@@ -1547,7 +1549,7 @@ const MaterialRow = ({ material, onEdit, onDelete }) => {
   return (
     <div className="px-4 sm:px-5 py-3.5 flex items-center gap-3 hover:bg-white/5 transition-colors">
       <div
-        className={`h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 border border-white/5 ${
+        className={`h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 border border-white/10 ${
           isLow ? 'bg-amber-500/15 text-amber-400' : 'bg-main-800 text-main-400'
         }`}
       >
@@ -1556,19 +1558,19 @@ const MaterialRow = ({ material, onEdit, onDelete }) => {
 
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-light-100 truncate">{material.name}</p>
-        <p className="text-xs text-light-200/40 mt-0.5 truncate">
+        <p className="text-xs text-light-200/65 mt-0.5 truncate">
           {metaParts.join(' · ')}
-          {reorderLevel > 0 && <span className="text-light-200/30"> · reorden {reorderLevel}</span>}
+          {reorderLevel > 0 && <span className="text-light-200/65"> · aviso en {formatQty(reorderLevel)}</span>}
         </p>
       </div>
 
       <div className="text-right shrink-0">
         <p className="text-sm font-bold text-light-100 tabular-nums">{formatMoney(material.costPerUnit || 0)}</p>
         <p className={`text-xs font-semibold tabular-nums flex items-center justify-end gap-1 mt-0.5 ${
-          isLow ? 'text-amber-400' : 'text-light-200/50'
+          isLow ? 'text-amber-400' : 'text-light-200/70'
         }`}>
           {isLow && <AlertTriangle size={11} />}
-          {currentStock} {unitLabel(material.unit)}
+          {formatQty(currentStock)} {unitLabel(material.unit)}
         </p>
       </div>
 
@@ -1576,14 +1578,14 @@ const MaterialRow = ({ material, onEdit, onDelete }) => {
         <button
           onClick={() => onEdit(material)}
           aria-label={`Editar ${material.name}`}
-          className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-white/10 text-light-200/50 hover:text-light-100 transition-colors cursor-pointer"
+          className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-white/10 text-light-200/70 hover:text-light-100 transition-colors cursor-pointer"
         >
           <Pencil size={14} />
         </button>
         <button
           onClick={() => onDelete(material)}
           aria-label={`Eliminar ${material.name}`}
-          className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-light-200/50 hover:text-red-400 transition-colors cursor-pointer"
+          className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-light-200/70 hover:text-red-400 transition-colors cursor-pointer"
         >
           <Trash2 size={14} />
         </button>
@@ -1668,26 +1670,26 @@ export const Stock = () => {
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-main-900/50 border border-white/5 rounded-3xl p-5">
-          <p className="text-xs text-light-200/40 uppercase tracking-wider">Materiales Registrados</p>
+        <div className="bg-main-900 border border-white/10 rounded-3xl p-5">
+          <p className="text-xs text-light-200/65 uppercase tracking-wider">Materiales Registrados</p>
           <p className="text-3xl font-bold text-light-100 mt-2">{loading ? '—' : materials.length}</p>
         </div>
-        <div className="bg-main-900/50 border border-white/5 rounded-3xl p-5">
-          <p className="text-xs text-light-200/40 uppercase tracking-wider">Bajo Nivel de Reorden</p>
+        <div className="bg-main-900 border border-white/10 rounded-3xl p-5">
+          <p className="text-xs text-light-200/65 uppercase tracking-wider">Por acabarse</p>
           <p className={`text-3xl font-bold mt-2 ${lowStockCount > 0 ? 'text-amber-400' : 'text-light-100'}`}>
             {loading ? '—' : lowStockCount}
           </p>
         </div>
-        <div className="bg-main-900/50 border border-white/5 rounded-3xl p-5 flex flex-col justify-between gap-3">
+        <div className="bg-main-900 border border-white/10 rounded-3xl p-5 flex flex-col justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs text-light-200/40 uppercase tracking-wider">Materia Prima</p>
-            <p className="text-xs text-light-200/30 mt-2 hidden sm:block">Insumos, costos y niveles de stock.</p>
+            <p className="text-xs text-light-200/65 uppercase tracking-wider">Materia Prima</p>
+            <p className="text-xs text-light-200/55 mt-2 hidden sm:block">Insumos, costos y niveles de stock.</p>
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setPurchaseModalOpen(true)}
               disabled={!materials.length}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-main-500 hover:bg-main-400 text-white text-sm font-semibold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-main-500 hover:bg-main-400 text-snow text-sm font-semibold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <PackagePlus size={16} />
               Agregar Stock
@@ -1718,22 +1720,22 @@ export const Stock = () => {
       )}
 
       {/* Search + list */}
-      <div className="bg-main-900/30 border border-white/5 rounded-3xl overflow-hidden">
-        <div className="p-4 border-b border-white/5">
+      <div className="bg-main-900 border border-white/10 rounded-3xl overflow-hidden">
+        <div className="p-4 border-b border-white/10">
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/30" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/55" />
             <input
               type="text"
               placeholder="Buscar material por nombre…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 bg-main-800/60 border border-white/5 rounded-xl text-sm text-light-100 placeholder:text-light-200/30 outline-none focus:border-main-500/40 transition-colors"
+              className="w-full pl-9 pr-4 py-2.5 bg-main-800/60 border border-white/10 rounded-xl text-sm text-light-100 placeholder:text-light-200/55 outline-none focus:border-main-500/40 transition-colors"
             />
           </div>
         </div>
 
         {loading ? (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-white/10">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="px-5 py-4 flex items-center gap-4">
                 <div className="h-10 w-10 rounded-2xl bg-white/5 animate-pulse shrink-0" />
@@ -1745,7 +1747,7 @@ export const Stock = () => {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="py-16 flex flex-col items-center gap-3 text-light-200/30">
+          <div className="py-16 flex flex-col items-center gap-3 text-light-200/55">
             <Boxes size={40} />
             <p className="text-sm italic">
               {search ? 'Sin resultados para esa búsqueda.' : 'No hay materiales registrados aún.'}
@@ -1753,7 +1755,7 @@ export const Stock = () => {
             {!search && (
               <button
                 onClick={() => setModalMode('add')}
-                className="mt-1 flex items-center gap-2 px-4 py-2 rounded-xl bg-main-500 hover:bg-main-400 text-white text-sm font-semibold transition-colors cursor-pointer"
+                className="mt-1 flex items-center gap-2 px-4 py-2 rounded-xl bg-main-500 hover:bg-main-400 text-snow text-sm font-semibold transition-colors cursor-pointer"
               >
                 <Plus size={15} />
                 Agregar el primero
@@ -1761,7 +1763,7 @@ export const Stock = () => {
             )}
           </div>
         ) : (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-white/10">
             {filtered.map((m) => (
               <MaterialRow key={m.docId} material={m} onEdit={setModalMode} onDelete={setDeleteTarget} />
             ))}
@@ -1793,7 +1795,7 @@ export const Stock = () => {
         />
       )}
 
-      <div className="border-t border-white/5 pt-6">
+      <div className="border-t border-white/10 pt-6">
         <RecipesSection materials={materials} />
       </div>
     </div>

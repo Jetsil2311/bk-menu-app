@@ -19,6 +19,7 @@ import { StationsManager } from './views/admin/StationsManager'
 import { RouteGate } from './components/admin/RouteGate'
 import { RegisterProvider } from './context/RegisterContext'
 import { StationProvider } from './context/StationContext'
+import { TestModeBadge } from './components/TestModeBadge'
 
 // Per-screen access is now gated by station (see StationContext /
 // RouteGate) instead of a single shared PIN. Each station's disabled
@@ -26,6 +27,7 @@ import { StationProvider } from './context/StationContext'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
+    <TestModeBadge />
     <BrowserRouter>
       <RegisterProvider>
         <StationProvider>

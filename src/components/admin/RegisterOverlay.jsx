@@ -28,7 +28,7 @@ export const RegisterOverlay = ({ children }) => {
   }
 
   return (
-    <div className="relative flex min-h-[60vh] flex-col items-center justify-center rounded-3xl border border-white/5 bg-main-900/40 p-12 text-center backdrop-blur-md">
+    <div className="relative flex min-h-[60vh] flex-col items-center justify-center rounded-3xl border border-white/10 bg-main-900 p-12 text-center backdrop-blur-md">
       <div className="mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-red-500/10 text-red-400 shadow-[0_0_30px_rgba(239,68,68,0.1)]">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -55,7 +55,7 @@ export const RegisterOverlay = ({ children }) => {
 
       <button
         onClick={() => setShowModal(true)}
-        className="group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-main-500 px-10 py-4 text-lg font-bold text-white transition-all hover:bg-main-400 hover:shadow-[0_0_20px_rgba(217,119,6,0.3)] active:scale-95"
+        className="group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-main-500 px-10 py-4 text-lg font-bold text-snow transition-all hover:bg-main-400 hover:shadow-[0_0_20px_rgba(217,119,6,0.3)] active:scale-95"
       >
         <span className="relative z-10 flex items-center gap-2">
           <svg
@@ -82,7 +82,7 @@ export const RegisterOverlay = ({ children }) => {
                   Ingresa el dinero base en caja
                 </label>
                 <div className="relative group">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-light-200/40 font-bold">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-light-200/65 font-bold">$</span>
                   <input
                     autoFocus
                     type="number"
@@ -105,7 +105,7 @@ export const RegisterOverlay = ({ children }) => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-2xl bg-main-500 px-6 py-4 font-bold text-white transition hover:bg-main-400"
+                  className="flex-1 rounded-2xl bg-main-500 px-6 py-4 font-bold text-snow transition hover:bg-main-400"
                 >
                   Confirmar
                 </button>
