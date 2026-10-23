@@ -2,21 +2,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import { collection, doc, onSnapshot, serverTimestamp, writeBatch } from 'firebase/firestore'
 import {
-  ArrowDown, ArrowUp, Ban, ChevronDown, CircleDot, Cloud, CupSoda, Dices, Droplet, ListChecks, Package,
-  Pencil, Play, Plus, Settings2, Snowflake, Trash2, TriangleAlert, Wallet,
+  ArrowDown, ArrowUp, Ban, ChevronDown, CircleDot, Cloud, CupSoda, Dices, Droplet, GitBranch, ListChecks, Package,
+  Pencil, Play, Plus, Settings2, Snowflake, Trash2, TriangleAlert, Wallet, X,
 } from 'lucide-react'
 import { auth, db } from '../../../firebase'
 import { formatMoney } from '../../../utils/cart'
 import {
   DRINK_RECIPE_ID, VISUAL_OPTIONS, cleanDraft, configFromDraft, createDraftOption, createDraftStep,
-  draftFromDocs, drinkRanges, linesCost, recipeFromDraft, validateDraft,
+  describeCondition, draftFromDocs, drinkRanges, hasCondition, linesCost, recipeFromDraft, toggleCondition, validateDraft,
 } from '../../../utils/drinkBuilderAdmin'
 import { deriveCupVisual, normalizeBuilderConfig, randomSelections } from '../../../utils/drinkBuilder'
 import { DrinkCup } from '../../drinkBuilder/DrinkCup'
 import { DrinkBuilder } from '../../drinkBuilder/DrinkBuilder'
 import { ConfirmDialog } from '../ConfirmDialog'
 import {
-  Drawer, EmptyState, Field, FormSection, MiniSwitch, Notice, Segmented, Toggle,
+  ChipCheck, Drawer, EmptyState, Field, FormSection, MiniSwitch, Notice, Segmented, Toggle,
   btnPrimary, btnSecondary, iconBtn, iconBtnDanger, inputCls, textareaCls,
 } from '../ui'
 import { InventoryRows } from './InventoryRows'
@@ -49,12 +49,78 @@ const ruleText = (s) => {
   return `${kind} · ${s.required ? 'Obligatorio' : 'Opcional'}`
 }
 
+// ── "Solo si…" rule: pick options from earlier steps ─────────────────────────
+// `allSteps` names the rule even when it points at a step that was moved
+// after this one (save is blocked until it's fixed — see validateDraft).
+const ConditionPicker = ({ value, earlierSteps, allSteps, onChange }) => {
+  const [open, setOpen] = useState(() => hasCondition(value))
+  const steps = earlierSteps.filter((s) => s.options.some((o) => o.name.trim()))
+  const summary = describeCondition(value, allSteps)
+  const misplaced = Object.keys(value).some((id) => value[id]?.length && !earlierSteps.some((s) => s.id === id))
+
+  if (!steps.length && !summary) {
+    return <p className="text-sm text-light-200/70">Para ponerle condición, tiene que haber un paso antes de este.</p>
+  }
+  if (!open && !summary) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className={btnSecondary}>
+        <GitBranch size={16} /> Agregar condición
+      </button>
+    )
+  }
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-light-200/70">
+        Marca lo que el cliente tiene que haber elegido antes. Del mismo paso basta con uno; si marcas en varios pasos,
+        tiene que cumplir todos.
+      </p>
+      {steps.map((s) => (
+        <div key={s.id}>
+          <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-light-200/65">{s.name || 'Paso sin nombre'}</p>
+          <div className="flex flex-wrap gap-2">
+            {s.options.filter((o) => o.name.trim()).map((o) => (
+              <ChipCheck
+                key={o.id}
+                checked={(value[s.id] || []).includes(o.id)}
+                onChange={() => onChange(toggleCondition(value, s.id, o.id))}
+              >
+                {o.name}
+              </ChipCheck>
+            ))}
+          </div>
+        </div>
+      ))}
+      {misplaced && (
+        <p className="flex items-start gap-2 text-sm text-amber-400">
+          <TriangleAlert size={16} className="mt-0.5 shrink-0" />
+          Depende de un paso que ahora va después de este. Súbelo o quita la condición.
+        </p>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-main-800 px-3 py-2.5 text-sm">
+        <span className="text-light-200/80">
+          {summary
+            ? <>Solo se muestra si el cliente eligió <b className="text-light-100">{summary}</b>.</>
+            : 'Sin condición: siempre se muestra.'}
+        </span>
+        <button
+          type="button"
+          onClick={() => { onChange({}); setOpen(false) }}
+          className="inline-flex min-h-[36px] cursor-pointer items-center gap-1 rounded-lg px-2 text-xs font-bold text-light-200/80 hover:bg-white/5"
+        >
+          <X size={14} /> {summary ? 'Quitar condición' : 'Cerrar'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── One ingredient inside a step ─────────────────────────────────────────────
-const OptionCard = ({ step, option, index, count, materials, presets, open, onToggleOpen, onChange, onMove, onRemove }) => {
+const OptionCard = ({ step, option, index, count, materials, presets, earlierSteps, allSteps, open, onToggleOpen, onChange, onMove, onRemove }) => {
   const cost = linesCost(option.ingredients, materials)
   const price = Number(option.priceModifier) || 0
   const usesColor = ['liquid', 'pearls', 'foam'].includes(step.visual)
   const set = (patch) => onChange({ ...option, ...patch })
+  const onlyWith = describeCondition(option.showIf, allSteps)
 
   return (
     <div className={`rounded-2xl border bg-main-900 transition-colors ${open ? 'border-primary/40' : 'border-white/10'} ${option.isActive ? '' : 'opacity-70'}`}>
@@ -76,6 +142,11 @@ const OptionCard = ({ step, option, index, count, materials, presets, open, onTo
               {price ? `+${money(price)}` : 'Incluido'} · costo {money(cost)}
               {!option.ingredients.length && <span className="text-amber-400"> · sin inventario</span>}
             </span>
+            {onlyWith && (
+              <span className="mt-0.5 flex items-center gap-1 truncate text-xs font-semibold text-light-200/80">
+                <GitBranch size={12} className="shrink-0" /> Solo con {onlyWith}
+              </span>
+            )}
           </span>
           <ChevronDown size={18} className={`shrink-0 text-light-200/60 transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
@@ -133,6 +204,15 @@ const OptionCard = ({ step, option, index, count, materials, presets, open, onTo
             </Field>
           )}
 
+          <Field label="Solo se puede elegir si…" hint="Ej. «Taro» solo con base «Leche». Sin condición = siempre disponible.">
+            <ConditionPicker
+              value={option.showIf}
+              earlierSteps={earlierSteps}
+              allSteps={allSteps}
+              onChange={(showIf) => set({ showIf })}
+            />
+          </Field>
+
           {step.visual === 'ice' && (
             <Field label="Cantidad de hielo que se dibuja">
               <Segmented
@@ -188,7 +268,8 @@ const OptionCard = ({ step, option, index, count, materials, presets, open, onTo
 }
 
 // ── Drawer: edit one step and its ingredients ────────────────────────────────
-const StepDrawer = ({ step, stepNumber, materials, presets, onChange, onClose }) => {
+const StepDrawer = ({ step, stepNumber, allSteps, materials, presets, onChange, onClose }) => {
+  const earlierSteps = allSteps.slice(0, stepNumber - 1)
   const [openOption, setOpenOption] = useState(() => (step.options.length === 1 && !step.options[0].name ? step.options[0].id : null))
   const set = (patch) => onChange({ ...step, ...patch })
   const setOption = (i, option) => set({ options: step.options.map((o, j) => (j === i ? option : o)) })
@@ -268,6 +349,19 @@ const StepDrawer = ({ step, stepNumber, materials, presets, onChange, onClose })
         </FormSection>
 
         <FormSection
+          icon={GitBranch}
+          title="Cuándo aparece"
+          hint="Ej. «Hielo» solo si la bebida es fría. Si no se cumple, el cliente se salta este paso."
+        >
+          <ConditionPicker
+            value={step.showIf}
+            earlierSteps={earlierSteps}
+            allSteps={allSteps}
+            onChange={(showIf) => set({ showIf })}
+          />
+        </FormSection>
+
+        <FormSection
           icon={ListChecks}
           title="Ingredientes"
           hint="Precio extra que cobras y la materia prima que se descuenta cuando se paga la bebida."
@@ -282,6 +376,8 @@ const StepDrawer = ({ step, stepNumber, materials, presets, onChange, onClose })
                 count={step.options.length}
                 materials={materials}
                 presets={presets}
+                earlierSteps={earlierSteps}
+                allSteps={allSteps}
                 open={openOption === o.id}
                 onToggleOpen={() => setOpenOption(openOption === o.id ? null : o.id)}
                 onChange={(next) => setOption(i, next)}
@@ -414,6 +510,9 @@ export const DrinkBuilderEditor = ({ notify }) => {
   }
 
   const isNew = savedConfig === null
+  const dependsOn = (stepId) => draft.steps.some(
+    (s) => s.showIf[stepId]?.length || s.options.some((o) => o.showIf[stepId]?.length)
+  )
 
   return (
     <div className="space-y-5 pb-4">
@@ -547,6 +646,8 @@ export const DrinkBuilderEditor = ({ notify }) => {
               const active = named.filter((o) => o.isActive)
               const noInv = named.filter((o) => !o.ingredients.length).length
               const prices = active.map((o) => Number(o.priceModifier) || 0)
+              const onlyIf = describeCondition(s.showIf, draft.steps)
+              const conditional = active.filter((o) => describeCondition(o.showIf, draft.steps)).length
               return (
                 <li key={s.id} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-main-900 p-2 pl-3">
                   <button
@@ -565,6 +666,15 @@ export const DrinkBuilderEditor = ({ notify }) => {
                         {ruleText(s)} · {active.length} {active.length === 1 ? 'ingrediente' : 'ingredientes'}
                         {prices.length ? ` · ${prices.some(Boolean) ? `+${range(Math.min(...prices), Math.max(...prices))}` : 'incluidos'}` : ''}
                       </span>
+                      {(onlyIf || conditional > 0) && (
+                        <span className="mt-0.5 flex items-center gap-1 truncate text-xs font-semibold text-light-200/80">
+                          <GitBranch size={12} className="shrink-0" />
+                          {[
+                            onlyIf && `Solo si eligió ${onlyIf}`,
+                            conditional > 0 && `${conditional} con condición`,
+                          ].filter(Boolean).join(' · ')}
+                        </span>
+                      )}
                       {noInv > 0 && (
                         <span className="mt-0.5 block text-xs font-semibold text-amber-400">{noInv} sin inventario</span>
                       )}
@@ -604,6 +714,7 @@ export const DrinkBuilderEditor = ({ notify }) => {
           key={draft.steps[editingStep].id}
           step={draft.steps[editingStep]}
           stepNumber={editingStep + 1}
+          allSteps={draft.steps}
           materials={materials}
           presets={presets}
           onChange={(next) => edit((d) => { d.steps[editingStep] = next; return d })}
@@ -614,10 +725,18 @@ export const DrinkBuilderEditor = ({ notify }) => {
       {deleteStep != null && draft.steps[deleteStep] && (
         <ConfirmDialog
           title={`¿Eliminar «${draft.steps[deleteStep].name || 'este paso'}»?`}
-          message="Se quitan el paso y sus ingredientes. No se borra nada hasta que toques «Guardar cambios»."
+          message={`Se quitan el paso y sus ingredientes${dependsOn(draft.steps[deleteStep].id) ? ', y las condiciones que dependen de él' : ''}. No se borra nada hasta que toques «Guardar cambios».`}
           onCancel={() => setDeleteStep(null)}
           onConfirm={() => {
-            edit((d) => { d.steps.splice(deleteStep, 1); return d })
+            edit((d) => {
+              const [gone] = d.steps.splice(deleteStep, 1)
+              // Drop rules that pointed at it (saving would drop them anyway).
+              for (const s of d.steps) {
+                delete s.showIf[gone.id]
+                for (const o of s.options) delete o.showIf[gone.id]
+              }
+              return d
+            })
             setDeleteStep(null)
           }}
         />

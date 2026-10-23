@@ -2,7 +2,7 @@
 
 Base template: https://github.com/Jetsil2311/menu-demo
 Client: Bubble Kaapeh (BK)
-Last updated: 2026-10-23 (Arma tu bebida — cashier builder)
+Last updated: 2026-10-23 (Arma tu bebida — conditional steps and ingredients)
 
 ---
 
@@ -608,6 +608,19 @@ What changed: Cashiers can build a customer's drink right in **Cobrar**, for wal
 Files affected: src/components/admin/pos/PosDrinkBuilder.jsx (new), src/views/admin/POS.jsx, src/utils/drinkBuilder.js (selectionsFromItem, nameFromItem), src/utils/drinkBuilder.test.js
 Reason: Owner asked for a way for the cashier to build the customer's drink.
 
+### 2026-10-23 — "Arma tu bebida": conditional steps and ingredients ("Solo si…")
+What changed: The owner can now make a step or a single ingredient depend on earlier choices, from **Admin → Menú → Arma tu bebida**. Examples: "Hielo" only appears for cold styles (a hot drink never asks for ice), and "Taro" can only be picked with a milk base.
+- **Step rule:** in a step's editor, the new **"Cuándo aparece"** section → "Agregar condición" → tap the options from earlier steps that must have been chosen. If the rule isn't met, the customer (and the cashier) skip the step entirely, and a required step stops being required.
+- **Ingredient rule:** inside each ingredient, **"Solo se puede elegir si…"** works the same way. The ingredient is hidden until its rule is met.
+- **How rules read:** options from the same step mean "any one of these"; options from several steps mean "one from each". The editor spells it out ("Solo se muestra si el cliente eligió Leche cremosa y (Iced o Frappé)"), and the step list shows "Solo si eligió …" and "N con condición".
+- **Changing your mind:** if the customer switches an earlier choice (milk → water), picks that no longer apply (Taro, and anything that depended on Taro) are removed automatically, and the price updates. Editing a ticket line in Cobrar does the same.
+- **Safety:** rules can only point at earlier steps. If the owner reorders steps so a rule points at a later one, saving is blocked with a message naming both steps. Deleting a step also removes the rules that pointed at it. "Sorpréndeme" random drinks follow the rules.
+- **Data:** optional `showIf: { [earlierStepId]: optionId[] }` on steps and options in `settings/drinkBuilder` (schema at the top of `src/utils/drinkBuilder.js`). Existing configs without it behave exactly as before. Stock deduction and Finanzas are unchanged. The price/cost range in the editor treats conditional required steps as skippable, so it stays a safe outer range.
+- **Test environment sample:** Taro, Matcha and Cloud de taro only with "Leche cremosa"; Hielo only for Iced / Frappé / Frozen.
+- Verified locally (emulators): customer builder, cashier builder and admin editor (adding a rule, saving it, and the reorder block).
+Files affected: src/utils/drinkBuilder.js, src/utils/drinkBuilderAdmin.js, src/components/drinkBuilder/DrinkBuilder.jsx, src/components/admin/pos/PosDrinkBuilder.jsx, src/components/admin/drinkBuilder/DrinkBuilderEditor.jsx, src/utils/drinkBuilder.test.js, src/utils/drinkBuilderAdmin.test.js, scripts/test-env/drink-builder-sample.json
+Reason: Owner asked that steps and ingredients only show when they make sense (no ice question for hot drinks, taro only with milk) and that this be set from the admin.
+
 ---
 
 ## Known Issues / Follow-ups
@@ -618,7 +631,8 @@ Reason: Owner asked for a way for the cashier to build the customer's drink.
 - **NEW (2026-10-23): web orders for regular products still arrive without `productDocId`** (pre-existing: the customer cart never set it), so stock is only deducted for them when charged from the POS product grid. Builder drinks do carry it.
 
 - **RESOLVED 2026-10-23 (admin editor added — see change entry)** ~~"Arma tu bebida" has no admin editor yet~~
-- **NEW (2026-10-23): builder rules not yet supported** — e.g. "these flavors only with this base" or "this style only for water bases". If the café needs them, add an `onlyWith` field per option when building the admin editor.
+- **RESOLVED 2026-10-23 ("Solo si…" conditions added — see change entry)** ~~builder rules not yet supported — e.g. "these flavors only with this base"~~
+- **NEW (2026-10-23): the live builder has no rules yet.** The sample rules (taro only with milk, ice only when cold) exist only in the test environment. The owner has to set them in Menú → Arma tu bebida for the real menu.
 - **NEW (2026-10-23): the builder's prices in the local sample are placeholders** — the real base price and extras will be set by the owner in the admin.
 
 - **NEW (2026-10-23): two different admin email allowlists.** `useAdminData.js` (used by the Menú editor) and the legacy `Admin.jsx` have a hardcoded `ALLOWED_EMAILS = ['jethrosiloe26@gmail.com']` and sign out any other account; the rest of the panel uses `settings/general.authorizedEmails` (Ajustes → "Correos con acceso", currently empty = open). So any staff account other than the owner's gets signed out when opening Menú, no matter what Ajustes says. Found while building the test environment; left unchanged in production pending owner decision (suggest: make useAdminData use the same `checkEmailAuthorized` as useAdminAuth).

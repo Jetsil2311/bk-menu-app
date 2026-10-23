@@ -32,12 +32,57 @@ const numOrEmpty = (v) => (v === null || v === undefined || v === '' ? '' : Stri
 const ingredientsToDraft = (lines = []) =>
   lines.map((l) => ({ materialId: l.materialId || '', quantity: numOrEmpty(l.quantity), unit: l.unit || '' }))
 
+// "Solo si…" rules (showIf, see utils/drinkBuilder.js). In the draft it's
+// always an object, {} meaning "always available".
+const conditionToDraft = (showIf) => {
+  const out = {}
+  if (!showIf || typeof showIf !== 'object') return out
+  for (const [stepId, ids] of Object.entries(showIf)) {
+    if (Array.isArray(ids) && ids.length) out[stepId] = ids.map(String)
+  }
+  return out
+}
+
+export const hasCondition = (showIf) => Object.values(showIf || {}).some((ids) => ids?.length)
+
+// Adds/removes one option of an earlier step from a rule.
+export const toggleCondition = (showIf, stepId, optionId) => {
+  const current = showIf?.[stepId] || []
+  const ids = current.includes(optionId) ? current.filter((id) => id !== optionId) : [...current, optionId]
+  const next = { ...showIf, [stepId]: ids }
+  if (!ids.length) delete next[stepId]
+  return next
+}
+
+// For saving: only references to earlier steps and options that still exist.
+const cleanCondition = (showIf, earlierSteps) => {
+  const out = {}
+  for (const s of earlierSteps) {
+    const ids = (showIf?.[s.id] || []).filter((id) => s.options.some((o) => o.id === id))
+    if (ids.length) out[s.id] = ids
+  }
+  return Object.keys(out).length ? out : null
+}
+
+// For the owner, in plain words: "Leche o Avena", "Leche y (Iced o Frappé)".
+export const describeCondition = (showIf, steps) => {
+  const groups = Object.entries(showIf || {})
+    .map(([stepId, ids]) => {
+      const step = steps.find((s) => s.id === stepId)
+      return (ids || []).map((id) => step?.options.find((o) => o.id === id)?.name.trim()).filter(Boolean)
+    })
+    .filter((names) => names.length)
+  return groups
+    .map((names) => (groups.length > 1 && names.length > 1 ? `(${names.join(' o ')})` : names.join(' o ')))
+    .join(' y ')
+}
+
 export const createDraftOption = () => ({
-  id: newId('ing'), name: '', desc: '', priceModifier: '', color: '', amount: 1, isActive: true, ingredients: [],
+  id: newId('ing'), name: '', desc: '', priceModifier: '', color: '', amount: 1, isActive: true, showIf: {}, ingredients: [],
 })
 
 export const createDraftStep = () => ({
-  id: newId('paso'), name: '', hint: '', type: 'single', required: false, maxSelections: '', visual: 'none',
+  id: newId('paso'), name: '', hint: '', type: 'single', required: false, maxSelections: '', visual: 'none', showIf: {},
   options: [createDraftOption()],
 })
 
@@ -58,6 +103,7 @@ export const draftFromDocs = (config, recipe) => {
       required: Boolean(s.required),
       maxSelections: numOrEmpty(s.maxSelections),
       visual: s.visual || 'none',
+      showIf: conditionToDraft(s.showIf),
       options: (s.options || []).map((o) => ({
         id: o.id || newId('ing'),
         name: o.name || '',
@@ -66,6 +112,7 @@ export const draftFromDocs = (config, recipe) => {
         color: o.color || '',
         amount: o.amount == null ? 1 : Number(o.amount),
         isActive: o.isActive !== false,
+        showIf: conditionToDraft(o.showIf),
         ingredients: ingredientsToDraft(optionLines[s.id]?.options?.[o.id]?.ingredients),
       })),
     })),
@@ -84,27 +131,35 @@ export const configFromDraft = (draft) => ({
   tagline: draft.tagline.trim(),
   basePrice: money(draft.basePrice),
   stationTags: draft.stationTags,
-  steps: draft.steps.map((s) => ({
-    id: s.id,
-    name: s.name.trim(),
-    hint: s.hint.trim(),
-    type: s.type,
-    required: s.required,
-    maxSelections: s.type === 'multi' && Number(s.maxSelections) > 0 ? Math.floor(Number(s.maxSelections)) : null,
-    visual: s.visual,
-    options: s.options.map((o) => {
-      const out = {
-        id: o.id,
-        name: o.name.trim(),
-        desc: o.desc.trim(),
-        priceModifier: money(o.priceModifier),
-        isActive: o.isActive,
-      }
-      if (o.color) out.color = o.color
-      if (s.visual === 'ice') out.amount = Number(o.amount)
-      return out
-    }),
-  })),
+  steps: draft.steps.map((s, i) => {
+    const earlier = draft.steps.slice(0, i)
+    const step = {
+      id: s.id,
+      name: s.name.trim(),
+      hint: s.hint.trim(),
+      type: s.type,
+      required: s.required,
+      maxSelections: s.type === 'multi' && Number(s.maxSelections) > 0 ? Math.floor(Number(s.maxSelections)) : null,
+      visual: s.visual,
+      options: s.options.map((o) => {
+        const out = {
+          id: o.id,
+          name: o.name.trim(),
+          desc: o.desc.trim(),
+          priceModifier: money(o.priceModifier),
+          isActive: o.isActive,
+        }
+        if (o.color) out.color = o.color
+        if (s.visual === 'ice') out.amount = Number(o.amount)
+        const showIf = cleanCondition(o.showIf, earlier)
+        if (showIf) out.showIf = showIf
+        return out
+      }),
+    }
+    const showIf = cleanCondition(s.showIf, earlier)
+    if (showIf) step.showIf = showIf
+    return step
+  }),
 })
 
 const usedRows = (rows = []) => rows.filter((r) => r.materialId || String(r.quantity).trim())
@@ -128,7 +183,9 @@ export const linesCost = (rows, materials) =>
 
 // Cheapest / priciest possible drink, for price and for cost separately.
 // Required single steps take their min/max option; multi steps add up to
-// their limit (max side only); optional steps can add nothing.
+// their limit (max side only); optional steps — and required ones that only
+// show up under a condition — can add nothing. Ingredient conditions are
+// ignored, so this is a safe outer range.
 export const drinkRanges = (draft, materials) => {
   const base = { price: money(draft.basePrice), cost: linesCost(draft.baseIngredients, materials) }
   const range = { minPrice: base.price, maxPrice: base.price, minCost: base.cost, maxCost: base.cost }
@@ -139,7 +196,7 @@ export const drinkRanges = (draft, materials) => {
     const costs = active.map((o) => linesCost(o.ingredients, materials))
     const limit = s.type === 'multi' ? (Number(s.maxSelections) > 0 ? Number(s.maxSelections) : active.length) : 1
     const topSum = (arr) => [...arr].sort((a, b) => b - a).slice(0, limit).reduce((a, b) => a + b, 0)
-    if (s.required) {
+    if (s.required && !hasCondition(s.showIf)) {
       range.minPrice += Math.min(...prices)
       range.minCost += Math.min(...costs)
     }
@@ -185,6 +242,18 @@ export const recipeFromDraft = (draft, materials) => {
 
 const badRows = (rows) => usedRows(rows).some((r) => !r.materialId || !(Number(r.quantity) > 0))
 
+// A rule may only look at steps the customer has already gone through.
+// Returns the first referenced step that is now at or after `index` (e.g.
+// after reordering), so the owner can fix it instead of losing the rule.
+const misplacedCondition = (showIf, steps, index) => {
+  for (const stepId of Object.keys(showIf || {})) {
+    if (!showIf[stepId]?.length) continue
+    const at = steps.findIndex((s) => s.id === stepId)
+    if (at >= index) return steps[at]
+  }
+  return null
+}
+
 // First problem found, phrased for the owner, plus where to fix it.
 export const validateDraft = (draft) => {
   if (draft.enabled && !draft.steps.length) return { message: 'Agrega al menos un paso antes de mostrarlo en el menú.' }
@@ -197,7 +266,11 @@ export const validateDraft = (draft) => {
     if (s.type === 'multi' && String(s.maxSelections).trim() && !(Number(s.maxSelections) >= 1)) {
       return { ...where, message: `"${s.name}": el máximo debe ser 1 o más (o déjalo vacío para sin límite).` }
     }
+    const later = misplacedCondition(s.showIf, draft.steps, si)
+    if (later) return { ...where, message: `"${s.name}" depende de "${later.name}", que ahora va después. Sube "${later.name}" o cambia la condición.` }
     for (const o of s.options) {
+      const laterO = misplacedCondition(o.showIf, draft.steps, si)
+      if (laterO) return { ...where, message: `"${s.name}" → "${o.name}" depende de "${laterO.name}", que va en este paso o después. Sube "${laterO.name}" o cambia la condición.` }
       if (!o.name.trim() && (o.ingredients.length || String(o.priceModifier).trim())) return { ...where, message: `"${s.name}" tiene un ingrediente sin nombre.` }
       if (String(o.priceModifier).trim() && !(Number(o.priceModifier) >= 0)) return { ...where, message: `"${s.name}" → "${o.name}": el precio extra no es válido.` }
       if (badRows(o.ingredients)) return { ...where, message: `"${s.name}" → "${o.name}": completa material y cantidad en cada fila de inventario.` }

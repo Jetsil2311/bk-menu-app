@@ -13,6 +13,7 @@ import {
   firstIncompleteStep,
   isStepComplete,
   randomSelections,
+  resolveBuilder,
   selectedOptionsOf,
   suggestName,
   toggleSelection,
@@ -135,13 +136,17 @@ export const DrinkBuilder = ({ isOpen, onClose, config, onAdd }) => {
     return () => window.removeEventListener('keydown', onKey)
   }, [isOpen, onClose])
 
-  const steps = config.steps
+  // Only the steps/ingredients the current choices allow (admin "Solo si…"
+  // rules). They depend on earlier steps only, so `index` stays put when a
+  // choice hides or reveals something further along.
+  const live = resolveBuilder(config, selections).config
+  const steps = live.steps
   const summaryIndex = steps.length
   const index = Math.min(stepIndex, summaryIndex)
   const onSummary = index === summaryIndex
   const step = onSummary ? null : steps[index]
-  const total = computeTotal(config, selections)
-  const visual = deriveCupVisual(config, selections)
+  const total = computeTotal(live, selections)
+  const visual = deriveCupVisual(live, selections)
   const chosenNames = steps.flatMap((s) => selectedOptionsOf(s, selections).map((o) => o.name))
   const isEmpty = chosenNames.length === 0
 
@@ -153,7 +158,8 @@ export const DrinkBuilder = ({ isOpen, onClose, config, onAdd }) => {
   }, [index, summaryIndex, name, config, selections])
 
   const pick = (option) => {
-    setSelections((prev) => toggleSelection(prev, step, option.id))
+    // Re-resolve so picks that this change rules out are dropped.
+    setSelections((prev) => resolveBuilder(config, toggleSelection(prev, step, option.id)).selections)
     setLastPicked(option.id)
     navigator.vibrate?.(8)
   }
@@ -168,7 +174,7 @@ export const DrinkBuilder = ({ isOpen, onClose, config, onAdd }) => {
     navigator.vibrate?.([8, 40, 8])
   }
 
-  const missing = firstIncompleteStep(config, selections)
+  const missing = firstIncompleteStep(live, selections)
 
   // Keep the current step's chip visible (scrolls the chip row only).
   useEffect(() => {
@@ -181,7 +187,7 @@ export const DrinkBuilder = ({ isOpen, onClose, config, onAdd }) => {
   const addToCart = () => {
     if (missing !== -1) { goTo(missing); return }
     onAdd({
-      item: buildCartItem(config, selections, name),
+      item: buildCartItem(live, selections, name),
       qty,
       fromRect: cupRef.current?.getBoundingClientRect() ?? null,
     })
@@ -398,7 +404,7 @@ export const DrinkBuilder = ({ isOpen, onClose, config, onAdd }) => {
                     />
                     <button
                       type="button"
-                      onClick={() => setName(suggestName(config, selections))}
+                      onClick={() => setName(suggestName(live, selections))}
                       disabled={isEmpty}
                       aria-label="Sugerir otro nombre"
                       title="Otra idea"

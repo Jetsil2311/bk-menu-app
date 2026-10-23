@@ -18,14 +18,23 @@
 //     required: true,
 //     maxSelections: 2,                 // multi only; empty = no limit
 //     visual: 'liquid' | 'pearls' | 'foam' | 'ice' | 'none',
+//     showIf: { estilo: ['iced', 'frappe'] },   // optional, see below
 //     options: [{
 //       id, name, desc, priceModifier,
 //       color: '#e4d6f5',               // how it looks in the cup
 //       amount: 0.5,                    // 'ice' only: 0 none … 1 full
 //       isActive: true,
+//       showIf: { base: ['leche'] },    // optional, see below
 //     }],
 //   }],
 // }
+//
+// `showIf` makes a step or an ingredient conditional on earlier choices:
+// { [earlierStepId]: optionId[] }. It's offered only when, for EVERY listed
+// step, the customer picked at least ONE of the listed options. So "Hielo"
+// with { estilo: ['iced', 'frappe'] } disappears for a hot drink, and "Taro"
+// with { base: ['leche'] } can't be picked on a water base. Changing an
+// earlier choice removes picks that no longer apply (see resolveBuilder).
 //
 // `visual` tells the animated cup how a step looks: liquids tint the drink
 // (several make an ombré), pearls drop to the bottom, foam sits on top and
@@ -44,6 +53,20 @@ const toNumber = (v) => {
   return Number.isFinite(n) ? n : 0
 }
 
+const normalizeCondition = (raw) => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const out = {}
+  for (const [stepId, ids] of Object.entries(raw)) {
+    const list = (Array.isArray(ids) ? ids : []).map(String).filter(Boolean)
+    if (list.length) out[stepId] = list
+  }
+  return Object.keys(out).length ? out : null
+}
+
+// True when a showIf rule is satisfied by the current selections.
+export const conditionMet = (showIf, selections) =>
+  !showIf || Object.entries(showIf).every(([stepId, ids]) => (selections[stepId] || []).some((id) => ids.includes(id)))
+
 // Cleans the raw Firestore document: drops inactive/empty options and steps
 // with nothing to choose, fills defaults. Returns null when the builder
 // shouldn't be shown at all.
@@ -60,6 +83,7 @@ export const normalizeBuilderConfig = (raw) => {
           priceModifier: toNumber(o.priceModifier),
           color: typeof o.color === 'string' && o.color.trim() ? o.color.trim() : null,
           amount: o.amount == null ? 1 : Math.min(1, Math.max(0, toNumber(o.amount))),
+          showIf: normalizeCondition(o.showIf),
         }))
       const type = step?.type === 'multi' ? 'multi' : 'single'
       const max = toNumber(step?.maxSelections)
@@ -71,6 +95,7 @@ export const normalizeBuilderConfig = (raw) => {
         required: Boolean(step?.required),
         maxSelections: type === 'multi' && max > 0 ? max : null,
         visual: VISUALS.includes(step?.visual) ? step.visual : 'none',
+        showIf: normalizeCondition(step?.showIf),
         options,
       }
     })
@@ -83,6 +108,25 @@ export const normalizeBuilderConfig = (raw) => {
     stationTags: Array.isArray(raw.stationTags) ? raw.stationTags.filter(Boolean) : [],
     steps,
   }
+}
+
+// What the customer can actually choose right now: the steps and options
+// whose showIf is met, plus the selections with every pick that no longer
+// applies removed. Conditions only look at earlier steps, so one pass in
+// order settles everything (a removed pick also hides what depended on it).
+// Every other helper below can then be called with the returned config.
+export const resolveBuilder = (config, selections) => {
+  const steps = []
+  const kept = {}
+  for (const step of config.steps) {
+    if (!conditionMet(step.showIf, kept)) continue
+    const options = step.options.filter((o) => conditionMet(o.showIf, kept))
+    if (!options.length) continue
+    steps.push(options.length === step.options.length ? step : { ...step, options })
+    const ids = (selections[step.id] || []).filter((id) => options.some((o) => o.id === id))
+    if (ids.length) kept[step.id] = ids
+  }
+  return { config: { ...config, steps }, selections: kept }
 }
 
 // selections: { [stepId]: optionId[] } — order of choice is kept.
@@ -135,16 +179,20 @@ export const deriveCupVisual = (config, selections) => {
 }
 
 // Random but valid drink: every required step gets something, optional
-// steps get something about half the time.
+// steps get something about half the time, conditions are respected.
 export const randomSelections = (config, rand = Math.random) => {
   const pick = (arr) => arr[Math.floor(rand() * arr.length)]
   const out = {}
   for (const step of config.steps) {
+    // Only what the choices so far allow (same rules as resolveBuilder).
+    if (!conditionMet(step.showIf, out)) continue
+    const options = step.options.filter((o) => conditionMet(o.showIf, out))
+    if (!options.length) continue
     if (!step.required && rand() < 0.4) { out[step.id] = []; continue }
-    if (step.type === 'single') { out[step.id] = [pick(step.options).id]; continue }
-    const limit = Math.min(step.maxSelections || 2, step.options.length, 2)
+    if (step.type === 'single') { out[step.id] = [pick(options).id]; continue }
+    const limit = Math.min(step.maxSelections || 2, options.length, 2)
     const count = 1 + Math.floor(rand() * limit)
-    const pool = [...step.options]
+    const pool = [...options]
     const chosen = []
     while (chosen.length < count && pool.length) {
       chosen.push(pool.splice(Math.floor(rand() * pool.length), 1)[0].id)
@@ -197,7 +245,7 @@ export const buildCartItem = (config, selections, customName = '') => {
 }
 
 // Reverse of buildCartItem, for editing a ticket/cart line: its selections
-// (skipping choices that no longer exist) and its custom name.
+// (skipping choices that no longer exist or no longer apply) and its custom name.
 export const selectionsFromItem = (config, item) => {
   const out = {}
   for (const so of item?.selectedOptions || []) {
@@ -205,7 +253,7 @@ export const selectionsFromItem = (config, item) => {
     if (!step?.options.some((o) => o.id === so.optionId)) continue
     out[step.id] = [...(out[step.id] || []), so.optionId]
   }
-  return out
+  return resolveBuilder(config, out).selections
 }
 
 export const nameFromItem = (config, item) => {

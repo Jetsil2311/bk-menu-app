@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  cleanDraft, configFromDraft, draftFromDocs, drinkRanges, recipeFromDraft, validateDraft,
+  cleanDraft, configFromDraft, describeCondition, draftFromDocs, drinkRanges, recipeFromDraft, toggleCondition,
+  validateDraft,
 } from './drinkBuilderAdmin'
 
 // Made-up raw materials, same shape as the rawMaterials collection.
@@ -95,5 +96,44 @@ describe('validation', () => {
     const withBlank = structuredClone(draft)
     withBlank.steps[0].options.push({ id: 'x', name: '  ', desc: '', priceModifier: '', ingredients: [], isActive: true })
     expect(cleanDraft(withBlank).steps[0].options).toHaveLength(1)
+  })
+})
+
+describe('"Solo si…" conditions', () => {
+  const withRules = () => {
+    const d = draftFromDocs(CONFIG, RECIPE)
+    d.steps[1].options[1].showIf = { base: ['leche'] }       // B only with Leche
+    d.steps[2].showIf = { sabor: ['a', 'gone'] }              // Perlas only with A
+    return d
+  }
+
+  it('round-trips rules and drops references to options that no longer exist', () => {
+    const config = configFromDraft(withRules())
+    expect(config.steps[1].options[1].showIf).toEqual({ base: ['leche'] })
+    expect(config.steps[2].showIf).toEqual({ sabor: ['a'] })
+    expect(config.steps[0]).not.toHaveProperty('showIf')
+    expect(draftFromDocs(config, RECIPE).steps[2].showIf).toEqual({ sabor: ['a'] })
+    expect(draftFromDocs(CONFIG, RECIPE).steps[0].showIf).toEqual({})
+  })
+
+  it('describes and toggles a rule', () => {
+    const d = withRules()
+    expect(describeCondition({ base: ['leche'], sabor: ['a', 'c'] }, d.steps)).toBe('Leche y (A o C)')
+    expect(describeCondition({ sabor: ['a', 'c'] }, d.steps)).toBe('A o C')
+    expect(toggleCondition({ base: ['leche'] }, 'base', 'leche')).toEqual({})
+    expect(toggleCondition({}, 'sabor', 'b')).toEqual({ sabor: ['b'] })
+  })
+
+  it('blocks saving when a rule points at a step that now comes later', () => {
+    const d = withRules()
+    ;[d.steps[1], d.steps[2]] = [d.steps[2], d.steps[1]]     // Perlas now before Sabor
+    expect(validateDraft(d)).toMatchObject({ stepIndex: 1 })
+    expect(validateDraft(withRules())).toBeNull()
+  })
+
+  it('a conditional required step can be skipped, so it adds nothing to the cheapest drink', () => {
+    const d = withRules()
+    d.steps[2].required = true
+    expect(drinkRanges(d, MATERIALS)).toMatchObject({ minPrice: 50, maxPrice: 75 })
   })
 })

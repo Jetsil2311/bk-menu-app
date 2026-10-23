@@ -26,12 +26,12 @@
       "required": true,
       "visual": "liquid",
       "options": [
-        { "id": "taro", "name": "Taro", "priceModifier": 0, "color": "#c9b3e6" },
+        { "id": "taro", "name": "Taro", "priceModifier": 0, "color": "#c9b3e6", "showIf": { "base": ["leche"] } },
         { "id": "mango", "name": "Mango", "priceModifier": 0, "color": "#ffc94d" },
         { "id": "fresa", "name": "Fresa", "priceModifier": 0, "color": "#ff8fa3" },
         { "id": "blueberry", "name": "Blueberry", "priceModifier": 0, "color": "#7d78d8" },
         { "id": "maracuya", "name": "Maracuyá", "priceModifier": 0, "color": "#f7d54a" },
-        { "id": "matcha", "name": "Matcha", "priceModifier": 10, "color": "#9cc66b" },
+        { "id": "matcha", "name": "Matcha", "priceModifier": 10, "color": "#9cc66b", "showIf": { "base": ["leche"] } },
         { "id": "kiwi", "name": "Kiwi", "priceModifier": 0, "color": "#a8d86e" },
         { "id": "caramel", "name": "Caramel", "priceModifier": 0, "color": "#c8894a" },
         { "id": "mocha", "name": "Mocha", "priceModifier": 0, "color": "#6e4330" }
@@ -57,6 +57,7 @@
       "type": "single",
       "required": false,
       "visual": "ice",
+      "showIf": { "estilo": ["iced", "frappe", "frozen"] },
       "options": [
         { "id": "normal", "name": "Normal", "amount": 1, "priceModifier": 0 },
         { "id": "poco", "name": "Poco hielo", "amount": 0.5, "priceModifier": 0 },
@@ -86,7 +87,7 @@
       "visual": "foam",
       "options": [
         { "id": "cloud", "name": "Cloud Top", "desc": "Espuma cremosa encima.", "priceModifier": 15, "color": "#fff7ec" },
-        { "id": "cloud-taro", "name": "Cloud de taro", "desc": "Espuma con un toque de taro.", "priceModifier": 15, "color": "#e4d6f5" }
+        { "id": "cloud-taro", "name": "Cloud de taro", "desc": "Espuma con un toque de taro.", "priceModifier": 15, "color": "#e4d6f5", "showIf": { "base": ["leche"] } }
       ]
     }
   ]
