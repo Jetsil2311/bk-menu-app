@@ -7,6 +7,7 @@ import {
   nameFromItem,
   normalizeBuilderConfig,
   randomSelections,
+  resolveBuilder,
   selectionsFromItem,
   suggestName,
   toggleSelection,
@@ -120,5 +121,82 @@ describe('editing a line', () => {
     expect(nameFromItem(c, buildCartItem(c, s))).toBe('')
     const stale = { ...item, selectedOptions: [...item.selectedOptions, { groupId: 'flavor', optionId: 'gone' }] }
     expect(selectionsFromItem(c, stale)).toEqual(s)
+  })
+})
+
+describe('"Solo si…" conditions', () => {
+  const c = normalizeBuilderConfig({
+    enabled: true,
+    basePrice: 50,
+    steps: [
+      { id: 'base', name: 'Base', type: 'single', required: true,
+        options: [{ id: 'leche', name: 'Leche' }, { id: 'agua', name: 'Agua' }] },
+      { id: 'sabor', name: 'Sabor', type: 'multi', required: true,
+        options: [
+          { id: 'taro', name: 'Taro', priceModifier: 5, showIf: { base: ['leche'] } },
+          { id: 'mango', name: 'Mango' },
+        ] },
+      { id: 'temp', name: 'Temperatura', type: 'single', required: true,
+        options: [{ id: 'frio', name: 'Frío' }, { id: 'caliente', name: 'Caliente' }] },
+      { id: 'hielo', name: 'Hielo', type: 'single', required: true, visual: 'ice', showIf: { temp: ['frio'] },
+        options: [{ id: 'normal', name: 'Normal' }, { id: 'poco', name: 'Poco', amount: 0.5 }] },
+      // Needs taro AND a cold drink.
+      { id: 'toque', name: 'Toque', type: 'single', showIf: { sabor: ['taro'], temp: ['frio'] },
+        options: [{ id: 'cloud', name: 'Cloud', priceModifier: 15 }] },
+    ],
+  })
+  const stepIds = (s) => resolveBuilder(c, s).config.steps.map((st) => st.id)
+
+  it('hides an ingredient until its condition is picked', () => {
+    const sabor = (s) => resolveBuilder(c, s).config.steps.find((st) => st.id === 'sabor').options.map((o) => o.id)
+    expect(sabor({ base: ['agua'] })).toEqual(['mango'])
+    expect(sabor({ base: ['leche'] })).toEqual(['taro', 'mango'])
+    expect(sabor({})).toEqual(['mango'])
+  })
+
+  it('skips a step whose condition is not met, so a hot drink never asks for ice', () => {
+    expect(stepIds({ temp: ['caliente'] })).toEqual(['base', 'sabor', 'temp'])
+    expect(stepIds({ temp: ['frio'] })).toEqual(['base', 'sabor', 'temp', 'hielo'])
+    const hot = resolveBuilder(c, { base: ['agua'], sabor: ['mango'], temp: ['caliente'] })
+    expect(firstIncompleteStep(hot.config, hot.selections)).toBe(-1)
+  })
+
+  it('needs one option of EVERY listed step', () => {
+    expect(stepIds({ base: ['leche'], sabor: ['taro'], temp: ['caliente'] })).not.toContain('toque')
+    expect(stepIds({ base: ['leche'], sabor: ['taro'], temp: ['frio'] })).toContain('toque')
+  })
+
+  it('drops picks that stop applying, in cascade', () => {
+    const before = { base: ['leche'], sabor: ['taro', 'mango'], temp: ['frio'], hielo: ['poco'], toque: ['cloud'] }
+    expect(resolveBuilder(c, before).selections).toEqual(before)
+    // Switching to water removes taro, and with it the taro-only topping.
+    const after = resolveBuilder(c, { ...before, base: ['agua'] })
+    expect(after.selections).toEqual({ base: ['agua'], sabor: ['mango'], temp: ['frio'], hielo: ['poco'] })
+    expect(computeTotal(after.config, after.selections)).toBe(50)
+  })
+
+  it('random drinks follow the rules', () => {
+    for (let i = 0; i < 50; i++) {
+      const s = randomSelections(c)
+      const r = resolveBuilder(c, s)
+      expect(r.selections).toEqual(Object.fromEntries(Object.entries(s).filter(([, ids]) => ids.length)))
+      expect(firstIncompleteStep(r.config, r.selections)).toBe(-1)
+    }
+  })
+
+  it('editing a ticket line drops choices the rules no longer allow', () => {
+    const item = { selectedOptions: [
+      { groupId: 'base', optionId: 'agua' }, { groupId: 'sabor', optionId: 'taro' },
+      { groupId: 'temp', optionId: 'caliente' }, { groupId: 'hielo', optionId: 'normal' },
+    ] }
+    expect(selectionsFromItem(c, item)).toEqual({ base: ['agua'], temp: ['caliente'] })
+  })
+
+  it('ignores malformed rules', () => {
+    const n = normalizeBuilderConfig({ enabled: true, steps: [
+      { id: 'a', name: 'A', showIf: ['x'], options: [{ id: '1', name: 'Uno', showIf: { a: [] } }] },
+    ] })
+    expect(n.steps[0].showIf).toBeNull()
+    expect(n.steps[0].options[0].showIf).toBeNull()
   })
 })

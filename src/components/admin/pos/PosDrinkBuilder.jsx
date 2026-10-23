@@ -5,8 +5,8 @@ import { DrinkCup } from '../../drinkBuilder/DrinkCup'
 import { Drawer, inputCls } from '../ui'
 import { formatMoney } from '../../../utils/cart'
 import {
-  NAME_MAX, buildCartItem, computeTotal, deriveCupVisual, firstIncompleteStep, nameFromItem, selectedOptionsOf,
-  selectionsFromItem, toggleSelection,
+  NAME_MAX, buildCartItem, computeTotal, deriveCupVisual, firstIncompleteStep, nameFromItem, resolveBuilder,
+  selectedOptionsOf, selectionsFromItem, toggleSelection,
 } from '../../../utils/drinkBuilder'
 
 const ruleLabel = (step) => {
@@ -16,7 +16,8 @@ const ruleLabel = (step) => {
 
 // Cashier version of "Arma tu bebida": every step on one screen, big tap
 // targets, running total. Same config, prices and stock recipe as the
-// customer builder.
+// customer builder, including the "Solo si…" rules: steps and ingredients
+// that don't apply to what's chosen so far aren't shown.
 export const PosDrinkBuilder = ({ isOpen, config, initialItem, onClose, onConfirm }) => {
   const [selections, setSelections] = useState({})
   const [name, setName] = useState('')
@@ -34,16 +35,20 @@ export const PosDrinkBuilder = ({ isOpen, config, initialItem, onClose, onConfir
 
   if (!isOpen) return null
 
-  const unit = computeTotal(config, selections)
-  const missing = firstIncompleteStep(config, selections)
+  const live = resolveBuilder(config, selections).config
+  const unit = computeTotal(live, selections)
+  const missing = firstIncompleteStep(live, selections)
   const isEditing = Boolean(initialItem)
+
+  const toggle = (step, optionId) =>
+    setSelections((prev) => resolveBuilder(config, toggleSelection(prev, step, optionId)).selections)
 
   const confirm = () => {
     if (missing !== -1) {
-      stepRefs.current[config.steps[missing].id]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      stepRefs.current[live.steps[missing].id]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
-    onConfirm({ item: buildCartItem(config, selections, name), qty })
+    onConfirm({ item: buildCartItem(live, selections, name), qty })
   }
 
   return (
@@ -74,7 +79,7 @@ export const PosDrinkBuilder = ({ isOpen, config, initialItem, onClose, onConfir
           >
             {missing === -1
               ? <>{isEditing ? 'Guardar cambios' : 'Agregar al pedido'} · <span className="tabular-nums">{formatMoney(unit * qty)}</span></>
-              : <>Falta: {config.steps[missing].name}</>}
+              : <>Falta: {live.steps[missing].name}</>}
           </button>
         </div>
       )}
@@ -83,7 +88,7 @@ export const PosDrinkBuilder = ({ isOpen, config, initialItem, onClose, onConfir
         {/* Live cup + total */}
         <div className="customer-preview flex items-center gap-4 overflow-hidden rounded-2xl bg-primary px-4 py-3 text-snow">
           <div className="h-24 shrink-0">
-            <DrinkCup visual={deriveCupVisual(config, selections)} label="Vista de la bebida" size="sm" />
+            <DrinkCup visual={deriveCupVisual(live, selections)} label="Vista de la bebida" size="sm" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold uppercase tracking-wider text-snow/70">Precio</p>
@@ -92,7 +97,7 @@ export const PosDrinkBuilder = ({ isOpen, config, initialItem, onClose, onConfir
           </div>
         </div>
 
-        {config.steps.map((step) => {
+        {live.steps.map((step) => {
           const chosen = selections[step.id] || []
           const lacking = step.required && chosen.length === 0
           return (
@@ -116,7 +121,7 @@ export const PosDrinkBuilder = ({ isOpen, config, initialItem, onClose, onConfir
                       key={o.id}
                       type="button"
                       aria-pressed={on}
-                      onClick={() => setSelections((prev) => toggleSelection(prev, step, o.id))}
+                      onClick={() => toggle(step, o.id)}
                       className={`inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-colors active:scale-[0.97] ${on
                         ? 'border-primary bg-primary text-snow'
                         : 'border-white/15 bg-main-800 text-light-100 hover:border-primary/40'
@@ -155,7 +160,7 @@ export const PosDrinkBuilder = ({ isOpen, config, initialItem, onClose, onConfir
 
         {/* Plain-text recap the cashier can read back to the customer */}
         <p className="text-sm text-light-200/75">
-          {config.steps.flatMap((s) => selectedOptionsOf(s, selections).map((o) => o.name)).join(' · ') || 'Toca los ingredientes que pide el cliente.'}
+          {live.steps.flatMap((s) => selectedOptionsOf(s, selections).map((o) => o.name)).join(' · ') || 'Toca los ingredientes que pide el cliente.'}
         </p>
       </div>
     </Drawer>
