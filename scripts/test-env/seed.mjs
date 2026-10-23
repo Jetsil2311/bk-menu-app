@@ -120,6 +120,14 @@ const main = async () => {
     }
   }
 
+  // Sample "Arma tu bebida" setup so the builder can be previewed locally
+  // (the real one is made from the admin panel). Kept if a copy already has one.
+  collections.settings = collections.settings || {}
+  if (!collections.settings.drinkBuilder) {
+    const sample = JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts/test-env/drink-builder-sample.json'), 'utf8'))
+    collections.settings.drinkBuilder = { data: sample }
+  }
+
   for (const [name, docs] of Object.entries(collections)) {
     const n = await writeDocs(name, docs)
     console.log(`  ✓ ${name.padEnd(20)} ${n} docs`)

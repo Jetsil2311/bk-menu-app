@@ -2,7 +2,7 @@
 
 Base template: https://github.com/Jetsil2311/menu-demo
 Client: Bubble Kaapeh (BK)
-Last updated: 2026-10-23 (Admin light/dark theme switch)
+Last updated: 2026-10-23 (Arma tu bebida — customer UI)
 
 ---
 
@@ -551,9 +551,30 @@ What changed: Changing promos in the carousel now always slides smoothly (0.45 s
 Files affected: src/components/PromoCarousel.jsx
 Reason: Owner reported the carousel had no sliding animation.
 
+### 2026-10-23 — "Arma tu bebida": build-your-own-drink (customer UI, branch feature/build-your-drink)
+What changed: Customers can create a drink from scratch, step by step, while an animated cup on screen fills up with their choices.
+- **Where it lives:** a big "Nuevo · Arma tu bebida" card at the top of the menu (on Todo and Bebidas, not Alimentos) and a highlighted first chip in the category bar. The link `…/#arma-tu-bebida` opens it directly, so it can be shared on Instagram/WhatsApp. The phone's back button closes it.
+- **The builder:** full-screen on phones (cup on top, steps below), a two-column dialog on desktop.
+  - Each step shows ingredient cards with a color swatch, the extra price ("+$10" / "Incluido") and its rule ("Elige 1", "Hasta 2", "Opcional").
+  - The step chips show progress and let people jump around.
+  - The price sticker updates live.
+  - "Sorpréndeme" builds a random valid drink.
+  - The last step suggests a fun name ("Nube de Taro", "Ola de Caramel") that people can change, recaps every choice with edit buttons, and sets the quantity.
+  - Closing keeps the drink in progress until it's added.
+- **The cup:** liquids rise and tint (two or more make an ombré), pearls drop in and bounce, foam puffs on top, ice cubes bob. Reduced-motion users get a still version.
+- **Data-driven, no ingredients in code:** everything (steps, ingredients, prices, colors, rules) comes from the Firestore document `settings/drinkBuilder`. The schema is documented at the top of `src/utils/drinkBuilder.js`. While that document doesn't exist (the live site today), the menu shows nothing new. The admin editor that writes it is the next phase.
+- **Orders:** the drink goes in the cart as "Arma tu bebida: <name>", with each choice as an option chip and its extra price. Price = base price + every chosen extra. It flows unchanged into the WhatsApp message, POS, kitchen board and receipts (`id: 'arma-tu-bebida'`, no recipe, so stock deduction skips it). Optional `stationTags` route it to a kitchen station; the cart now keeps an item's `stationTags`.
+- **Test environment:** a sample setup lives only in the local emulator (`scripts/test-env/drink-builder-sample.json`, loaded by `npm run test:reset`) so the builder can be previewed. It is never sent to production.
+Files affected: src/utils/drinkBuilder.js (new), src/utils/drinkBuilder.test.js (new), src/hooks/useDrinkBuilder.js (new), src/components/drinkBuilder/{DrinkBuilder,DrinkBuilderCard,DrinkCup}.jsx (new), src/views/Home.jsx, src/components/CategoryTabs.jsx, src/index.css, scripts/test-env/seed.mjs, scripts/test-env/drink-builder-sample.json (new)
+Reason: Owner wants a "build your drink" section as a brand-defining feature. Per the owner, the UI comes first; ingredients and structure will be managed from the admin panel later.
+
 ---
 
 ## Known Issues / Follow-ups
+
+- **NEW (2026-10-23): "Arma tu bebida" has no admin editor yet** — next phase. It must write `settings/drinkBuilder` in the shape documented in `src/utils/drinkBuilder.js`: steps (name, hint, single/multi, required, max, cup look: liquid/pearls/foam/ice/none) and per-ingredient name, description, extra price, color, ice amount and on/off. `settings` is already publicly readable and writable by signed-in staff, so no Firestore rule change is needed. Until then the feature is invisible on the live site.
+- **NEW (2026-10-23): builder rules not yet supported** — e.g. "these flavors only with this base" or "this style only for water bases". If the café needs them, add an `onlyWith` field per option when building the admin editor.
+- **NEW (2026-10-23): the builder's prices in the local sample are placeholders** — the real base price and extras will be set by the owner in the admin.
 
 - **NEW (2026-10-23): two different admin email allowlists.** `useAdminData.js` (used by the Menú editor) and the legacy `Admin.jsx` have a hardcoded `ALLOWED_EMAILS = ['jethrosiloe26@gmail.com']` and sign out any other account; the rest of the panel uses `settings/general.authorizedEmails` (Ajustes → "Correos con acceso", currently empty = open). So any staff account other than the owner's gets signed out when opening Menú, no matter what Ajustes says. Found while building the test environment; left unchanged in production pending owner decision (suggest: make useAdminData use the same `checkEmailAuthorized` as useAdminAuth).
 - **NEW (2026-10-23): `emulator-seed/production.json` (from `npm run test:pull`) contains real customer names/phones** — it is git-ignored; don't share it. Delete it when not needed.

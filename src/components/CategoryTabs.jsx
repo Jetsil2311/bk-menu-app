@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react'
 import PropTypes from 'prop-types'
+import { Sparkles } from 'lucide-react'
 import { getSectionIcon } from '../utils/menuTheme'
 
 // Sticky horizontal pill bar for category navigation.
 // Sticks below the desktop navbar (top-[104px] on sm+) and at top-0 on mobile.
 // Each chip has an icon + label; the active chip is kept scrolled into view.
-export const CategoryTabs = ({ sections, activeSection, onTabClick }) => {
+// `onBuildDrink` adds a highlighted "Arma tu bebida" chip first.
+export const CategoryTabs = ({ sections, activeSection, onTabClick, onBuildDrink, buildDrinkLabel = 'Arma tu bebida' }) => {
   const scrollerRef = useRef(null)
   const chipRefs = useRef({})
 
@@ -29,6 +31,18 @@ export const CategoryTabs = ({ sections, activeSection, onTabClick }) => {
         role="tablist"
         aria-label="Categorías del menú"
       >
+        {onBuildDrink && (
+          <button
+            type="button"
+            onClick={onBuildDrink}
+            className="shrink-0 inline-flex min-h-[44px] items-center gap-2 cursor-pointer rounded-full bg-accent pl-2 pr-4 text-sm font-bold text-ink shadow-[0_6px_16px_-8px_var(--color-ink)] transition-all duration-200 hover:brightness-105 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+          >
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface/70" aria-hidden="true">
+              <Sparkles size={16} strokeWidth={2.25} />
+            </span>
+            {buildDrinkLabel}
+          </button>
+        )}
         {sections.map((section) => {
           const isActive = activeSection === section.name
           const Icon = getSectionIcon(section.name)
@@ -71,4 +85,6 @@ CategoryTabs.propTypes = {
   ).isRequired,
   activeSection: PropTypes.string,
   onTabClick: PropTypes.func.isRequired,
+  onBuildDrink: PropTypes.func,
+  buildDrinkLabel: PropTypes.string,
 }

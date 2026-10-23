@@ -11,6 +11,8 @@ import { BottomSheet } from '../components/BottomSheet'
 import { PromoBanner } from '../components/PromoBanner'
 import { SectionsList } from '../components/SectionsList'
 import { CategoryTabs } from '../components/CategoryTabs'
+import { DrinkBuilder } from '../components/drinkBuilder/DrinkBuilder'
+import { DrinkBuilderCard } from '../components/drinkBuilder/DrinkBuilderCard'
 import {
   addDoc,
   collection,
@@ -23,6 +25,8 @@ import {
 import { usePromotion } from '../hooks/usePromotion'
 import { useSections } from '../hooks/useSections'
 import { useSettings } from '../hooks/useSettings'
+import { useDrinkBuilder } from '../hooks/useDrinkBuilder'
+import { DRINK_BUILDER_HASH } from '../utils/drinkBuilder'
 import { flyToCart, formatMoney, getCartKey } from '../utils/cart'
 import { toSafeItems } from '../utils/posCalculations'
 import { db, isTestEnv } from '../firebase'
@@ -64,6 +68,45 @@ export const Home = () => {
 
   // Cart item being edited (to change its toppings).
   const [editingToppingCartItemId, setEditingToppingCartItemId] = useState(null)
+
+  // ── "Arma tu bebida" builder ──────────────────────────────────────────────
+  // Config lives in settings/drinkBuilder; while it isn't set up, the menu
+  // shows nothing. Opening adds #arma-tu-bebida to the URL so the link can
+  // be shared and the phone's back button closes the builder.
+  const { config: builderConfig } = useDrinkBuilder()
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false)
+  const builderPushedHash = useRef(false)
+
+  const openBuilder = () => {
+    if (window.location.hash !== DRINK_BUILDER_HASH) {
+      window.history.pushState(window.history.state, '', DRINK_BUILDER_HASH)
+      builderPushedHash.current = true
+    }
+    setIsBuilderOpen(true)
+  }
+
+  const closeBuilder = () => {
+    setIsBuilderOpen(false)
+    if (window.location.hash !== DRINK_BUILDER_HASH) return
+    if (builderPushedHash.current) {
+      builderPushedHash.current = false
+      window.history.back()
+    } else {
+      window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search)
+    }
+  }
+
+  useEffect(() => {
+    if (!builderConfig) return
+    if (window.location.hash === DRINK_BUILDER_HASH) setIsBuilderOpen(true)
+    const onPop = () => {
+      const open = window.location.hash === DRINK_BUILDER_HASH
+      if (!open) builderPushedHash.current = false
+      setIsBuilderOpen(open)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [builderConfig])
 
   // ── Toast ─────────────────────────────────────────────────────────────────
   const [toast, setToast] = useState(null)
@@ -148,6 +191,7 @@ export const Home = () => {
     selectedToppings = [],
     availableToppings = [],
     selectedOptions = [],
+    stationTags = [],
     qty: addQty = 1,
   }) => {
     if (fromRect) {
@@ -178,6 +222,7 @@ export const Home = () => {
             selectedToppings,
             availableToppings,
             selectedOptions,
+            stationTags,
           },
         ]
       }
@@ -252,6 +297,13 @@ export const Home = () => {
       qty,
     })
     showToast('¡Agregado! 🧋')
+  }
+
+  // Called when the drink builder's "Agregar" button is tapped.
+  const handleBuilderAdd = ({ item, qty, fromRect }) => {
+    closeBuilder()
+    _commitToCart({ ...item, qty, fromRect, flyImageSrc: null })
+    showToast('¡Tu creación va al carrito!')
   }
 
   // Called when ToppingsOverlay confirms a selection (add flow).
@@ -539,10 +591,15 @@ export const Home = () => {
           sections={visibleSections}
           activeSection={activeSection}
           onTabClick={handleTabClick}
+          onBuildDrink={builderConfig && location.pathname !== '/alimentos' ? openBuilder : undefined}
+          buildDrinkLabel={builderConfig?.title}
         />
       )}
 
       <main className="pb-6">
+        {builderConfig && location.pathname !== '/alimentos' && (
+          <DrinkBuilderCard config={builderConfig} onOpen={openBuilder} />
+        )}
         <SectionsList
           isLoading={sectionsLoading}
           error={sectionsError}
@@ -589,6 +646,15 @@ export const Home = () => {
         onClearCart={clearCart}
         onEditToppings={(cartItemId) => setEditingToppingCartItemId(cartItemId)}
       />
+
+      {builderConfig && (
+        <DrinkBuilder
+          isOpen={isBuilderOpen}
+          onClose={closeBuilder}
+          config={builderConfig}
+          onAdd={handleBuilderAdd}
+        />
+      )}
 
       {/* ── BottomSheet — option groups ──────────────────────────────── */}
       <BottomSheet

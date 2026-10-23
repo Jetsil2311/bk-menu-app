@@ -1,0 +1,93 @@
+{
+  "enabled": true,
+  "title": "Arma tu bebida",
+  "tagline": "Tú eliges cada capa. Nosotros la preparamos.",
+  "basePrice": 55,
+  "steps": [
+    {
+      "id": "base",
+      "name": "Base",
+      "hint": "Lo que le da cuerpo a tu bebida.",
+      "type": "single",
+      "required": true,
+      "visual": "liquid",
+      "options": [
+        { "id": "leche", "name": "Leche cremosa", "desc": "Suave, estilo milk tea.", "priceModifier": 0, "color": "#f6efe4" },
+        { "id": "soda", "name": "Agua mineral", "desc": "Burbujeante y ligera.", "priceModifier": 0, "color": "#e2f2f6" },
+        { "id": "espresso", "name": "Espresso", "desc": "Doble carga de café.", "priceModifier": 5, "color": "#7a4a32" }
+      ]
+    },
+    {
+      "id": "sabor",
+      "name": "Sabor",
+      "hint": "Mezcla hasta dos. Sí, se vale.",
+      "type": "multi",
+      "maxSelections": 2,
+      "required": true,
+      "visual": "liquid",
+      "options": [
+        { "id": "taro", "name": "Taro", "priceModifier": 0, "color": "#c9b3e6" },
+        { "id": "mango", "name": "Mango", "priceModifier": 0, "color": "#ffc94d" },
+        { "id": "fresa", "name": "Fresa", "priceModifier": 0, "color": "#ff8fa3" },
+        { "id": "blueberry", "name": "Blueberry", "priceModifier": 0, "color": "#7d78d8" },
+        { "id": "maracuya", "name": "Maracuyá", "priceModifier": 0, "color": "#f7d54a" },
+        { "id": "matcha", "name": "Matcha", "priceModifier": 10, "color": "#9cc66b" },
+        { "id": "kiwi", "name": "Kiwi", "priceModifier": 0, "color": "#a8d86e" },
+        { "id": "caramel", "name": "Caramel", "priceModifier": 0, "color": "#c8894a" },
+        { "id": "mocha", "name": "Mocha", "priceModifier": 0, "color": "#6e4330" }
+      ]
+    },
+    {
+      "id": "estilo",
+      "name": "Estilo",
+      "hint": "¿Cómo te la preparamos?",
+      "type": "single",
+      "required": true,
+      "visual": "none",
+      "options": [
+        { "id": "iced", "name": "Iced", "desc": "Fría, con hielo.", "priceModifier": 0 },
+        { "id": "frappe", "name": "Frappé", "desc": "Licuada y cremosa.", "priceModifier": 5 },
+        { "id": "frozen", "name": "Frozen", "desc": "Tipo granizado.", "priceModifier": 5 },
+        { "id": "caliente", "name": "Caliente", "desc": "Para los días fríos.", "priceModifier": 0 }
+      ]
+    },
+    {
+      "id": "hielo",
+      "name": "Hielo",
+      "type": "single",
+      "required": false,
+      "visual": "ice",
+      "options": [
+        { "id": "normal", "name": "Normal", "amount": 1, "priceModifier": 0 },
+        { "id": "poco", "name": "Poco hielo", "amount": 0.5, "priceModifier": 0 },
+        { "id": "sin", "name": "Sin hielo", "amount": 0, "priceModifier": 0 }
+      ]
+    },
+    {
+      "id": "perlas",
+      "name": "Perlas",
+      "hint": "Lo más divertido va al fondo.",
+      "type": "multi",
+      "maxSelections": 2,
+      "required": false,
+      "visual": "pearls",
+      "options": [
+        { "id": "tapioca", "name": "Tapioca", "desc": "Las clásicas, chiclosas.", "priceModifier": 0, "color": "#3a2016" },
+        { "id": "exp-fresa", "name": "Explosivas de fresa", "desc": "Revientan en tu boca.", "priceModifier": 10, "color": "#ff5c7a" },
+        { "id": "exp-mango", "name": "Explosivas de mango", "desc": "Revientan en tu boca.", "priceModifier": 10, "color": "#ffb000" }
+      ]
+    },
+    {
+      "id": "toque",
+      "name": "Toque final",
+      "hint": "La corona de tu bebida.",
+      "type": "single",
+      "required": false,
+      "visual": "foam",
+      "options": [
+        { "id": "cloud", "name": "Cloud Top", "desc": "Espuma cremosa encima.", "priceModifier": 15, "color": "#fff7ec" },
+        { "id": "cloud-taro", "name": "Cloud de taro", "desc": "Espuma con un toque de taro.", "priceModifier": 15, "color": "#e4d6f5" }
+      ]
+    }
+  ]
+}
