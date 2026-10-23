@@ -97,6 +97,31 @@ const buildDemoCollections = async () => {
   }
 }
 
+// Sample "Arma tu bebida" setup so the builder (and its stock deduction) can
+// be tried locally — the real one is made from the admin panel. Each piece is
+// only added when the data being loaded doesn't already have it.
+const readSample = (file) => JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts/test-env', file), 'utf8'))
+
+const addDrinkBuilderSamples = async (collections) => {
+  collections.settings = collections.settings || {}
+  if (!collections.settings.drinkBuilder) {
+    collections.settings.drinkBuilder = { data: readSample('drink-builder-sample.json') }
+  }
+  if (!collections.rawMaterials || !Object.keys(collections.rawMaterials).length) {
+    collections.rawMaterials = Object.fromEntries(
+      Object.entries(readSample('raw-materials-sample.json')).map(([id, m]) => [id, { data: { ...m, supplier: '', notes: 'Muestra del entorno de prueba' } }])
+    )
+  }
+  collections.recipes = collections.recipes || {}
+  const { DRINK_RECIPE_ID, draftFromDocs, recipeFromDraft } = await import(path.join(ROOT, 'src/utils/drinkBuilderAdmin.js'))
+  if (!collections.recipes[DRINK_RECIPE_ID]) {
+    const materials = Object.entries(collections.rawMaterials).map(([docId, { data }]) => ({ docId, ...data }))
+    const config = collections.settings.drinkBuilder.data
+    const draft = draftFromDocs(config, readSample('drink-builder-recipe-sample.json'))
+    collections.recipes[DRINK_RECIPE_ID] = { data: recipeFromDraft(draft, materials) }
+  }
+}
+
 const main = async () => {
   const useSnapshot = !forceDemo && fs.existsSync(SNAPSHOT_FILE)
   let collections
@@ -120,13 +145,7 @@ const main = async () => {
     }
   }
 
-  // Sample "Arma tu bebida" setup so the builder can be previewed locally
-  // (the real one is made from the admin panel). Kept if a copy already has one.
-  collections.settings = collections.settings || {}
-  if (!collections.settings.drinkBuilder) {
-    const sample = JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts/test-env/drink-builder-sample.json'), 'utf8'))
-    collections.settings.drinkBuilder = { data: sample }
-  }
+  await addDrinkBuilderSamples(collections)
 
   for (const [name, docs] of Object.entries(collections)) {
     const n = await writeDocs(name, docs)

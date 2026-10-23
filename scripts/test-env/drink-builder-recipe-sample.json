@@ -1,0 +1,42 @@
+{
+  "fixedIngredients": [
+    { "materialId": "vaso-16oz", "quantity": 1, "unit": "units" },
+    { "materialId": "tapa-domo", "quantity": 1, "unit": "units" },
+    { "materialId": "popote-boba", "quantity": 1, "unit": "units" }
+  ],
+  "optionIngredients": {
+    "base": { "options": {
+      "leche":    { "ingredients": [{ "materialId": "leche-entera", "quantity": 200, "unit": "ml" }] },
+      "soda":     { "ingredients": [{ "materialId": "agua-mineral", "quantity": 250, "unit": "ml" }] },
+      "espresso": { "ingredients": [{ "materialId": "cafe-grano", "quantity": 18, "unit": "grams" }] }
+    } },
+    "sabor": { "options": {
+      "taro":      { "ingredients": [{ "materialId": "polvo-taro", "quantity": 25, "unit": "grams" }] },
+      "mango":     { "ingredients": [{ "materialId": "jarabe-mango", "quantity": 30, "unit": "ml" }] },
+      "fresa":     { "ingredients": [{ "materialId": "jarabe-fresa", "quantity": 30, "unit": "ml" }] },
+      "blueberry": { "ingredients": [{ "materialId": "jarabe-blueberry", "quantity": 30, "unit": "ml" }] },
+      "maracuya":  { "ingredients": [{ "materialId": "jarabe-maracuya", "quantity": 30, "unit": "ml" }] },
+      "matcha":    { "ingredients": [{ "materialId": "polvo-matcha", "quantity": 6, "unit": "grams" }] },
+      "kiwi":      { "ingredients": [{ "materialId": "jarabe-kiwi", "quantity": 30, "unit": "ml" }] },
+      "caramel":   { "ingredients": [{ "materialId": "jarabe-caramel", "quantity": 25, "unit": "ml" }] },
+      "mocha":     { "ingredients": [{ "materialId": "jarabe-mocha", "quantity": 25, "unit": "ml" }] }
+    } },
+    "estilo": { "options": {
+      "frappe": { "ingredients": [{ "materialId": "hielo", "quantity": 200, "unit": "grams" }] },
+      "frozen": { "ingredients": [{ "materialId": "hielo", "quantity": 250, "unit": "grams" }] }
+    } },
+    "hielo": { "options": {
+      "normal": { "ingredients": [{ "materialId": "hielo", "quantity": 150, "unit": "grams" }] },
+      "poco":   { "ingredients": [{ "materialId": "hielo", "quantity": 75, "unit": "grams" }] }
+    } },
+    "perlas": { "options": {
+      "tapioca":   { "ingredients": [{ "materialId": "tapioca", "quantity": 60, "unit": "grams" }] },
+      "exp-fresa": { "ingredients": [{ "materialId": "exp-fresa", "quantity": 50, "unit": "grams" }] },
+      "exp-mango": { "ingredients": [{ "materialId": "exp-mango", "quantity": 50, "unit": "grams" }] }
+    } },
+    "toque": { "options": {
+      "cloud":      { "ingredients": [{ "materialId": "base-cloud", "quantity": 40, "unit": "ml" }] },
+      "cloud-taro": { "ingredients": [{ "materialId": "base-cloud", "quantity": 40, "unit": "ml" }, { "materialId": "polvo-taro", "quantity": 5, "unit": "grams" }] }
+    } }
+  }
+}

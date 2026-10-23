@@ -1,4 +1,4 @@
-import { convertUnits } from './unitConversion'
+import { convertUnits } from './unitConversion.js'
 
 export const UNIT_OPTIONS = [
   { value: 'kg', label: 'kg' },

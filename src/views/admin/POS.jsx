@@ -713,7 +713,7 @@ export const POS = () => {
 
   const _commit = (item) => {
     const product = productsById[item.productDocId] || productsById[item.id]
-    const stationTags = product?.stationTags || []
+    const stationTags = product?.stationTags || item.stationTags || []
     setOrderItems(prev => {
       const idx = prev.findIndex(it =>
         it.id === item.id &&

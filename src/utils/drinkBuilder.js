@@ -178,6 +178,9 @@ export const buildCartItem = (config, selections, customName = '') => {
   const name = customName.trim().slice(0, NAME_MAX)
   return {
     id: DRINK_BUILDER_ITEM_ID,
+    // recipes/arma-tu-bebida — paying the order deducts each choice's raw
+    // materials (see utils/drinkBuilderAdmin.js).
+    productDocId: DRINK_BUILDER_ITEM_ID,
     name: name ? `${config.title}: ${name}` : config.title,
     price: config.basePrice,
     stationTags: config.stationTags,

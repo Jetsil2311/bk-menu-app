@@ -45,12 +45,13 @@ export async function computeAndDeductOrderStock(items, totalRevenue, orderId) {
   const deductions = {} // materialId -> total quantity to remove across the whole order
   const itemsWithCosts = items.map((item) => {
     const recipe = item.productDocId ? recipesById[item.productDocId] : null
-    if (!recipe || !(recipe.fixedIngredients?.length > 0)) {
+    const noRecipe = () => {
       warnings.push(`"${item.name}" no tiene receta — no se calculó costo ni se dedujo stock para este producto.`)
       return { ...item, costPerUnit: null, totalCost: null }
     }
+    if (!recipe) return noRecipe()
 
-    const ingredientLines = [...recipe.fixedIngredients]
+    const ingredientLines = [...(recipe.fixedIngredients || [])]
     for (const so of item.selectedOptions || []) {
       if (!so.groupId || !so.optionId) {
         if (so.optionName) warnings.push(`"${item.name}": opción "${so.optionName}" es de un pedido con formato anterior — se ignoró para el costeo.`)
@@ -59,6 +60,9 @@ export async function computeAndDeductOrderStock(items, totalRevenue, orderId) {
       const optionData = recipe.optionIngredients?.[so.groupId]?.options?.[so.optionId]
       if (optionData?.ingredients?.length) ingredientLines.push(...optionData.ingredients)
     }
+    // Product recipes always have fixed lines; the drink builder's recipe
+    // ("Arma tu bebida") may be made only of per-choice lines.
+    if (ingredientLines.length === 0) return noRecipe()
 
     const costPerUnit = Number(ingredientLines.reduce((sum, ing) => sum + ing.totalCost, 0).toFixed(2))
     const qty = item.qty || 1

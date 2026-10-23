@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { DRINK_BUILDER_ITEM_ID } from '../../../utils/drinkBuilder'
 import { formatMoney } from '../../../utils/cart'
 import { itemLineTotal } from '../../../utils/financeCalculations'
 import { Table2, Search, ChevronUp, ChevronDown, X } from 'lucide-react'
@@ -28,7 +29,7 @@ export const ProductProfitability = ({ orders }) => {
     for (const order of orders) {
       for (const item of order.items || []) {
         const key = item.productDocId || item.id || item.name
-        if (!byProduct[key]) byProduct[key] = { key, name: item.name || 'Sin nombre', units: 0, revenue: 0, cost: 0, missingRecipe: false, hasEstimate: false }
+        if (!byProduct[key]) byProduct[key] = { key, name: key === DRINK_BUILDER_ITEM_ID ? 'Arma tu bebida' : (item.name || 'Sin nombre'), units: 0, revenue: 0, cost: 0, missingRecipe: false, hasEstimate: false }
         const row = byProduct[key]
         row.units += item.qty || 0
         row.revenue += itemLineTotal(item)

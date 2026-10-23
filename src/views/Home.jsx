@@ -192,6 +192,7 @@ export const Home = () => {
     availableToppings = [],
     selectedOptions = [],
     stationTags = [],
+    productDocId = null,
     qty: addQty = 1,
   }) => {
     if (fromRect) {
@@ -223,6 +224,7 @@ export const Home = () => {
             availableToppings,
             selectedOptions,
             stationTags,
+            productDocId,
           },
         ]
       }

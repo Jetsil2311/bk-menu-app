@@ -197,7 +197,8 @@ export const DrinkBuilder = ({ isOpen, onClose, config, onAdd }) => {
   const nextStep = steps[index + 1]
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-[9000] font-body text-ink md:flex md:items-center md:justify-center md:p-6">
+    // customer-preview: keeps the real brand colors when the admin previews it
+    <div className="customer-preview fixed inset-0 z-[9000] font-body text-ink md:flex md:items-center md:justify-center md:p-6">
       {/* Backdrop (desktop; the sheet covers the whole phone screen) */}
       <div
         className={`absolute inset-0 hidden bg-ink/60 backdrop-blur-sm transition-opacity duration-300 md:block ${entered ? 'opacity-100' : 'opacity-0'}`}

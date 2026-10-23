@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { DRINK_BUILDER_ITEM_ID } from '../../../utils/drinkBuilder'
 import { collection, onSnapshot } from 'firebase/firestore'
 import { db } from '../../../firebase'
 import { formatMoney } from '../../../utils/cart'
@@ -117,7 +118,7 @@ export const StockVariance = ({ orders, docIdByLegacyId = {}, nameToDocId = {} }
         actualCogs += actual
 
         const key = item.productDocId || item.id || item.name
-        if (!byProduct[key]) byProduct[key] = { key, name: item.name || 'Sin nombre', expected: 0, actual: 0 }
+        if (!byProduct[key]) byProduct[key] = { key, name: key === DRINK_BUILDER_ITEM_ID ? 'Arma tu bebida' : (item.name || 'Sin nombre'), expected: 0, actual: 0 }
         byProduct[key].expected += expected
         byProduct[key].actual += actual
       }

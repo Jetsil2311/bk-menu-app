@@ -1,0 +1,22 @@
+{
+  "vaso-16oz":        { "name": "Vaso 16 oz",            "unit": "units", "costPerUnit": 2.5,  "currentStock": 300, "reorderLevel": 50 },
+  "tapa-domo":        { "name": "Tapa domo",             "unit": "units", "costPerUnit": 1.2,  "currentStock": 300, "reorderLevel": 50 },
+  "popote-boba":      { "name": "Popote para boba",      "unit": "units", "costPerUnit": 0.8,  "currentStock": 300, "reorderLevel": 50 },
+  "leche-entera":     { "name": "Leche entera",          "unit": "liter", "costPerUnit": 26,   "currentStock": 20,  "reorderLevel": 4 },
+  "agua-mineral":     { "name": "Agua mineral",          "unit": "liter", "costPerUnit": 18,   "currentStock": 15,  "reorderLevel": 3 },
+  "cafe-grano":       { "name": "Café en grano",         "unit": "kg",    "costPerUnit": 380,  "currentStock": 3,   "reorderLevel": 0.5 },
+  "polvo-taro":       { "name": "Polvo de taro",         "unit": "kg",    "costPerUnit": 320,  "currentStock": 2,   "reorderLevel": 0.4 },
+  "polvo-matcha":     { "name": "Matcha en polvo",       "unit": "kg",    "costPerUnit": 900,  "currentStock": 1,   "reorderLevel": 0.2 },
+  "jarabe-mango":     { "name": "Jarabe de mango",       "unit": "liter", "costPerUnit": 210,  "currentStock": 3,   "reorderLevel": 0.5 },
+  "jarabe-fresa":     { "name": "Jarabe de fresa",       "unit": "liter", "costPerUnit": 210,  "currentStock": 3,   "reorderLevel": 0.5 },
+  "jarabe-blueberry": { "name": "Jarabe de blueberry",   "unit": "liter", "costPerUnit": 220,  "currentStock": 2,   "reorderLevel": 0.5 },
+  "jarabe-maracuya":  { "name": "Jarabe de maracuyá",    "unit": "liter", "costPerUnit": 210,  "currentStock": 2,   "reorderLevel": 0.5 },
+  "jarabe-kiwi":      { "name": "Jarabe de kiwi",        "unit": "liter", "costPerUnit": 210,  "currentStock": 2,   "reorderLevel": 0.5 },
+  "jarabe-caramel":   { "name": "Jarabe de caramelo",    "unit": "liter", "costPerUnit": 230,  "currentStock": 2,   "reorderLevel": 0.5 },
+  "jarabe-mocha":     { "name": "Jarabe de mocha",       "unit": "liter", "costPerUnit": 230,  "currentStock": 2,   "reorderLevel": 0.5 },
+  "tapioca":          { "name": "Perlas de tapioca",     "unit": "kg",    "costPerUnit": 120,  "currentStock": 5,   "reorderLevel": 1 },
+  "exp-fresa":        { "name": "Perlas explosivas fresa", "unit": "kg",  "costPerUnit": 260,  "currentStock": 3,   "reorderLevel": 0.5 },
+  "exp-mango":        { "name": "Perlas explosivas mango", "unit": "kg",  "costPerUnit": 260,  "currentStock": 3,   "reorderLevel": 0.5 },
+  "base-cloud":       { "name": "Base para Cloud Top",   "unit": "liter", "costPerUnit": 150,  "currentStock": 2,   "reorderLevel": 0.5 },
+  "hielo":            { "name": "Hielo",                 "unit": "kg",    "costPerUnit": 6,    "currentStock": 40,  "reorderLevel": 10 }
+}

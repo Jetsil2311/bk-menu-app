@@ -2,7 +2,7 @@
 
 Base template: https://github.com/Jetsil2311/menu-demo
 Client: Bubble Kaapeh (BK)
-Last updated: 2026-10-23 (Arma tu bebida — customer UI)
+Last updated: 2026-10-23 (Arma tu bebida — admin editor + stock)
 
 ---
 
@@ -568,11 +568,46 @@ What changed: Customers can create a drink from scratch, step by step, while an 
 Files affected: src/utils/drinkBuilder.js (new), src/utils/drinkBuilder.test.js (new), src/hooks/useDrinkBuilder.js (new), src/components/drinkBuilder/{DrinkBuilder,DrinkBuilderCard,DrinkCup}.jsx (new), src/views/Home.jsx, src/components/CategoryTabs.jsx, src/index.css, scripts/test-env/seed.mjs, scripts/test-env/drink-builder-sample.json (new)
 Reason: Owner wants a "build your drink" section as a brand-defining feature. Per the owner, the UI comes first; ingredients and structure will be managed from the admin panel later.
 
+### 2026-10-23 — "Arma tu bebida": admin editor + every ingredient connected to stock
+What changed: The owner now sets up the whole builder from **Admin → Menú → Arma tu bebida**, including what each ingredient costs the customer and how much raw material it uses. When a builder drink is paid, those raw materials come off the inventory and Finanzas knows its real cost.
+- **Overview:**
+  - A live sample cup ("Otra combinación" re-mixes it) and the "Mostrar en el menú" switch.
+  - The cheapest-to-priciest drink price, cost and margin.
+  - "Probar como cliente", which opens the real customer builder.
+  - A warning listing ingredients that don't deduct anything yet.
+- **Precio y textos:** title, tagline and base price.
+- **Siempre se usa:** raw materials every drink consumes (cup, lid, straw…).
+- **Pasos:** reorder, edit, delete (with confirmation). Each step opens a drawer:
+  - The step's name, helper line, "Solo 1 / Varios" with an optional max, Obligatorio, and how it looks in the cup (Líquido, Perlas, Espuma, Hielo, Ninguno).
+  - Its ingredients: name, extra price, short description, cup color (presets from the menu's own palette or any color), ice amount, Disponible/Agotado switch, up/down order, and **"Qué descuenta del inventario"** rows (raw material + amount + unit, with live cost).
+  - Each ingredient shows "Incluido en el precio base · te cuesta $X", or for extras "Ganas $Y", or a red warning when the extra doesn't cover its own cost.
+  - Amounts default to ml/g for materials stocked in L/kg, since drink portions are small; any unit of the same family can be chosen.
+- **Saving:** one "Guardar cambios" bar (with Descartar) saves everything in a single atomic write. Nothing is half-saved.
+- **Where data lives:**
+  - `settings/drinkBuilder` = what customers see (no quantities, materials or costs, since that document is public).
+  - `recipes/arma-tu-bebida` = consumption, in exactly the same shape as product recipes made in Inventario (`fixedIngredients` + `optionIngredients[stepId].options[optionId]`, with `quantityInMaterialUnit` and a cost snapshot).
+  - Builder cart lines carry `productDocId: 'arma-tu-bebida'`, so the existing payment code (`computeAndDeductOrderStock`) and Finanzas (`estimateItemCost`, Rentabilidad, Varianza) handle them with no special cases.
+- **Fixes to shared code needed for this:**
+  - Stock deduction no longer skips a recipe that has no fixed lines but does have per-choice lines. Product recipes behave exactly as before.
+  - The POS keeps an item's own station tags when no catalog product matches.
+  - The customer cart keeps `productDocId`.
+  - Finanzas groups all custom drinks into one "Arma tu bebida" row.
+  - The customer builder keeps brand colors when previewed inside the admin's dark theme.
+- **Verified locally:** a 2-drink order (milk + taro + strawberry, Frappé, poco hielo, tapioca, Cloud Top) deducted 2 cups, lids and straws, 0.44 L milk, 0.05 kg taro, 0.06 L strawberry syrup, 0.55 kg ice, 0.12 kg tapioca and 0.08 L cloud base. That is exactly the configured amounts. Cost was $39.37 per drink.
+- **Test environment:** sample raw materials and a sample consumption recipe (`scripts/test-env/raw-materials-sample.json`, `drink-builder-recipe-sample.json`) load with `npm run test:reset` only when the data has none. They never touch production.
+Files affected: src/components/admin/drinkBuilder/{DrinkBuilderEditor,InventoryRows}.jsx (new), src/utils/drinkBuilderAdmin.js (new), src/utils/drinkBuilderAdmin.test.js (new), src/views/admin/MenuEditor.jsx, src/utils/drinkBuilder.js, src/utils/stockDeduction.js, src/utils/recipeCalculations.js (import extension only), src/views/Home.jsx, src/views/admin/POS.jsx, src/components/admin/finance/{ProductProfitability,StockVariance}.jsx, src/components/drinkBuilder/DrinkBuilder.jsx, scripts/test-env/seed.mjs, scripts/test-env/{raw-materials-sample,drink-builder-recipe-sample}.json (new)
+Reason: Owner asked for the admin editor, with a price and a raw-material consumption for every ingredient.
+
 ---
 
 ## Known Issues / Follow-ups
 
-- **NEW (2026-10-23): "Arma tu bebida" has no admin editor yet** — next phase. It must write `settings/drinkBuilder` in the shape documented in `src/utils/drinkBuilder.js`: steps (name, hint, single/multi, required, max, cup look: liquid/pearls/foam/ice/none) and per-ingredient name, description, extra price, color, ice amount and on/off. `settings` is already publicly readable and writable by signed-in staff, so no Firestore rule change is needed. Until then the feature is invisible on the live site.
+- **NEW (2026-10-23): "Arma tu bebida" can't be saved on the live site until the `recipes` Firestore rule is published.** The editor saves the menu document and the inventory recipe in one atomic write. Production has no rule for `recipes` (known gap, see the 2026-08-04 note below), so the save fails with a clear message. `firestore.rules` in the repo already has the rule; it needs `firebase deploy --only firestore:rules` (review the whole file first, because it replaces the live rules).
+- **NEW (2026-10-23): builder ingredient costs are a snapshot from the moment of saving** — same behavior as product recipes in Inventario. If a raw material's price changes, open Arma tu bebida and save again to refresh costs. Stock *quantities* are always correct.
+- **NEW (2026-10-23): the POS can't ring up an "Arma tu bebida" for walk-in customers yet** — it only arrives through web/WhatsApp orders loaded into the POS. Natural next step: an "Arma tu bebida" tile in Cobrar that opens the same builder.
+- **NEW (2026-10-23): web orders for regular products still arrive without `productDocId`** (pre-existing: the customer cart never set it), so stock is only deducted for them when charged from the POS product grid. Builder drinks do carry it.
+
+- **RESOLVED 2026-10-23 (admin editor added — see change entry)** ~~"Arma tu bebida" has no admin editor yet~~
 - **NEW (2026-10-23): builder rules not yet supported** — e.g. "these flavors only with this base" or "this style only for water bases". If the café needs them, add an `onlyWith` field per option when building the admin editor.
 - **NEW (2026-10-23): the builder's prices in the local sample are placeholders** — the real base price and extras will be set by the owner in the admin.
 

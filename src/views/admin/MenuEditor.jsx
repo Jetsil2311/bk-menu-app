@@ -7,6 +7,7 @@ import { useAdminData } from '../../hooks/useAdminData'
 import { useStationContext } from '../../context/StationContext'
 import { ConfirmDialog } from '../../components/admin/ConfirmDialog'
 import { MenuCard } from '../../components/MenuCard'
+import { DrinkBuilderEditor } from '../../components/admin/drinkBuilder/DrinkBuilderEditor'
 import { getSectionTone } from '../../utils/menuTheme'
 import {
   addOptionToGroup,
@@ -38,6 +39,7 @@ import {
   Eye,
   EyeOff,
   SlidersHorizontal,
+  CupSoda,
   ChefHat,
   Info,
   ArrowUp,
@@ -1128,6 +1130,7 @@ const TABS = [
   { id: 'products', label: 'Productos', icon: Layers },
   { id: 'toppings', label: 'Extras', icon: Candy },
   { id: 'carousel', label: 'Carrusel', icon: MonitorPlay },
+  { id: 'builder', label: 'Arma tu bebida', icon: CupSoda },
 ]
 
 export const MenuEditor = () => {
@@ -1157,7 +1160,7 @@ export const MenuEditor = () => {
   return (
     <div className="space-y-5">
       {/* Tabs */}
-      <div role="tablist" aria-label="Partes del menú" className="flex w-full sm:inline-flex sm:w-auto gap-1 rounded-2xl bg-main-900 p-1.5 ring-1 ring-white/10">
+      <div role="tablist" aria-label="Partes del menú" className="flex w-full max-w-full sm:inline-flex sm:w-auto gap-1 overflow-x-auto scrollbar-hide rounded-2xl bg-main-900 p-1.5 ring-1 ring-white/10">
         {TABS.map(tab => {
           const active = activeTab === tab.id
           return (
@@ -1165,8 +1168,11 @@ export const MenuEditor = () => {
               key={tab.id}
               role="tab"
               aria-selected={active}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-1 sm:flex-none min-h-[44px] items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition-colors cursor-pointer ${
+              onClick={(e) => {
+                setActiveTab(tab.id)
+                e.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' })
+              }}
+              className={`flex flex-1 shrink-0 sm:flex-none min-h-[44px] items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-bold transition-colors cursor-pointer ${
                 active ? 'bg-primary text-snow shadow-sm' : 'text-light-200/75 hover:bg-white/5 hover:text-light-100'
               }`}
             >
@@ -1180,6 +1186,7 @@ export const MenuEditor = () => {
       {activeTab === 'products' && <ProductsTab data={data} notify={notify} />}
       {activeTab === 'toppings' && <ToppingsTab data={data} />}
       {activeTab === 'carousel' && <CarouselTab data={data} />}
+      {activeTab === 'builder' && <DrinkBuilderEditor notify={notify} />}
 
       {toast && (
         <div role="status" aria-live="polite" className="fixed left-1/2 -translate-x-1/2 bottom-24 md:bottom-8 z-[80] flex items-center gap-2 rounded-full bg-light-100 px-5 py-3 text-sm font-bold text-main-900 shadow-2xl">
