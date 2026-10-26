@@ -488,6 +488,7 @@ export const POS = () => {
   // Set when the active ticket is editing/charging an existing "en curso"
   // order (loaded via Agregar/Cobrar) instead of a brand-new one.
   const [resumingOrderId, setResumingOrderId] = useState(null)
+  const [resumingMeta, setResumingMeta] = useState(null)  // { id, orderId, source } of the order being charged
 
   // ── En curso (orders sent to kitchen, not yet charged) ────────────────────
   const [enCursoOrders, setEnCursoOrders] = useState([])
@@ -938,6 +939,7 @@ export const POS = () => {
 
   // ── Cobrar (from En curso): load the order then open the payment modal directly ──
   const chargeEnCursoOrder = (order) => {
+    setResumingMeta({ id: order.id, orderId: order.orderId, source: order.source })
     setOrderItems((order.items || []).map(it => ({ ...it, cartItemId: createLocalId(), itemNote: it.itemNote || '' })))
     setGeneralNote(order.generalNote || '')
     setCustomer(order.customer || null)
@@ -1052,7 +1054,11 @@ export const POS = () => {
       // Resuming an en-curso order charges the SAME doc (updateDoc) instead of
       // creating a new one — reuses its own orderId/source rather than minting
       // a fresh POS- id, since the order already exists and may be mid-kitchen.
-      const resumingOrder = resumingOrderId ? enCursoOrders.find(o => o.id === resumingOrderId) : null
+      // Orders charged from Pedidos aren't always "en curso" (never sent to a
+      // station), so fall back to the id/source captured when they were loaded.
+      const resumingOrder = resumingOrderId
+        ? enCursoOrders.find(o => o.id === resumingOrderId) ?? (resumingMeta?.id === resumingOrderId ? resumingMeta : null)
+        : null
       const orderId = resumingOrder?.orderId
         || `POS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`
 
