@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useLocation } from 'react-router'
 import {
   collection, getDocs, getDoc, addDoc, updateDoc, doc,
-  serverTimestamp, onSnapshot,
+  serverTimestamp, onSnapshot, query, where,
   increment,
 } from 'firebase/firestore'
 import { db } from '../../firebase'
@@ -17,6 +17,7 @@ import {
   toSafeItems,
 } from '../../utils/posCalculations'
 import { routeOrderToStations } from '../../utils/stations'
+import { ACTIVE_STATUSES } from '../../utils/orderStatus'
 import { computeAndDeductOrderStock } from '../../utils/stockDeduction'
 import { useStationContext } from '../../context/StationContext'
 import { MoneyInput } from '../../components/MoneyInput'
@@ -590,8 +591,9 @@ export const POS = () => {
     let unsub = null
     const timer = setTimeout(() => {
       if (cancelled) return
+      // Only live orders — the orders history is no longer capped at 50.
       unsub = onSnapshot(
-        collection(db, 'orders'),
+        query(collection(db, 'orders'), where('status', 'in', ACTIVE_STATUSES)),
         snap => {
           if (!alive) return
           const orders = snap.docs

@@ -17,10 +17,7 @@ import {
   addDoc,
   collection,
   getDocs,
-  orderBy,
-  query,
   serverTimestamp,
-  writeBatch,
 } from 'firebase/firestore'
 import { usePromotion } from '../hooks/usePromotion'
 import { useSections } from '../hooks/useSections'
@@ -447,19 +444,9 @@ export const Home = () => {
         reviewed: false,
         createdAt: serverTimestamp(),
       })
-
-      const snapshot = await getDocs(
-        query(collection(db, 'orders'), orderBy('createdAt', 'asc'))
-      )
-
-      if (snapshot.size > 50) {
-        const batch = writeBatch(db)
-        const excess = snapshot.size - 50
-        snapshot.docs.slice(0, excess).forEach((docSnap) => {
-          batch.delete(docSnap.ref)
-        })
-        await batch.commit()
-      }
+      // No trimming here: the menu used to keep only the newest 50 orders,
+      // which deleted paid sales history. Abandoned snapshots are cleaned up
+      // by the admin panel instead (utils/orderCleanup.js).
     } catch (error) {
       console.error('Failed to save order snapshot:', error)
     }

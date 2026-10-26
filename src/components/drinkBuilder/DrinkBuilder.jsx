@@ -169,7 +169,9 @@ export const DrinkBuilder = ({ isOpen, onClose, config, onAdd }) => {
     setSelections(s)
     setName(suggestName(config, s))
     setDirection('next')
-    setStepIndex(summaryIndex)
+    // The summary sits after the NEW drink's steps (its choices may reveal or
+    // hide conditional ones), not after the current drink's.
+    setStepIndex(resolveBuilder(config, s).config.steps.length)
     scrollRef.current?.scrollTo({ top: 0 })
     navigator.vibrate?.([8, 40, 8])
   }

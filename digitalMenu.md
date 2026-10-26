@@ -2,7 +2,7 @@
 
 Base template: https://github.com/Jetsil2311/menu-demo
 Client: Bubble Kaapeh (BK)
-Last updated: 2026-10-26 (Inicio and Caja show the same sales)
+Last updated: 2026-10-26 (order history no longer capped at 50)
 
 ---
 
@@ -632,6 +632,20 @@ What changed: **Inicio** ("Pedidos hoy", "Ventas de hoy", "Ticket promedio") now
 Files affected: src/utils/dailySales.js (new), src/utils/dailySales.test.js (new), src/hooks/useAdminDashboard.js, src/views/admin/Overview.jsx, src/views/admin/Orders.jsx, src/views/admin/POS.jsx
 Reason: Owner saw different "ventas de hoy" numbers on Inicio and Caja.
 
+### 2026-10-26 — Fix: order history was capped at the newest 50 orders
+What changed: Paid orders are no longer deleted. History in Pedidos, Finanzas and Métricas now keeps growing instead of stopping at ~50 orders.
+- **The bug:** every WhatsApp checkout on the customer menu read the whole `orders` collection and deleted everything except the newest 50 documents. That included paid sales, refunds and kitchen orders, not just abandoned WhatsApp snapshots. Cause: `saveOrderSnapshot` in Home.jsx, which needed public read/delete on `orders`.
+- **Now:** the menu only *creates* the order. The signed-in admin panel removes, once per session, only WhatsApp snapshots nobody acted on (or that a cashier discarded) after 3 days. Anything with a status, sent to the kitchen, paid or refunded is never deleted (`src/utils/orderCleanup.js`).
+- **Screens that depended on the cap, fixed so they keep working as history grows:**
+  - Kitchen board and the WhatsApp banner read the **oldest** 60 orders. Without the cap they would have stopped showing new orders. Now the kitchen board asks only for orders still being made (Nuevo/Preparando/Listo), and the banner only for unreviewed WhatsApp orders. The banner also no longer counts WhatsApp orders that were already paid or cancelled.
+  - Cobrar's "En curso" list read every order ever; it now asks only for orders still being made.
+  - Pedidos loads the newest 200 orders, with a "Cargar pedidos anteriores" button for older ones (search and filters cover what's loaded).
+- **Security (needs deploy):** `firestore.rules` now lets the public only *create* orders. Reading, editing and deleting orders (customer names/phones) is staff only. This takes effect when the rules are published with `firebase deploy --only firestore:rules`. Until then the live rules stay fully open, which is no worse than before. The app works either way.
+- **Also fixed:** in Arma tu bebida, "Sorpréndeme" could stop on the last step instead of the summary when the random drink revealed a conditional step (e.g. Hielo). Bug from the 2026-10-23 conditions change.
+- Verified locally (emulators, new rules): an anonymous read of `orders` is refused; a customer WhatsApp checkout saves its order without deleting anything (65 → 66); opening the admin removed only the two old abandoned/discarded snapshots. All 60 old paid orders and an old paid WhatsApp order were kept and listed in Pedidos. The banner showed the 2 live WhatsApp orders and Cobrar showed "1 en curso".
+Files affected: src/views/Home.jsx, src/utils/orderCleanup.js (new), src/utils/orderCleanup.test.js (new), src/utils/orderStatus.js, src/context/WhatsAppOrdersContext.jsx, src/views/admin/KitchenBoard.jsx, src/views/admin/POS.jsx, src/views/admin/Orders.jsx, src/components/drinkBuilder/DrinkBuilder.jsx, firestore.rules
+Reason: Owner asked to fix the order history cap.
+
 ---
 
 ## Known Issues / Follow-ups
@@ -641,7 +655,9 @@ Reason: Owner saw different "ventas de hoy" numbers on Inicio and Caja.
 - **RESOLVED 2026-10-23 (cashier builder added — see change entry)** ~~the POS can't ring up an "Arma tu bebida" for walk-in customers yet~~
 - **NEW (2026-10-26): today's numbers already recorded before this fix stay as they are.** Orders marked paid from Pedidos before the fix never reached Caja. They now count on Inicio (they are paid) but not in Caja's cash/card totals. From now on, every charge goes through Caja.
 - **NEW (2026-10-26): a refund of an order paid on an earlier day is subtracted from today's Caja**, but doesn't change today's Inicio numbers (that sale belongs to its own day). This is pre-existing refund behavior and rare. It's the one remaining way the two screens can differ.
-- **NEW (2026-10-26): every WhatsApp checkout trims `orders` to the newest 50 documents (Home.jsx `saveOrderSnapshot`)** — this deletes PAID order history too, not just old WhatsApp snapshots, so Finanzas/Métricas/Pedidos history only reaches back ~50 orders. Already noted as a security concern (public read/delete); it is also a data-loss issue. Fixing it needs the trim moved server-side (or limited to unreviewed WhatsApp snapshots).
+- **RESOLVED 2026-10-26 (see change entry)** ~~every WhatsApp checkout trims `orders` to the newest 50 documents, deleting paid history~~ — orders deleted before this fix can't be recovered.
+- **NEW (2026-10-26): publish the new `orders` rule** (`firebase deploy --only firestore:rules`, review the whole file first) so customer names/phones in `orders` stop being publicly readable. Same deploy also enables the `recipes` rule noted above.
+- **NEW (2026-10-26): Finanzas and Métricas still read the whole `orders` collection.** That's fine for months of a single café's volume. If they get slow, filter by the selected date range in the query.
 - **NEW (2026-10-23): web orders for regular products still arrive without `productDocId`** (pre-existing: the customer cart never set it), so stock is only deducted for them when charged from the POS product grid. Builder drinks do carry it.
 
 - **RESOLVED 2026-10-23 (admin editor added — see change entry)** ~~"Arma tu bebida" has no admin editor yet~~
