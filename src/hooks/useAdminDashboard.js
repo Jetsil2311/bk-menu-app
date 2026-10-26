@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { collection, getDocs, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
+import { collection, query, orderBy, limit, onSnapshot, where, Timestamp } from 'firebase/firestore'
 import { db } from '../firebase'
+import { summarizeDailySales } from '../utils/dailySales'
 
 export const useAdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -9,6 +10,8 @@ export const useAdminDashboard = () => {
     avgTicket: 0,
     prevOrdersToday: 0,
     prevRevenueToday: 0,
+    prevAvgTicket: 0,
+    pendingToday: 0,
   })
   const [recentOrders, setRecentOrders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -42,44 +45,43 @@ export const useAdminDashboard = () => {
     }
   }, [])
 
-  // One-time stats fetch on mount — separate from the real-time listener
+  // Live "today" stats — same basis as Caja (paid orders, by payment time;
+  // see utils/dailySales.js). A week of orders covers tabs opened earlier
+  // and paid today, plus yesterday for the comparison.
+  const [weekOrders, setWeekOrders] = useState(null)
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    // Moves "ayer a esta hora" along and rolls over at midnight.
+    const timer = setInterval(() => setNow(new Date()), 60000)
+    return () => clearInterval(timer)
+  }, [])
+
   useEffect(() => {
     let alive = true
-    setLoading(true)
-
-    const now = new Date()
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-    const startOfYesterday = startOfToday - 86400000
-
-    getDocs(collection(db, 'orders')).then(allSnap => {
+    const since = new Date()
+    since.setHours(0, 0, 0, 0)
+    since.setDate(since.getDate() - 7)
+    const q = query(collection(db, 'orders'), where('createdAt', '>=', Timestamp.fromDate(since)))
+    const unsub = onSnapshot(q, (snap) => {
       if (!alive) return
-      let todayCount = 0, todayRev = 0, yesterdayCount = 0, yesterdayRev = 0, totalRev = 0
-
-      allSnap.docs.forEach(doc => {
-        const data = doc.data()
-        const time = (data.createdAt?.toDate() || new Date()).getTime()
-        const total = Number(data.total || 0)
-        totalRev += total
-        if (time >= startOfToday) { todayCount++; todayRev += total }
-        else if (time >= startOfYesterday) { yesterdayCount++; yesterdayRev += total }
-      })
-
-      setStats({
-        ordersToday: todayCount,
-        revenueToday: todayRev,
-        avgTicket: allSnap.size > 0 ? totalRev / allSnap.size : 0,
-        prevOrdersToday: yesterdayCount,
-        prevRevenueToday: yesterdayRev,
-      })
+      // 'estimate' so an order charged a moment ago already has its paidAt.
+      setWeekOrders(snap.docs.map((d) => d.data({ serverTimestamps: 'estimate' })))
       setLoading(false)
-    }).catch(() => {
+    }, () => {
       if (!alive) return
       setError('Error al cargar estadísticas')
       setLoading(false)
     })
-
-    return () => { alive = false }
+    return () => {
+      alive = false
+      try { unsub() } catch { /* already ended */ }
+    }
   }, [])
+
+  useEffect(() => {
+    if (weekOrders) setStats(summarizeDailySales(weekOrders, now))
+  }, [weekOrders, now])
 
   return { stats, recentOrders, loading, error }
 }

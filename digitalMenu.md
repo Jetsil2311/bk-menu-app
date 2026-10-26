@@ -2,7 +2,7 @@
 
 Base template: https://github.com/Jetsil2311/menu-demo
 Client: Bubble Kaapeh (BK)
-Last updated: 2026-10-23 (Arma tu bebida — conditional steps and ingredients)
+Last updated: 2026-10-26 (Inicio and Caja show the same sales)
 
 ---
 
@@ -621,6 +621,17 @@ What changed: The owner can now make a step or a single ingredient depend on ear
 Files affected: src/utils/drinkBuilder.js, src/utils/drinkBuilderAdmin.js, src/components/drinkBuilder/DrinkBuilder.jsx, src/components/admin/pos/PosDrinkBuilder.jsx, src/components/admin/drinkBuilder/DrinkBuilderEditor.jsx, src/utils/drinkBuilder.test.js, src/utils/drinkBuilderAdmin.test.js, scripts/test-env/drink-builder-sample.json
 Reason: Owner asked that steps and ingredients only show when they make sense (no ice question for hot drinks, taro only with milk) and that this be set from the admin.
 
+### 2026-10-26 — Fix: Inicio and Caja showed different sales for the same day
+What changed: **Inicio** ("Pedidos hoy", "Ventas de hoy", "Ticket promedio") now uses the same rule as **Caja**: only orders that were actually charged count, on the day they were charged. Example from the owner's screenshots: Inicio said 7 orders / $1,725 while Caja had $425 cash + $660 card = $1,085.
+- **Bug 1 — Inicio counted every order created today, paid or not.** That included WhatsApp orders nobody had charged yet (each WhatsApp checkout saves an order, even if the customer never sends it), discarded WhatsApp orders, tabs still "en curso", and cancelled and refunded orders. Caja only adds money when an order is charged. Now unpaid orders are left out and shown apart as "+N por cobrar" under Pedidos hoy.
+- **Bug 2 — "Ticket promedio" was the average of every order ever saved**, not today's ($126.83 vs $1,725 / 7). It's now today's sales ÷ today's paid orders, compared with yesterday.
+- **Bug 3 — "comparado con ayer a esta hora" compared with all of yesterday.** It now compares with yesterday up to the current time.
+- **Bug 4 — "Registrar pago" in Pedidos marked an order paid without recording cash/card or adding it to Caja** (only orders routed to kitchen stations went through Cobrar). It now opens Cobrar's payment screen for that order, like "Marcar como entregado" already did: the cashier enters cash/card, change is shown, Caja is updated, stock is deducted, and the order keeps its own number and WhatsApp/POS source. Only very old text-only orders (no product list to load) are still marked paid directly.
+- Inicio now updates live (it used to read every order once when the page opened).
+- Verified locally (emulators): two pending WhatsApp orders → Inicio $0 with "+2 por cobrar"; charged one ($65 cash) from Pedidos → Inicio $65 / 1 pedido / "+1 por cobrar", Caja efectivo $65; the order kept `BK-…` and `source: whatsapp`.
+Files affected: src/utils/dailySales.js (new), src/utils/dailySales.test.js (new), src/hooks/useAdminDashboard.js, src/views/admin/Overview.jsx, src/views/admin/Orders.jsx, src/views/admin/POS.jsx
+Reason: Owner saw different "ventas de hoy" numbers on Inicio and Caja.
+
 ---
 
 ## Known Issues / Follow-ups
@@ -628,6 +639,9 @@ Reason: Owner asked that steps and ingredients only show when they make sense (n
 - **NEW (2026-10-23): "Arma tu bebida" can't be saved on the live site until the `recipes` Firestore rule is published.** The editor saves the menu document and the inventory recipe in one atomic write. Production has no rule for `recipes` (known gap, see the 2026-08-04 note below), so the save fails with a clear message. `firestore.rules` in the repo already has the rule; it needs `firebase deploy --only firestore:rules` (review the whole file first, because it replaces the live rules).
 - **NEW (2026-10-23): builder ingredient costs are a snapshot from the moment of saving** — same behavior as product recipes in Inventario. If a raw material's price changes, open Arma tu bebida and save again to refresh costs. Stock *quantities* are always correct.
 - **RESOLVED 2026-10-23 (cashier builder added — see change entry)** ~~the POS can't ring up an "Arma tu bebida" for walk-in customers yet~~
+- **NEW (2026-10-26): today's numbers already recorded before this fix stay as they are.** Orders marked paid from Pedidos before the fix never reached Caja. They now count on Inicio (they are paid) but not in Caja's cash/card totals. From now on, every charge goes through Caja.
+- **NEW (2026-10-26): a refund of an order paid on an earlier day is subtracted from today's Caja**, but doesn't change today's Inicio numbers (that sale belongs to its own day). This is pre-existing refund behavior and rare. It's the one remaining way the two screens can differ.
+- **NEW (2026-10-26): every WhatsApp checkout trims `orders` to the newest 50 documents (Home.jsx `saveOrderSnapshot`)** — this deletes PAID order history too, not just old WhatsApp snapshots, so Finanzas/Métricas/Pedidos history only reaches back ~50 orders. Already noted as a security concern (public read/delete); it is also a data-loss issue. Fixing it needs the trim moved server-side (or limited to unreviewed WhatsApp snapshots).
 - **NEW (2026-10-23): web orders for regular products still arrive without `productDocId`** (pre-existing: the customer cart never set it), so stock is only deducted for them when charged from the POS product grid. Builder drinks do carry it.
 
 - **RESOLVED 2026-10-23 (admin editor added — see change entry)** ~~"Arma tu bebida" has no admin editor yet~~

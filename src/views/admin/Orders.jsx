@@ -661,7 +661,14 @@ export const Orders = () => {
                       )
                     ) : actionLabel ? (
                       <button
-                        onClick={() => updateStatus(order, next)}
+                        onClick={() => (
+                          // Charging goes through Cobrar (cash/card, change, Caja), same as
+                          // the station flow above — marking it paid here would skip Caja.
+                          // Only very old text-only orders (no items to load) are marked directly.
+                          next === 'Pagado' && order.items?.length
+                            ? navigate('/admin/pos', { state: { chargeOrderId: order.id } })
+                            : updateStatus(order, next)
+                        )}
                         disabled={isUpdating}
                         className="flex items-center gap-1.5 px-3 py-2 bg-main-500 hover:bg-main-400 text-snow rounded-xl text-xs font-bold transition-all shadow-lg shadow-main-500/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       >

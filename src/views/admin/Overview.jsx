@@ -56,7 +56,7 @@ export const Overview = () => {
     return ((current - previous) / previous) * 100
   }
 
-  const StatCard = ({ title, value, previousValue, prefix = '' }) => {
+  const StatCard = ({ title, value, previousValue, prefix = '', note }) => {
     const trend = calculateTrend(value, previousValue)
     const isPositive = trend >= 0
     const hasPrevData = previousValue > 0
@@ -78,6 +78,7 @@ export const Overview = () => {
         {!loading && hasPrevData && (
           <p className="hidden sm:block text-xs text-light-200/65 mt-1">comparado con ayer a esta hora</p>
         )}
+        {!loading && note && <p className="text-xs font-semibold text-amber-400 mt-1">{note}</p>}
       </div>
     )
   }
@@ -107,10 +108,12 @@ export const Overview = () => {
     <div className="space-y-6 sm:space-y-8">
       {/* Hero Metrics */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
+        {/* Paid orders only, like Caja — unpaid ones are listed apart. */}
         <StatCard
           title="Pedidos hoy"
           value={stats.ordersToday}
           previousValue={stats.prevOrdersToday}
+          note={stats.pendingToday > 0 ? `+${stats.pendingToday} por cobrar` : null}
         />
         <StatCard
           title="Ventas de hoy"
@@ -121,7 +124,7 @@ export const Overview = () => {
         <StatCard
           title="Ticket promedio"
           value={stats.avgTicket}
-          previousValue={0}
+          previousValue={stats.prevAvgTicket}
           prefix="$"
         />
       </div>
