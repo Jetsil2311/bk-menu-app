@@ -1,6 +1,7 @@
 /* eslint-disable react/prop-types */
 import { useState } from 'react'
 import { useAdminDashboard } from '../../hooks/useAdminDashboard'
+import { useAdminAlerts } from '../../context/AdminAlertsContext'
 import {
   TrendingUp,
   TrendingDown,
@@ -28,6 +29,7 @@ const todayKey = () => {
 
 export const Overview = () => {
   const { stats, recentOrders, loading } = useAdminDashboard()
+  const { pendingOrders } = useAdminAlerts() // menu orders waiting in web_orders
   const navigate = useNavigate()
 
   const [histOpen, setHistOpen]       = useState(false)
@@ -113,7 +115,7 @@ export const Overview = () => {
           title="Pedidos hoy"
           value={stats.ordersToday}
           previousValue={stats.prevOrdersToday}
-          note={stats.pendingToday > 0 ? `+${stats.pendingToday} por cobrar` : null}
+          note={stats.pendingToday + pendingOrders.length > 0 ? `+${stats.pendingToday + pendingOrders.length} por cobrar` : null}
         />
         <StatCard
           title="Ventas de hoy"

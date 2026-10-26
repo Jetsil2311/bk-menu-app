@@ -2,7 +2,7 @@
 
 Base template: https://github.com/Jetsil2311/menu-demo
 Client: Bubble Kaapeh (BK)
-Last updated: 2026-10-26 (order history no longer capped at 50)
+Last updated: 2026-10-26 (web orders, alerts, real earnings in Finanzas, admin UX pass)
 
 ---
 
@@ -648,7 +648,33 @@ Reason: Owner asked to fix the order history cap.
 
 ---
 
+### 2026-10-26 — Web orders saved as real orders, pop-up alerts with sound, stock warnings, real earnings in Finanzas
+What changed:
+- **Menu orders ("Realizar pedido") are now saved as structured orders** in a new `web_orders` collection (items with every option and topping, total, note, status `pending`). WhatsApp still opens immediately, and its message now starts with the order code (e.g. `WEB-UU3TEOF`) so staff can match it. No text parsing anywhere.
+- **Admin alerts**: a new web order pops up in the middle of the screen on any admin page, with a chime that repeats every 90 s until someone answers, plus a system notification when the panel is in another tab. A one-time card asks for notification permission. Buttons: **Importar a Cobrar** (loads the items into the ticket and marks the order `imported` inside a transaction, so two devices can't import it twice), **Ignorar** (asks for confirmation, then marks it `dismissed`) and **Ver después** (closes the popup; a honey bar and the bell keep showing it). The badge disappears as soon as the order is imported or ignored. The old one stayed forever because charging never cleared the snapshot.
+- Imported tickets keep the web code as their `orderId`, `source: 'whatsapp'` and `webOrderId`. Each line now gets its `productDocId` and station tags from the catalog on import, so cost, stock deduction and kitchen routing work. Before, web orders never had cost or stock data.
+- **Stock alerts**: when an ingredient reaches its warning level, a toast pops up (with sound and a system notification if it happened during the session). The bell lists every low ingredient, and a ⚠ appears next to **Finanzas** and **Inventario** in the sidebar and on the mobile "Más" tab. Cobrar shows a red count while web orders wait.
+- **Finanzas earnings fixed** (bugs found while checking the "Tendencia" chart):
+  1. Every menu order deleted all but the newest 50 docs in `orders`, including real paid POS sales, so history and trends were missing sales. Removed; `orders` is now staff-only in the rules.
+  2. Products without a recipe counted as $0 cost, so "Ganancia" looked like ~79% margin. Their sales are now measured and shown with the product names to fix.
+  3. Fixed expenses were never subtracted. "Día a día" now shows Vendiste − Ingredientes − Gastos fijos = **Te quedó**, with expenses spread over the real month length.
+  4. Days without sales were skipped, so the line jumped from one sale day to the next. Every day in the range now appears, at $0 when there were no sales.
+  5. Inicio and Métricas counted every doc in `orders` (unpaid snapshots, cancelled orders, tickets still in the kitchen) as sales. They now count only paid orders, the same way Finanzas does.
+  Verified with unit tests (`financeCalculations.test.js`) and in the browser against hand-calculated sample data (`scripts/test-env/sample-sales.mjs`).
+- Combined with the two earlier 2026-10-26 entries (made in a parallel session): kept their active-status queries for the kitchen board / En curso, Pedidos "Registrar pago" through Cobrar, live Inicio stats and the stale-snapshot cleanup (now in AdminAlertsContext). Replaced their `orders` public-create rule and WhatsApp banner with `web_orders` + the new alerts. Inicio's "+N por cobrar" now also counts menu orders waiting in `web_orders`.
+- **UX pass**: every admin page except Cobrar has a "¿Cómo funciona…?" guide (steps in `PAGE_GUIDES`, folds away with "Entendido"). Inventario is split into **Insumos | Recetas** tabs, with a clickable "Por acabarse" filter, "Registrar compra" / "Nuevo insumo" buttons, field hints and labeled stock rows. Finanzas tabs got plain names and a one-line explanation each (Día a día, Por producto, Gastos fijos, Consumo de insumos, Compras, Días de la semana). Jargon was replaced throughout: COGS, Varianza, Loyalty, Saldo teórico, Equilibrio.
+- Old WhatsApp text snapshots in `orders` (no status) are hidden from Pedidos and Inicio, where they used to show up as "Nuevo" forever.
+Files affected: src/utils/webOrders.js (+test), src/utils/adminAlerts.js, src/utils/stockAlerts.js, src/context/AdminAlertsContext.jsx (replaces WhatsAppOrdersContext.jsx), src/components/admin/AdminAlerts.jsx (replaces WhatsAppBanner.jsx), src/components/admin/NavBadge.jsx, src/components/admin/PageGuide.jsx, src/hooks/useExpenses.js, src/utils/financeCalculations.js (+test), src/utils/expenses.js, src/components/admin/finance/DailyTrendChart.jsx, src/views/admin/{Finance,POS,Orders,Stock,Metrics,KitchenBoard,AdminLayout,Register,Customers}.jsx, src/components/admin/{Topbar,Sidebar,BottomTabBar}.jsx, src/components/admin/finance/{StockVariance,BreakEvenAnalysis,ProfitByDayOfWeek,ProductProfitability,ExpenseManager}.jsx, src/hooks/useAdminDashboard.js, src/config/adminNav.jsx, src/views/Home.jsx, src/index.css, firestore.rules, scripts/test-env/{seed,sample-sales}.mjs
+Reason: Owner request. Web orders arrived as plain text with a badge that never cleared, alerts were easy to miss, Finanzas earnings looked wrong, and Inventario and Finanzas were hard to understand.
+
 ## Known Issues / Follow-ups
+
+- **NEW (2026-10-26): `firestore.rules` MUST be deployed before (or together with) this release.** Production has no rule for the new `web_orders` collection, so menu orders would still go out by WhatsApp but would not reach the panel. The file also makes `orders` staff-only, which is now safe because the menu no longer reads or deletes it. Run `firebase deploy --only firestore:rules` after reviewing the whole file (it also adds the pending `recipes`/`stations`/`expenses` rules).
+- **NEW (2026-10-26): system notifications need the panel open in a browser tab** (they are not push notifications). On iPhone Safari they only work if the panel is added to the Home Screen. The pop-up and chime work everywhere once someone has tapped the page.
+- **NEW (2026-10-26): old pending WhatsApp snapshots in `orders` are hidden, not migrated.** Any customer order still unanswered at deploy time has to be handled from WhatsApp.
+- **NEW (2026-10-26): Métricas "ventas por día" still comes from the register (cash + card charged), while Finanzas uses paid orders.** The two can differ by loyalty payments and by orders marked Pagado from Pedidos (that path doesn't credit the register, see the 2026-08-04 note). This is now explained on the page.
+- **NEW (2026-10-26): the new alerts, popup and guides were browser-checked on desktop only**, not at phone width or on a real phone.
+- **RESOLVED 2026-10-26** ~~web orders for regular products still arrive without `productDocId`~~ (resolved from the catalog on import)
 
 - **NEW (2026-10-23): "Arma tu bebida" can't be saved on the live site until the `recipes` Firestore rule is published.** The editor saves the menu document and the inventory recipe in one atomic write. Production has no rule for `recipes` (known gap, see the 2026-08-04 note below), so the save fails with a clear message. `firestore.rules` in the repo already has the rule; it needs `firebase deploy --only firestore:rules` (review the whole file first, because it replaces the live rules).
 - **NEW (2026-10-23): builder ingredient costs are a snapshot from the moment of saving** — same behavior as product recipes in Inventario. If a raw material's price changes, open Arma tu bebida and save again to refresh costs. Stock *quantities* are always correct.

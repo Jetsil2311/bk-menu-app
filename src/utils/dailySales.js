@@ -18,8 +18,11 @@ export const paidTimeOf = (order) => toDate(order.paidAt) ?? toDate(order.comple
 
 const CLOSED = new Set(['pagado', 'entregado', 'reembolsado', 'cancelado'])
 
+// Old WhatsApp text snapshots (source 'whatsapp', no status) aren't tickets —
+// menu orders now live in web_orders until a cashier imports them.
 export const isPendingOrder = (order) =>
-  !order.discarded && !CLOSED.has(String(order.status || '').toLowerCase())
+  !order.discarded && !(order.source === 'whatsapp' && !order.status)
+  && !CLOSED.has(String(order.status || '').toLowerCase())
 
 export const summarizeDailySales = (orders, now = new Date()) => {
   const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())

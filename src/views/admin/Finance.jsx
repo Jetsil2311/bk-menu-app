@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { useState, useEffect, useMemo } from 'react'
 import { collection, onSnapshot, getDocs } from 'firebase/firestore'
 import { db } from '../../firebase'
@@ -5,10 +6,14 @@ import { formatMoney } from '../../utils/cart'
 import { isPaidOrderStatus } from '../../utils/orderStatus'
 import {
   enrichOrderFinancials,
+  buildDailyTrend,
   buildDocIdByLegacyIdMap,
   buildNameToDocIdMap,
   orderDate,
+  summarizeTrend,
 } from '../../utils/financeCalculations'
+import { fixedCostForDay } from '../../utils/expenses'
+import { useExpenses } from '../../hooks/useExpenses'
 import { DailyTrendChart } from '../../components/admin/finance/DailyTrendChart'
 import { ProductProfitability } from '../../components/admin/finance/ProductProfitability'
 import { BreakEvenAnalysis } from '../../components/admin/finance/BreakEvenAnalysis'
@@ -16,7 +21,7 @@ import { StockVariance } from '../../components/admin/finance/StockVariance'
 import { SupplierAnalysis } from '../../components/admin/finance/SupplierAnalysis'
 import { ProfitByDayOfWeek } from '../../components/admin/finance/ProfitByDayOfWeek'
 import {
-  Calendar, DollarSign, Package, TrendingUp, Percent, ShoppingBag, Receipt, AlertTriangle,
+  Calendar, DollarSign, Package, TrendingUp, ShoppingBag, Receipt, AlertTriangle, Wallet,
 } from 'lucide-react'
 
 const RANGE_OPTIONS = [
@@ -27,14 +32,15 @@ const RANGE_OPTIONS = [
   { key: 'custom', label: 'Personalizado' },
 ]
 
+// Keys are saved in localStorage — keep them; only labels/help changed.
 const TAB_OPTIONS = [
-  { key: 'resumen',      label: 'Resumen'    },
-  { key: 'tendencia',    label: 'Tendencia'  },
-  { key: 'productos',    label: 'Productos'  },
-  { key: 'equilibrio',   label: 'Equilibrio' },
-  { key: 'inventario',   label: 'Inventario' },
-  { key: 'proveedores',  label: 'Proveedores'},
-  { key: 'pordia',       label: 'Por Día'    },
+  { key: 'resumen',     label: 'Resumen',           help: 'Lo más importante del periodo: cuánto vendiste, cuánto te costó y cuánto ganaste.' },
+  { key: 'tendencia',   label: 'Día a día',         help: 'Cuánto vendiste y cuánto te quedó cada día, ya descontando ingredientes y gastos fijos.' },
+  { key: 'productos',   label: 'Por producto',      help: 'Qué productos te dejan más ganancia y cuáles casi no te dejan nada.' },
+  { key: 'equilibrio',  label: 'Gastos fijos',      help: 'Registra renta, sueldos y servicios, y ve cuánto necesitas vender hoy para cubrirlos. Usa solo las ventas de hoy.' },
+  { key: 'inventario',  label: 'Consumo de insumos', help: 'Compara lo que deberían haber costado tus ventas según las recetas contra lo que se registró al cobrar.' },
+  { key: 'proveedores', label: 'Compras',           help: 'Cuánto le compraste a cada proveedor en el periodo (de las entradas de Inventario).' },
+  { key: 'pordia',      label: 'Días de la semana', help: 'Qué días de la semana vendes y ganas más, para planear horarios y promociones.' },
 ]
 
 const TAB_STORAGE_KEY = 'bk_finance_tab'
@@ -71,15 +77,15 @@ const getRangeBounds = (rangeKey, customStart, customEnd) => {
   return { start: startOfDay(first), end: endOfDay(now) }
 }
 
-const MetricCard = ({ icon: Icon, label, value, subtext, colorCls }) => (
-  <div className="bg-main-900 border border-white/10 rounded-3xl p-5 sm:p-6 shadow-sm flex items-center gap-4 sm:gap-5">
+const MetricCard = ({ icon: Icon, label, value, subtext, colorCls, valueCls = 'text-light-100' }) => (
+  <div className="bg-main-900 border border-white/10 rounded-3xl p-5 sm:p-6 shadow-sm flex items-start gap-4 sm:gap-5">
     <div className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center shrink-0 ${colorCls}`}>
       <Icon size={22} />
     </div>
     <div className="min-w-0">
-      <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider truncate">{label}</p>
-      <h4 className="text-xl sm:text-2xl font-bold text-light-100 mt-1 tabular-nums truncate">{value}</h4>
-      {subtext && <p className="text-[10px] text-light-200/55 mt-0.5 truncate">{subtext}</p>}
+      <p className="text-sm font-semibold text-light-200/75">{label}</p>
+      <h4 className={`text-xl sm:text-2xl font-bold mt-0.5 tabular-nums truncate ${valueCls}`}>{value}</h4>
+      {subtext && <p className="text-xs text-light-200/65 mt-1 leading-snug">{subtext}</p>}
     </div>
   </div>
 )
@@ -215,6 +221,15 @@ export const Finance = () => {
 
   const anyEstimated = useMemo(() => paidInRange.some((o) => o.costEstimated), [paidInRange])
 
+  // Day-by-day money incl. fixed expenses — shared by Resumen and Día a día.
+  const expenses = useExpenses()
+  const hasExpenses = expenses.length > 0
+  const trendDays = useMemo(
+    () => buildDailyTrend(paidInRange, { start, end, fixedCostForDay: (d) => fixedCostForDay(expenses, d) }),
+    [paidInRange, start, end, expenses]
+  )
+  const trendSummary = useMemo(() => summarizeTrend(trendDays), [trendDays])
+
   const metrics = useMemo(() => {
     const totalRevenue = paidInRange.reduce((sum, o) => sum + Number(o.revenue || 0), 0)
     const totalCogs = paidInRange.reduce((sum, o) => sum + Number(o.totalCogs || 0), 0)
@@ -299,11 +314,9 @@ export const Finance = () => {
         ))}
       </div>
 
-      {activeTab === 'equilibrio' && (
-        <p className="text-xs text-light-200/65 -mt-2">
-          Basado en las órdenes de hoy — no usa el rango de fechas seleccionado arriba.
-        </p>
-      )}
+      <p className="text-sm text-light-200/75 -mt-2 max-w-3xl">
+        {TAB_OPTIONS.find((t) => t.key === activeTab)?.help}
+      </p>
 
       {loadError && (
         <div role="alert" className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -330,52 +343,65 @@ export const Finance = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               <MetricCard
                 icon={DollarSign}
-                label="Ingresos Totales"
+                label="Vendiste"
                 value={formatMoney(metrics.totalRevenue)}
-                subtext={`De ${metrics.orderCount} pedido${metrics.orderCount !== 1 ? 's' : ''}`}
+                subtext={`Lo que pagaron tus clientes en ${metrics.orderCount} pedido${metrics.orderCount !== 1 ? 's' : ''} (${activeLabel.toLowerCase()}).`}
                 colorCls="bg-emerald-500/10 text-emerald-400"
               />
               <MetricCard
                 icon={Package}
-                label="Costo de Bienes"
+                label="Te costaron los ingredientes"
                 value={formatMoney(metrics.totalCogs)}
-                subtext="Costo de ingredientes"
+                subtext="Calculado con las recetas de cada producto vendido."
                 colorCls="bg-amber-500/10 text-amber-400"
               />
               <MetricCard
                 icon={TrendingUp}
-                label="Ganancia Bruta"
+                label="Ganancia antes de gastos fijos"
                 value={formatMoney(metrics.grossProfit)}
-                subtext="Ingresos - Costos"
+                subtext={`Vendiste − ingredientes. Es el ${metrics.profitMargin.toFixed(0)}% de lo vendido.`}
                 colorCls="bg-blue-500/10 text-blue-400"
               />
               <MetricCard
-                icon={Percent}
-                label="Margen de Ganancia"
-                value={`${metrics.profitMargin.toFixed(1)}%`}
-                subtext="Porcentaje de ganancia"
+                icon={Wallet}
+                label="Te quedó"
+                value={hasExpenses ? formatMoney(trendSummary.netProfit) : '—'}
+                valueCls={hasExpenses && trendSummary.netProfit < 0 ? 'text-rose-400' : 'text-light-100'}
+                subtext={hasExpenses
+                  ? `Después de ${formatMoney(trendSummary.fixedCosts)} de gastos fijos (renta, sueldos…) de estos días.`
+                  : 'Registra tus gastos fijos en la pestaña Gastos fijos para ver tu ganancia real.'}
                 colorCls="bg-purple-500/10 text-purple-400"
               />
               <MetricCard
                 icon={ShoppingBag}
-                label="Número de Pedidos"
+                label="Pedidos pagados"
                 value={metrics.orderCount.toLocaleString('es-MX')}
-                subtext="Pedidos completados"
+                subtext="No cuenta pedidos cancelados, reembolsados ni pendientes de cobro."
                 colorCls="bg-white/10 text-light-200"
               />
               <MetricCard
                 icon={Receipt}
-                label="Ticket Promedio"
+                label="Ticket promedio"
                 value={formatMoney(metrics.avgOrderValue)}
-                subtext={`Revenue por pedido — ${activeLabel}`}
+                subtext="Lo que gasta en promedio cada cliente por pedido."
                 colorCls="bg-teal-500/10 text-teal-400"
               />
             </div>
 
+            {trendSummary.uncostedRevenue > 0 && hasAnyRecipe && (
+              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-300 flex items-start gap-2">
+                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                <span>
+                  {formatMoney(trendSummary.uncostedRevenue)} de lo vendido es de productos sin receta: su costo cuenta como $0,
+                  así que la ganancia real es menor. Ve a <strong>Día a día</strong> para ver cuáles son.
+                </span>
+              </div>
+            )}
+
             {!hasAnyRecipe && (
               <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-300 flex items-start gap-2">
                 <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                <span>No hay recetas definidas. Los costos no se pueden calcular. Define recetas en Stock → Recetas.</span>
+                <span>Todavía no hay recetas, así que no se puede saber cuánto te cuestan tus productos. Crea las recetas en Inventario → Recetas.</span>
               </div>
             )}
             {hasAnyRecipe && anyEstimated && (
@@ -386,7 +412,13 @@ export const Finance = () => {
           </>
         )
       ) : activeTab === 'tendencia' ? (
-        <DailyTrendChart orders={paidInRange} />
+        <DailyTrendChart
+          days={trendDays}
+          summary={trendSummary}
+          orders={paidInRange}
+          hasExpenses={hasExpenses}
+          onOpenExpenses={() => setActiveTab('equilibrio')}
+        />
       ) : activeTab === 'productos' ? (
         <ProductProfitability orders={paidInRange} />
       ) : activeTab === 'equilibrio' ? (

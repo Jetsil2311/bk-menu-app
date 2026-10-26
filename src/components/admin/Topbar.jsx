@@ -1,11 +1,12 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import { LogOut, Bell, Settings, Package, ChefHat, RefreshCw, Sun, Moon } from 'lucide-react'
+import { LogOut, Bell, BellOff, BellRing, Settings, Package, PackageX, ChefHat, RefreshCw, Sun, Moon, Download } from 'lucide-react'
 import { ROLE_ICONS } from '../../utils/stations'
-import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore'
-import { db } from '../../firebase'
 import { formatMoney } from '../../utils/cart'
+import { timeAgo, webOrderPreview } from '../../utils/webOrders'
+import { formatQuantity, getUnitShortLabel } from '../../utils/recipeCalculations'
+import { useAdminAlerts } from '../../context/AdminAlertsContext'
 import { useRegister } from '../../hooks/useRegister'
 import { useSettings } from '../../hooks/useSettings'
 import { useStationContext } from '../../context/StationContext'
@@ -29,43 +30,18 @@ export const Topbar = ({ user, handleLogout, theme = 'light', onToggleTheme }) =
   const [avatarOpen, setAvatarOpen] = useState(false)
   const avatarRef = useRef(null)
 
-  // Notification bell dropdown
-  const [newOrders, setNewOrders] = useState([])
+  // Notification bell: pending web orders + stock running out (AdminAlertsContext)
+  const {
+    pendingOrders, importOrder, lowStock, permission, askPermission, canTakeOrders,
+  } = useAdminAlerts()
+  const alertCount = pendingOrders.length + lowStock.length
   const [bellOpen, setBellOpen]   = useState(false)
   const bellRef = useRef(null)
+  const canOpenStock = !(selectedStation?.disabledRoutes || []).includes('stock')
 
   useEffect(() => {
     const timer = setInterval(() => setDateTime(new Date()), 60000)
     return () => clearInterval(timer)
-  }, [])
-
-  // Real-time listener: fetch recent orders, filter to 'Nuevo' client-side
-  useEffect(() => {
-    let cancelled = false
-    let alive = true
-    let unsub = null
-    const timer = setTimeout(() => {
-      if (cancelled) return
-      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(20))
-      unsub = onSnapshot(q, snap => {
-        if (!alive) return
-        const nuevo = snap.docs
-          .map(d => ({
-            id: d.id,
-            ...d.data(),
-            createdAt: d.data().createdAt?.toDate() ?? new Date(),
-          }))
-          .filter(o => (o.status || '').toLowerCase() === 'nuevo')
-          .slice(0, 3)
-        setNewOrders(nuevo)
-      })
-    }, 0)
-    return () => {
-      cancelled = true
-      alive = false
-      clearTimeout(timer)
-      if (unsub) try { unsub() } catch {}
-    }
   }, [])
 
   // Close avatar dropdown when clicking outside
@@ -186,87 +162,99 @@ export const Topbar = ({ user, handleLogout, theme = 'light', onToggleTheme }) =
             <button
               onClick={() => setBellOpen(v => !v)}
               className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-white/5 text-light-200/80 hover:text-light-100 transition-colors relative cursor-pointer"
-              aria-label="Pedidos nuevos"
+              aria-label={alertCount > 0 ? `Avisos: ${alertCount}` : 'Avisos'}
             >
-              <Bell size={19} />
-              {newOrders.length > 0 && (
-                <span className="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-snow border-2 border-main-900">
-                  {newOrders.length}
+              {pendingOrders.length > 0 ? <BellRing size={19} className="alert-shake text-primary dark:text-main-300" /> : <Bell size={19} />}
+              {alertCount > 0 && (
+                <span className={`absolute top-0.5 right-0.5 flex h-[18px] min-w-[18px] px-1 items-center justify-center rounded-full text-[10px] font-bold text-snow border-2 border-main-900 ${pendingOrders.length > 0 ? 'bg-rose-600' : 'bg-amber-500'}`}>
+                  {alertCount}
                 </span>
               )}
             </button>
 
             {bellOpen && (
-              <div className="absolute right-0 mt-2 w-72 md:w-80 bg-main-900 border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
-
-                {/* Dropdown header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                  <p className="text-sm font-semibold text-light-100">Nuevos pedidos</p>
-                  {newOrders.length > 0 && (
-                    <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20 text-[10px] font-bold">
-                      {newOrders.length} nuevo{newOrders.length !== 1 ? 's' : ''}
-                    </span>
+              <div className="fixed md:absolute inset-x-3 md:inset-x-auto top-[68px] md:top-auto md:right-0 md:mt-2 md:w-96 max-h-[75dvh] flex flex-col bg-main-900 border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                <div className="flex-1 overflow-y-auto">
+                  {/* Web orders */}
+                  {canTakeOrders && (
+                    <section>
+                      <p className="px-4 pt-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-light-200/60">Pedidos del menú</p>
+                      {pendingOrders.length === 0 ? (
+                        <p className="px-4 pb-3 text-sm text-light-200/60">Ninguno esperando. Cuando un cliente pida por WhatsApp aparecerá aquí.</p>
+                      ) : (
+                        <ul className="divide-y divide-white/10">
+                          {pendingOrders.map(order => (
+                            <li key={order.id} className="px-4 py-3 flex items-center gap-3">
+                              <div className="flex-1 min-w-0">
+                                <p className="flex items-center gap-2 text-sm font-bold text-light-100">
+                                  #{order.orderId}
+                                  <span className="font-semibold text-light-200/60 text-xs">{timeAgo(order.createdAt)}</span>
+                                </p>
+                                <p className="text-xs text-light-200/70 truncate">{webOrderPreview(order)}</p>
+                                <p className="text-xs font-bold text-light-100 tabular-nums mt-0.5">{formatMoney(Number(order.total || 0))}</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => { setBellOpen(false); importOrder(order.id) }}
+                                className="shrink-0 inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl bg-primary text-snow text-xs font-bold hover:bg-secondary cursor-pointer"
+                              >
+                                <Download size={14} /> Importar
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
                   )}
+
+                  {/* Stock */}
+                  <section className="border-t border-white/10">
+                    <p className="px-4 pt-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-light-200/60">Inventario por agotarse</p>
+                    {lowStock.length === 0 ? (
+                      <p className="px-4 pb-3 text-sm text-light-200/60 flex items-center gap-2"><Package size={15} /> Todo con buen nivel.</p>
+                    ) : (
+                      <ul className="pb-2">
+                        {lowStock.slice(0, 8).map(m => (
+                          <li key={m.id} className="px-4 py-1.5 flex items-center gap-2.5 text-sm">
+                            <PackageX size={15} className={Number(m.currentStock) <= 0 ? 'text-rose-400' : 'text-amber-400'} />
+                            <span className="flex-1 truncate text-light-100">{m.name}</span>
+                            <span className={`tabular-nums text-xs font-bold ${Number(m.currentStock) <= 0 ? 'text-rose-400' : 'text-amber-400'}`}>
+                              {Number(m.currentStock) <= 0 ? 'Agotado' : `${formatQuantity(Number(m.currentStock) || 0)} ${getUnitShortLabel(m.unit)}`}
+                            </span>
+                          </li>
+                        ))}
+                        {lowStock.length > 8 && <li className="px-4 py-1 text-xs text-light-200/60">y {lowStock.length - 8} más</li>}
+                      </ul>
+                    )}
+                    {lowStock.length > 0 && canOpenStock && (
+                      <div className="px-4 pb-3">
+                        <button
+                          onClick={() => { setBellOpen(false); navigate('/admin/stock') }}
+                          className="w-full min-h-[40px] rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-400 cursor-pointer"
+                        >
+                          Ver inventario
+                        </button>
+                      </div>
+                    )}
+                  </section>
                 </div>
 
-                {/* Order list */}
-                {newOrders.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center gap-2 py-10 text-light-200/50">
-                    <Package size={28} />
-                    <p className="text-xs">Sin pedidos nuevos</p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-white/10">
-                    {newOrders.map(order => {
-                      const shortId = order.orderId
-                        ? order.orderId.slice(-6)
-                        : order.id.slice(-4).toUpperCase()
-                      const diffMin = Math.floor((Date.now() - order.createdAt.getTime()) / 60000)
-                      const timeAgo = diffMin < 1
-                        ? 'Ahora'
-                        : diffMin < 60
-                        ? `hace ${diffMin} min`
-                        : `hace ${Math.floor(diffMin / 60)} h`
-                      const preview = Array.isArray(order.items) && order.items.length > 0
-                        ? order.items.map(it => `${it.qty > 1 ? `${it.qty}× ` : ''}${it.name}`).slice(0, 2).join(' · ')
-                        : (order.content || '').split('\n').filter(l => /^\d+\./.test(l.trim())).map(l => l.replace(/^\d+\.\s*/, '')).slice(0, 2).join(' · ') || '—'
-
-                      return (
-                        <div key={order.id} className="px-4 py-3 hover:bg-white/3 transition-colors">
-                          <div className="flex items-center justify-between gap-2 mb-0.5">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="shrink-0 text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-full">
-                                #{shortId}
-                              </span>
-                              {order.customerName && (
-                                <span className="text-xs text-light-200/70 truncate">
-                                  {order.customerName}
-                                </span>
-                              )}
-                            </div>
-                            <span className="text-xs font-bold text-light-100 tabular-nums shrink-0">
-                              {formatMoney(Number(order.total || 0))}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-xs text-light-200/60 truncate">{preview}</p>
-                            <span className="text-[10px] text-light-200/50 shrink-0 tabular-nums">{timeAgo}</span>
-                          </div>
-                        </div>
-                      )
-                    })}
+                {/* System notifications status */}
+                {canTakeOrders && permission !== 'unsupported' && (
+                  <div className="px-4 py-3 border-t border-white/10 bg-main-800/60 flex items-center gap-2.5 text-xs">
+                    {permission === 'granted' ? (
+                      <><BellRing size={15} className="text-emerald-400" /><span className="text-light-200/75">Avisos con sonido y notificación activados en este dispositivo.</span></>
+                    ) : permission === 'denied' ? (
+                      <><BellOff size={15} className="text-rose-400" /><span className="text-light-200/75">Las notificaciones están bloqueadas. Actívalas desde el candado de la barra de direcciones.</span></>
+                    ) : (
+                      <>
+                        <BellOff size={15} className="text-light-200/60" />
+                        <span className="flex-1 text-light-200/75">Recibe avisos aunque estés en otra pestaña.</span>
+                        <button onClick={askPermission} className="shrink-0 min-h-[36px] px-3 rounded-lg bg-primary text-snow font-bold cursor-pointer hover:bg-secondary">Activar</button>
+                      </>
+                    )}
                   </div>
                 )}
-
-                {/* Footer CTA */}
-                <div className="px-4 py-3 border-t border-white/10">
-                  <button
-                    onClick={() => { setBellOpen(false); navigate('/admin/pedidos') }}
-                    className="w-full rounded-xl bg-main-500/15 hover:bg-main-500/25 border border-main-500/20 py-2 text-xs font-semibold text-main-300 hover:text-main-200 transition-colors cursor-pointer"
-                  >
-                    Ver todos los pedidos
-                  </button>
-                </div>
               </div>
             )}
           </div>

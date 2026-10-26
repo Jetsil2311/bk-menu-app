@@ -12,7 +12,8 @@ describe('summarizeDailySales', () => {
     const orders = [
       { status: 'Pagado', total: 425, createdAt: ts(at(26, 9)), paidAt: ts(at(26, 9)) },
       { status: 'Pagado', total: 660, createdAt: ts(at(26, 12)), paidAt: ts(at(26, 12)) },
-      // WhatsApp orders nobody charged yet (no status field at all).
+      // Old WhatsApp text snapshots (no status) — not tickets; pending menu
+      // orders now live in web_orders.
       { source: 'whatsapp', total: 200, createdAt: ts(at(26, 13)) },
       { source: 'whatsapp', total: 240, createdAt: ts(at(26, 14)) },
       { source: 'whatsapp', total: 200, createdAt: ts(at(26, 15)), reviewed: true, discarded: true },
@@ -21,7 +22,7 @@ describe('summarizeDailySales', () => {
       { status: 'Reembolsado', total: 70, createdAt: ts(at(26, 11)), paidAt: ts(at(26, 11)) },
     ]
     const s = summarizeDailySales(orders, NOW)
-    expect(s).toMatchObject({ ordersToday: 2, revenueToday: 1085, avgTicket: 542.5, pendingToday: 3 })
+    expect(s).toMatchObject({ ordersToday: 2, revenueToday: 1085, avgTicket: 542.5, pendingToday: 1 })
   })
 
   it('a tab opened yesterday and paid today counts today', () => {

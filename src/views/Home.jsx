@@ -13,19 +13,14 @@ import { SectionsList } from '../components/SectionsList'
 import { CategoryTabs } from '../components/CategoryTabs'
 import { DrinkBuilder } from '../components/drinkBuilder/DrinkBuilder'
 import { DrinkBuilderCard } from '../components/drinkBuilder/DrinkBuilderCard'
-import {
-  addDoc,
-  collection,
-  getDocs,
-  serverTimestamp,
-} from 'firebase/firestore'
+import { addDoc, collection, getDocs, serverTimestamp } from 'firebase/firestore'
 import { usePromotion } from '../hooks/usePromotion'
 import { useSections } from '../hooks/useSections'
 import { useSettings } from '../hooks/useSettings'
 import { useDrinkBuilder } from '../hooks/useDrinkBuilder'
 import { DRINK_BUILDER_HASH } from '../utils/drinkBuilder'
 import { flyToCart, formatMoney, getCartKey } from '../utils/cart'
-import { toSafeItems } from '../utils/posCalculations'
+import { WEB_ORDERS_COLLECTION, buildWebOrder, newWebOrderCode } from '../utils/webOrders'
 import { db, isTestEnv } from '../firebase'
 
 export const Home = () => {
@@ -369,10 +364,10 @@ export const Home = () => {
   }
 
   // ── WhatsApp order ────────────────────────────────────────────────────────
-  const buildOrderMessage = () => {
+  const buildOrderMessage = (orderCode) => {
     const notes = orderNotes.trim()
     const lines = [
-      'Pedido BK Menu',
+      `Pedido BK Menu · ${orderCode}`,
       '',
       'Items:',
       ...cart.map((item, idx) => {
@@ -417,38 +412,28 @@ export const Home = () => {
     return lines.join('\n')
   }
 
+  // WhatsApp opens first (still inside the tap, so popup blockers allow it);
+  // the same order is saved for the café's panel in the background, where a
+  // cashier imports it into Cobrar with one click. A failed save never blocks
+  // the customer — the WhatsApp message still carries the whole order.
   const handleWhatsAppOrder = () => {
     if (cart.length === 0) return
-    const message = buildOrderMessage()
-    saveOrderSnapshot(message, cartTotal, cart, orderNotes)
+    const orderCode = newWebOrderCode()
+    const message = buildOrderMessage(orderCode)
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`
     window.open(url, '_blank', 'noopener,noreferrer')
+    saveWebOrder(orderCode)
   }
 
-  // `items` is stored in the exact same shape POS.jsx's own tickets use
-  // (toSafeItems) so the admin side can load every product straight into the
-  // POS ticket with one click, instead of the cashier re-typing the order
-  // from the WhatsApp text message.
-  const saveOrderSnapshot = async (message, total, items = [], notes = '') => {
+  const saveWebOrder = async (orderCode) => {
     try {
-      const orderId = `BK-${Date.now()
-        .toString(36)
-        .toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
-      await addDoc(collection(db, 'orders'), {
-        orderId,
-        content: message,
-        total: Number(total || 0),
-        items: toSafeItems(items),
-        generalNote: notes.trim() || null,
-        source: 'whatsapp',
-        reviewed: false,
+      await addDoc(collection(db, WEB_ORDERS_COLLECTION), {
+        ...buildWebOrder(cart, orderNotes, orderCode),
         createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       })
-      // No trimming here: the menu used to keep only the newest 50 orders,
-      // which deleted paid sales history. Abandoned snapshots are cleaned up
-      // by the admin panel instead (utils/orderCleanup.js).
     } catch (error) {
-      console.error('Failed to save order snapshot:', error)
+      console.error('Failed to save web order:', error)
     }
   }
 

@@ -21,6 +21,7 @@ import {
   validateIngredientRows,
 } from '../../utils/recipeCalculations'
 import { ConfirmDialog } from '../../components/admin/ConfirmDialog'
+import { isLowStock } from '../../utils/stockAlerts'
 import {
   Package, PackagePlus, Boxes, Search, Plus, Pencil, Trash2, X, Check,
   AlertTriangle, ChevronDown, Loader2, Eye, ChevronsUpDown, BookOpen, Circle, CheckCircle2,
@@ -36,6 +37,7 @@ const buildGroupsDraft = buildOptionGroupsDraft
 const inputCls =
   'w-full rounded-xl border border-white/10 bg-main-900 px-3 py-2.5 text-sm text-light-100 placeholder-light-200/55 outline-none transition focus:border-main-500/50 focus:ring-1 focus:ring-main-500/20'
 const labelCls = 'block text-xs font-medium text-light-200/60 mb-1.5'
+const hintCls = 'mt-1 text-[11px] leading-snug text-light-200/60'
 
 // Relative time in Spanish, matching the rest of the admin panel's locale.
 const formatRelative = (date) => {
@@ -125,7 +127,7 @@ const MaterialModal = ({ material, onClose }) => {
       <div className="bg-main-900 border border-white/10 rounded-3xl w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-base font-bold text-light-100">
-            {isEdit ? 'Editar Material' : 'Nuevo Material'}
+            {isEdit ? 'Editar insumo' : 'Nuevo insumo'}
           </h3>
           <button
             onClick={onClose}
@@ -174,6 +176,9 @@ const MaterialModal = ({ material, onClose }) => {
               </select>
             </div>
           </div>
+          <p className={hintCls + ' -mt-1'}>
+            Lo que pagas por 1 {unitLabel(unit).toLowerCase()}. Ej.: si 1 litro de leche cuesta $26, pon $26 y unidad Litro.
+          </p>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -188,6 +193,7 @@ const MaterialModal = ({ material, onClose }) => {
                 placeholder="0"
                 className={inputCls}
               />
+              <p className={hintCls}>Te avisamos con sonido y una alerta en el menú al llegar a esta cantidad. 0 = sin aviso.</p>
             </div>
             {!isEdit && (
               <div>
@@ -202,6 +208,7 @@ const MaterialModal = ({ material, onClose }) => {
                   placeholder="0"
                   className={inputCls}
                 />
+                <p className={hintCls}>En {unitShort(unit)}. Después se ajusta sola con ventas y compras.</p>
               </div>
             )}
           </div>
@@ -376,7 +383,10 @@ const AddStockPurchaseModal = ({ materials, onClose, onSuccess }) => {
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-main-900 border border-white/10 rounded-3xl w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-base font-bold text-light-100">Agregar Stock</h3>
+          <div>
+            <h3 className="text-base font-bold text-light-100">Registrar compra</h3>
+            <p className="text-xs text-light-200/65 mt-0.5">Suma lo que compraste al inventario y actualiza el costo del insumo.</p>
+          </div>
           <button
             onClick={onClose}
             aria-label="Cerrar"
@@ -388,7 +398,7 @@ const AddStockPurchaseModal = ({ materials, onClose, onSuccess }) => {
 
         <div className="space-y-3 mb-5">
           <div ref={comboRef} className="relative">
-            <label htmlFor="purchase-material" className={labelCls}>Material *</label>
+            <label htmlFor="purchase-material" className={labelCls}>Insumo *</label>
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/55" />
               <input
@@ -405,7 +415,7 @@ const AddStockPurchaseModal = ({ materials, onClose, onSuccess }) => {
                   setComboOpen(true)
                 }}
                 onFocus={() => setComboOpen(true)}
-                placeholder="Buscar material…"
+                placeholder="Buscar insumo…"
                 className={inputCls + ' pl-8 pr-8'}
               />
               <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-light-200/55 pointer-events-none" />
@@ -1407,7 +1417,7 @@ const RecipesSection = ({ materials }) => {
         <div>
           <h2 className="text-base font-bold text-light-100">Recetas</h2>
           <p className="text-xs text-light-200/65 mt-0.5">
-            Define el costo de cada producto. Los datos de receta se usan para calcular ganancia y deducir stock automáticamente.
+            Indica qué insumos (y cuánto) lleva cada producto. Con eso calculamos cuánto te cuesta, cuánto ganas y descontamos el inventario en cada venta. Un producto sin receta cuenta como costo $0 en Finanzas.
           </p>
         </div>
       </div>
@@ -1542,7 +1552,7 @@ const MaterialRow = ({ material, onEdit, onDelete }) => {
   const currentStock = material.currentStock ?? 0
   const isLow = reorderLevel > 0 && currentStock <= reorderLevel
 
-  const metaParts = [unitLabel(material.unit)]
+  const metaParts = [`${formatMoney(material.costPerUnit || 0)} por ${unitLabel(material.unit).toLowerCase()}`]
   if (material.supplier) metaParts.push(material.supplier)
   metaParts.push(formatRelative(lastUpdatedDate))
 
@@ -1560,17 +1570,17 @@ const MaterialRow = ({ material, onEdit, onDelete }) => {
         <p className="text-sm font-semibold text-light-100 truncate">{material.name}</p>
         <p className="text-xs text-light-200/65 mt-0.5 truncate">
           {metaParts.join(' · ')}
-          {reorderLevel > 0 && <span className="text-light-200/65"> · aviso en {formatQty(reorderLevel)}</span>}
+          {reorderLevel > 0 && <span className="text-light-200/65"> · avisa al llegar a {formatQty(reorderLevel)} {unitShort(material.unit)}</span>}
         </p>
       </div>
 
       <div className="text-right shrink-0">
-        <p className="text-sm font-bold text-light-100 tabular-nums">{formatMoney(material.costPerUnit || 0)}</p>
-        <p className={`text-xs font-semibold tabular-nums flex items-center justify-end gap-1 mt-0.5 ${
-          isLow ? 'text-amber-400' : 'text-light-200/70'
+        <p className="text-[11px] font-semibold text-light-200/60">{currentStock <= 0 && reorderLevel > 0 ? 'Agotado' : 'Quedan'}</p>
+        <p className={`text-sm font-bold tabular-nums flex items-center justify-end gap-1 ${
+          isLow ? 'text-amber-400' : 'text-light-100'
         }`}>
-          {isLow && <AlertTriangle size={11} />}
-          {formatQty(currentStock)} {unitLabel(material.unit)}
+          {isLow && <AlertTriangle size={12} aria-label="Por acabarse" />}
+          {formatQty(currentStock)} {unitShort(material.unit)}
         </p>
       </div>
 
@@ -1578,16 +1588,16 @@ const MaterialRow = ({ material, onEdit, onDelete }) => {
         <button
           onClick={() => onEdit(material)}
           aria-label={`Editar ${material.name}`}
-          className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-white/10 text-light-200/70 hover:text-light-100 transition-colors cursor-pointer"
+          className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-white/10 text-light-200/70 hover:text-light-100 transition-colors cursor-pointer"
         >
-          <Pencil size={14} />
+          <Pencil size={15} />
         </button>
         <button
           onClick={() => onDelete(material)}
           aria-label={`Eliminar ${material.name}`}
-          className="h-9 w-9 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-light-200/70 hover:text-red-400 transition-colors cursor-pointer"
+          className="h-10 w-10 flex items-center justify-center rounded-xl hover:bg-red-500/10 text-light-200/70 hover:text-red-400 transition-colors cursor-pointer"
         >
-          <Trash2 size={14} />
+          <Trash2 size={15} />
         </button>
       </div>
     </div>
@@ -1649,9 +1659,18 @@ export const Stock = () => {
     })
     .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
 
-  const lowStockCount = materials.filter(
-    (m) => (m.reorderLevel ?? 0) > 0 && (m.currentStock ?? 0) <= (m.reorderLevel ?? 0)
-  ).length
+  const lowStockCount = materials.filter(isLowStock).length
+  const [onlyLow, setOnlyLow] = useState(false)
+  const shown = onlyLow ? filtered.filter(isLowStock) : filtered
+
+  // Insumos | Recetas — remembered on this device.
+  const [tab, setTab] = useState(() => {
+    try { return localStorage.getItem('bk_stock_tab') === 'recetas' ? 'recetas' : 'insumos' } catch { return 'insumos' }
+  })
+  const selectTab = (t) => {
+    setTab(t)
+    try { localStorage.setItem('bk_stock_tab', t) } catch { /* private mode */ }
+  }
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -1668,39 +1687,76 @@ export const Stock = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      <div role="tablist" aria-label="Inventario" className="flex items-center gap-1 p-1 rounded-xl bg-main-900 border border-white/10 w-fit">
+        {[
+          { key: 'insumos', label: 'Insumos', icon: Boxes },
+          { key: 'recetas', label: 'Recetas', icon: BookOpen },
+        ].map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => selectTab(key)}
+            className={`inline-flex items-center gap-2 min-h-[40px] px-4 rounded-lg text-sm font-semibold transition-colors cursor-pointer ${
+              tab === key ? 'bg-main-500 text-snow' : 'text-light-200/70 hover:text-light-100'
+            }`}
+          >
+            <Icon size={16} /> {label}
+            {key === 'insumos' && lowStockCount > 0 && <AlertTriangle size={14} className={tab === key ? 'text-snow' : 'text-amber-400'} aria-label="Hay insumos por agotarse" />}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'recetas' ? (
+        <RecipesSection materials={materials} />
+      ) : (
+      <>
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-main-900 border border-white/10 rounded-3xl p-5">
-          <p className="text-xs text-light-200/65 uppercase tracking-wider">Materiales Registrados</p>
-          <p className="text-3xl font-bold text-light-100 mt-2">{loading ? '—' : materials.length}</p>
+          <p className="text-sm font-semibold text-light-200/75">Insumos registrados</p>
+          <p className="text-3xl font-bold text-light-100 mt-1">{loading ? '—' : materials.length}</p>
+          <p className="text-xs text-light-200/60 mt-1">Todo lo que compras para preparar tus productos.</p>
         </div>
-        <div className="bg-main-900 border border-white/10 rounded-3xl p-5">
-          <p className="text-xs text-light-200/65 uppercase tracking-wider">Por acabarse</p>
-          <p className={`text-3xl font-bold mt-2 ${lowStockCount > 0 ? 'text-amber-400' : 'text-light-100'}`}>
+        <button
+          type="button"
+          onClick={() => setOnlyLow((v) => !v)}
+          disabled={lowStockCount === 0}
+          aria-pressed={onlyLow}
+          className={`text-left rounded-3xl p-5 border transition-colors cursor-pointer disabled:cursor-default ${
+            onlyLow ? 'bg-amber-500/10 border-amber-500/40' : 'bg-main-900 border-white/10 hover:border-amber-500/30'
+          }`}
+        >
+          <p className="text-sm font-semibold text-light-200/75 flex items-center gap-1.5">
+            {lowStockCount > 0 && <AlertTriangle size={14} className="text-amber-400" />} Por acabarse
+          </p>
+          <p className={`text-3xl font-bold mt-1 ${lowStockCount > 0 ? 'text-amber-400' : 'text-light-100'}`}>
             {loading ? '—' : lowStockCount}
           </p>
-        </div>
+          <p className="text-xs text-light-200/60 mt-1">
+            {lowStockCount === 0 ? 'Todo arriba de su nivel de aviso.' : onlyLow ? 'Mostrando solo estos. Toca para ver todos.' : 'Toca para ver solo estos.'}
+          </p>
+        </button>
         <div className="bg-main-900 border border-white/10 rounded-3xl p-5 flex flex-col justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs text-light-200/65 uppercase tracking-wider">Materia Prima</p>
-            <p className="text-xs text-light-200/55 mt-2 hidden sm:block">Insumos, costos y niveles de stock.</p>
+            <p className="text-sm font-semibold text-light-200/75">¿Compraste algo?</p>
+            <p className="text-xs text-light-200/60 mt-1">Regístralo para sumar al inventario. Si es algo nuevo, primero créalo.</p>
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setPurchaseModalOpen(true)}
               disabled={!materials.length}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-main-500 hover:bg-main-400 text-snow text-sm font-semibold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex-1 flex items-center justify-center gap-2 px-3 min-h-[44px] rounded-xl bg-main-500 hover:bg-main-400 text-snow text-sm font-semibold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <PackagePlus size={16} />
-              Agregar Stock
+              Registrar compra
             </button>
             <button
               onClick={() => setModalMode('add')}
-              aria-label="Nuevo Material"
-              className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-light-100 text-sm font-semibold transition-colors cursor-pointer shrink-0"
+              className="flex items-center justify-center gap-2 px-3 min-h-[44px] rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-light-100 text-sm font-semibold transition-colors cursor-pointer shrink-0"
             >
               <Plus size={16} />
-              <span className="hidden lg:inline">Nuevo</span>
+              Nuevo insumo
             </button>
           </div>
         </div>
@@ -1726,7 +1782,7 @@ export const Stock = () => {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-light-200/55" />
             <input
               type="text"
-              placeholder="Buscar material por nombre…"
+              placeholder="Buscar insumo por nombre…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 bg-main-800/60 border border-white/10 rounded-xl text-sm text-light-100 placeholder:text-light-200/55 outline-none focus:border-main-500/40 transition-colors"
@@ -1746,11 +1802,11 @@ export const Stock = () => {
               </div>
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : shown.length === 0 ? (
           <div className="py-16 flex flex-col items-center gap-3 text-light-200/55">
             <Boxes size={40} />
             <p className="text-sm italic">
-              {search ? 'Sin resultados para esa búsqueda.' : 'No hay materiales registrados aún.'}
+              {search ? 'Sin resultados para esa búsqueda.' : 'Aún no registras insumos. Empieza por lo que más usas: leche, vasos, café…'}
             </p>
             {!search && (
               <button
@@ -1764,7 +1820,7 @@ export const Stock = () => {
           </div>
         ) : (
           <div className="divide-y divide-white/10">
-            {filtered.map((m) => (
+            {shown.map((m) => (
               <MaterialRow key={m.docId} material={m} onEdit={setModalMode} onDelete={setDeleteTarget} />
             ))}
           </div>
@@ -1788,16 +1844,14 @@ export const Stock = () => {
 
       {deleteTarget && (
         <DeleteConfirm
-          label={`¿Seguro que deseas eliminar "${deleteTarget.name}"? Esta acción no se puede deshacer.`}
+          label={`¿Seguro que deseas eliminar "${deleteTarget.name}"? Las recetas que lo usan dejarán de descontarlo. Esta acción no se puede deshacer.`}
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
           loading={deleting}
         />
       )}
-
-      <div className="border-t border-white/10 pt-6">
-        <RecipesSection materials={materials} />
-      </div>
+      </>
+      )}
     </div>
   )
 }

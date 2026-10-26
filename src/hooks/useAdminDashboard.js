@@ -27,7 +27,8 @@ export const useAdminDashboard = () => {
       const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(10))
       unsub = onSnapshot(q, (snapshot) => {
         if (!alive) return
-        setRecentOrders(snapshot.docs.map(doc => ({
+        // Legacy WhatsApp text snapshots (no status) were never real tickets.
+        setRecentOrders(snapshot.docs.filter(doc => doc.data().status || doc.data().source !== 'whatsapp').map(doc => ({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate() || new Date()

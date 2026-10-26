@@ -43,8 +43,8 @@ const resolveActualItemCost = (item, recipesById, docIdByLegacyId, nameToDocId) 
 
 const COLUMNS = [
   { key: 'name', label: 'Producto', align: 'left' },
-  { key: 'expected', label: 'Esperado', align: 'right' },
-  { key: 'actual', label: 'Real', align: 'right' },
+  { key: 'expected', label: 'Según receta', align: 'right' },
+  { key: 'actual', label: 'Registrado', align: 'right' },
   { key: 'diff', label: 'Diferencia', align: 'right' },
   { key: 'diffPercent', label: '%', align: 'right' },
 ]
@@ -174,28 +174,28 @@ export const StockVariance = ({ orders, docIdByLegacyId = {}, nameToDocId = {} }
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <StatCard
               icon={Boxes}
-              label="Valor de Inventario Actual"
+              label="Valor de tu inventario hoy"
               value={formatMoney(inventoryValue)}
               subtext="Valor de todo el stock en mano"
               colorCls="bg-blue-500/10 text-blue-400"
             />
             <StatCard
               icon={Calculator}
-              label="COGS Esperado"
+              label="Costo según recetas"
               value={formatMoney(variance.expectedCogs)}
               subtext="Basado en recetas actuales"
               colorCls="bg-purple-500/10 text-purple-400"
             />
             <StatCard
               icon={Receipt}
-              label="COGS Real"
+              label="Costo registrado al cobrar"
               value={formatMoney(variance.actualCogs)}
               subtext="Costo real de las órdenes"
               colorCls="bg-amber-500/10 text-amber-400"
             />
             <StatCard
               icon={GitCompareArrows}
-              label="Varianza"
+              label="Diferencia"
               value={`${variance.diff >= 0 ? '+' : ''}${formatMoney(variance.diff)} (${variance.diffPercent >= 0 ? '+' : ''}${variance.diffPercent.toFixed(1)}%)`}
               subtext="Diferencia esperado vs real"
               colorCls={variance.diff > 0 ? 'bg-rose-500/10 text-rose-400' : 'bg-emerald-500/10 text-emerald-400'}

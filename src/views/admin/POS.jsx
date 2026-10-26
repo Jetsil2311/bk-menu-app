@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useLocation } from 'react-router'
 import {
   collection, getDocs, getDoc, addDoc, updateDoc, doc,
-  serverTimestamp, onSnapshot, query, where,
+  serverTimestamp, onSnapshot, query, where, runTransaction,
   increment,
 } from 'firebase/firestore'
 import { db } from '../../firebase'
@@ -29,11 +29,13 @@ import { TicketItem } from '../../components/admin/pos/TicketItem'
 import { PosDrinkBuilder } from '../../components/admin/pos/PosDrinkBuilder'
 import { useDrinkBuilder } from '../../hooks/useDrinkBuilder'
 import { DRINK_BUILDER_ITEM_ID } from '../../utils/drinkBuilder'
+import { WEB_ORDERS_COLLECTION, WEB_ORDER_STATUS } from '../../utils/webOrders'
+import { ConfirmDialog } from '../../components/admin/ConfirmDialog'
 import {
   ShoppingCart, Search, X, User, UserPlus,
   CreditCard, Banknote, Wallet, Package, CheckCircle2,
   Receipt, ChefHat, Plus, MessageCircle,
-  Trash2, ChevronDown, ChevronRight, Clock, AlertCircle as AlertCircleIcon, Send, Sparkles,
+  ChevronDown, ChevronRight, Clock, AlertCircle as AlertCircleIcon, Sparkles,
 } from 'lucide-react'
 
 const BASE_URL = import.meta.env.BASE_URL
@@ -333,7 +335,7 @@ const LoyaltyLookupModal = ({ allCustomers, onSelect, onSkip, onClose }) => {
             </div>
             <div>
               <h3 className="text-base font-bold text-light-100 leading-tight">¿Con quién es?</h3>
-              <p className="text-xs text-light-200/65 mt-0.5">Vincula un cliente para acumular loyalty</p>
+              <p className="text-xs text-light-200/65 mt-0.5">Vincula un cliente para que acumule recompensas</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/70 cursor-pointer transition-colors">
@@ -450,7 +452,7 @@ const LoyaltyLookupModal = ({ allCustomers, onSelect, onSkip, onClose }) => {
           >
             Continuar sin cliente
           </button>
-          <p className="text-center text-[11px] text-light-200/45">La compra no quedará registrada en loyalty</p>
+          <p className="text-center text-[11px] text-light-200/45">La compra no le sumará recompensas a nadie</p>
         </div>
       </div>
     </div>
@@ -496,13 +498,15 @@ export const POS = () => {
   const [ticketTab, setTicketTab]         = useState('active')  // 'active' | 'curso'
   const [isSendingToKitchen, setIsSendingToKitchen] = useState(false)
 
-  // ── WhatsApp order review ─────────────────────────────────────────────────
-  const [waOrderId, setWaOrderId] = useState(null)
-  const [waContent, setWaContent] = useState('')
-  // Holds a loadWhatsApp id from nav state until the catalog is ready to
-  // resolve each item's productDocId/stationTags — see the two-effect split
-  // below.
-  const [pendingWhatsAppId, setPendingWhatsAppId] = useState(null)
+  // ── Web orders (from the public menu, see utils/webOrders.js) ─────────────
+  // webOrder = the imported web order currently in the ticket ({ id, orderId }),
+  // so the order it becomes keeps its WEB- code and source 'whatsapp'.
+  const [webOrder, setWebOrder] = useState(null)
+  // Held from nav state until the catalog has loaded (items need it to get
+  // their productDocId/stationTags).
+  const [pendingImportId, setPendingImportId] = useState(null)
+  const [importConflictId, setImportConflictId] = useState(null) // ticket busy → ask first
+  const [importNotice, setImportNotice] = useState('')
 
   // ── Overlay state (mirrors Home.jsx exactly) ───────────────────────────────
   const [bottomSheetProduct, setBottomSheetProduct]         = useState(null)
@@ -617,40 +621,22 @@ export const POS = () => {
     }
   }, [])
 
-  // ── WhatsApp order review — arrives via navigate(state: { loadWhatsApp }) ──
-  // Captures the id immediately (nav state is cleared right away either way);
-  // resolution is deferred to the next effect until the catalog has loaded,
-  // since loading structured items needs productsById to stamp
-  // productDocId/stationTags via _commit.
+  // ── Web order import — arrives via navigate(state: { importWebOrder }) ──
   useEffect(() => {
-    const id = location.state?.loadWhatsApp
+    const id = location.state?.importWebOrder
     if (!id) return
     window.history.replaceState({}, '')
-    setPendingWhatsAppId(id)
+    setPendingImportId(id)
   }, [location.state])
 
   useEffect(() => {
-    if (!pendingWhatsAppId || catalogLoading) return
-    const id = pendingWhatsAppId
-    setPendingWhatsAppId(null)
-    if (orderItems.length > 0) return  // ticket busy — cashier must clear it manually first
-    getDoc(doc(db, 'orders', id)).then(snap => {
-      if (!snap.exists()) return
-      setWaOrderId(id)
-      const data = snap.data()
-      if (Array.isArray(data.items) && data.items.length > 0) {
-        // Structured order (built from the customer's actual cart) — load
-        // every product straight into the ticket, same as tapping each one
-        // on the product grid. Falls back to the raw text below only for
-        // orders saved before this order shape existed.
-        data.items.forEach(item => _commit(item))
-        setGeneralNote(data.generalNote || '')
-      } else {
-        setWaContent(data.content || '')
-      }
-    }).catch(() => {})
+    if (!pendingImportId || catalogLoading) return
+    const id = pendingImportId
+    setPendingImportId(null)
+    if (orderItems.length > 0) setImportConflictId(id)
+    else importWebOrder(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingWhatsAppId, catalogLoading])
+  }, [pendingImportId, catalogLoading])
 
   // ── Charge an en-curso order from Orders.jsx's "Marcar como entregado" ────
   useEffect(() => {
@@ -673,6 +659,7 @@ export const POS = () => {
         setOrderItems(draft.orderItems)
         setGeneralNote(draft.generalNote || '')
         setCustomer(draft.customer || null)
+        setWebOrder(draft.webOrder || null)
         setDraftRestored(true)
       }
     } catch { /* silently ignore */ }
@@ -685,15 +672,19 @@ export const POS = () => {
       return
     }
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ orderItems, generalNote, customer }))
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ orderItems, generalNote, customer, webOrder }))
     } catch { /* silently ignore */ }
-  }, [orderItems, generalNote, customer])
+  }, [orderItems, generalNote, customer, webOrder])
 
   // If the cashier manually empties a ticket that was loaded via Agregar,
   // don't let a later brand-new ticket silently overwrite that stale order.
   useEffect(() => {
     if (orderItems.length === 0 && resumingOrderId) setResumingOrderId(null)
   }, [orderItems.length, resumingOrderId])
+  // Same for an imported web order: an emptied ticket is no longer that order.
+  useEffect(() => {
+    if (orderItems.length === 0 && webOrder) setWebOrder(null)
+  }, [orderItems.length, webOrder])
 
   // ── Customer search — client-side filter on cached list ──────────────────
   // Matches phone as a plain digit string; matches name accent-insensitively.
@@ -906,9 +897,11 @@ export const POS = () => {
           extraFields: { items: safeItems, total, generalNote: generalNote || null, ...customerFields },
         })
       } else {
-        const orderId = `POS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`
+        const orderId = webOrder?.orderId
+          || `POS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`
         const ref = await addDoc(collection(db, 'orders'), {
-          orderId, items: safeItems, total, status: 'Nuevo', source: 'pos',
+          orderId, items: safeItems, total, status: 'Nuevo',
+          source: webOrder ? 'whatsapp' : 'pos', webOrderId: webOrder?.id ?? null,
           generalNote: generalNote || null, ...customerFields,
           createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
         })
@@ -969,39 +962,53 @@ export const POS = () => {
     }
   }
 
-  // ── WhatsApp review: discard or route the raw order in place ─────────────
-  const discardWhatsAppOrder = async () => {
-    if (!waOrderId) return
-    try {
-      await updateDoc(doc(db, 'orders', waOrderId), { reviewed: true, discarded: true, updatedAt: serverTimestamp() })
-    } catch (e) { console.error('Error discarding WhatsApp order:', e) }
-    setWaOrderId(null); setWaContent('')
-  }
+  // ── Import a web order into the ticket ────────────────────────────────────
+  // The order's items are already structured (same shape as a ticket line),
+  // so they load as-is. Marked 'imported' in a transaction first, so two
+  // devices can't both import the same order.
+  const findCatalogProduct = (item) =>
+    productsById[item.productDocId]
+    || allProducts.find(p => item.id != null && String(p.id) === String(item.id))
+    || allProducts.find(p => normalizeSearchText(p.name) === normalizeSearchText(item.name))
 
-  const sendWhatsAppOrderToKitchen = async () => {
-    if (!waOrderId || orderItems.length === 0 || isSendingToKitchen) return
-    setIsSendingToKitchen(true)
+  const importWebOrder = async (id) => {
+    setImportConflictId(null)
+    setImportNotice('')
     try {
-      const safeItems = toSafeItems(orderItems)
-      const total = getOrderTotal(safeItems)
-      await routeOrderToStations(waOrderId, { items: safeItems }, stations, {
-        productsById,
-        extraFields: {
-          items: safeItems, total, status: 'Nuevo', reviewed: true,
-          generalNote: generalNote || null,
-          customerId: customer?.id ?? null, customerName: customer?.name ?? null,
-        },
+      const ref = doc(db, WEB_ORDERS_COLLECTION, id)
+      const data = await runTransaction(db, async (tx) => {
+        const snap = await tx.get(ref)
+        if (!snap.exists() || snap.data().status !== WEB_ORDER_STATUS.pending) return null
+        tx.update(ref, { status: WEB_ORDER_STATUS.imported, importedAt: serverTimestamp(), updatedAt: serverTimestamp() })
+        return snap.data()
       })
-      setOrderItems([]); setGeneralNote(''); setCustomer(null); setLoyaltyRedeemed(0)
-      setWaOrderId(null); setWaContent('')
+      if (!data) {
+        setImportNotice('Ese pedido ya lo importó o ignoró alguien más.')
+        return
+      }
+      // Web carts carry the product's legacy id; resolve the Firestore doc so
+      // cost, stock deduction and kitchen routing work like a POS line.
+      setOrderItems((data.items || []).map(item => {
+        const product = item.productDocId === DRINK_BUILDER_ITEM_ID ? null : findCatalogProduct(item)
+        return {
+          ...item,
+          productDocId: item.productDocId || product?.docId || null,
+          stationTags: product?.stationTags || item.stationTags || [],
+          cartItemId: createLocalId(),
+          itemNote: item.itemNote || '',
+        }
+      }))
+      setGeneralNote(data.generalNote || '')
+      setCustomer(null)
+      setLoyaltyRedeemed(0)
+      setResumingOrderId(null)
+      setWebOrder({ id, orderId: data.orderId })
       setDraftRestored(false)
-      localStorage.removeItem(DRAFT_KEY)
-      setTicketTab('curso')
+      setTicketTab('active')
+      setIsTicketOpen(true)
     } catch (e) {
-      console.error('Error al enviar orden de WhatsApp a cocina:', e)
-      alert('No se pudo enviar la orden de WhatsApp a cocina.')
-    } finally {
-      setIsSendingToKitchen(false)
+      console.error('Error importing web order:', e)
+      setImportNotice('No se pudo importar el pedido. Revisa la conexión e inténtalo de nuevo.')
     }
   }
 
@@ -1061,7 +1068,7 @@ export const POS = () => {
       const resumingOrder = resumingOrderId
         ? enCursoOrders.find(o => o.id === resumingOrderId) ?? (resumingMeta?.id === resumingOrderId ? resumingMeta : null)
         : null
-      const orderId = resumingOrder?.orderId
+      const orderId = resumingOrder?.orderId || webOrder?.orderId
         || `POS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`
 
       // Earn rate is deliberately based on effectiveTotal (subtotal minus what was just
@@ -1100,7 +1107,8 @@ export const POS = () => {
       // works if total is the full pre-redemption value.
       const payload = {
         orderId, content: buildContent(), total: subtotal,
-        status: 'Pagado', source: resumingOrder?.source || 'pos',
+        status: 'Pagado', source: resumingOrder?.source || (webOrder ? 'whatsapp' : 'pos'),
+        ...(webOrder && !resumingOrder ? { webOrderId: webOrder.id } : {}),
         paymentMethods: { cash: cashAmount, card: cardAmount, loyalty: loyaltyRedeemed },
         customerId: customer?.id ?? null, customerName: customer?.name ?? null,
         items: itemsWithCosts, generalNote: generalNote || null,
@@ -1297,17 +1305,13 @@ export const POS = () => {
           </button>
         </div>
       )}
-      {waOrderId && (
+      {webOrder && (
         <div className="mx-3 mt-2.5 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2.5 shrink-0">
           <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
             <MessageCircle size={12} />
-            {waContent ? 'Orden de WhatsApp — arma el ticket manualmente' : 'Orden de WhatsApp — productos cargados'}
+            Pedido del menú #{webOrder.orderId}
           </p>
-          {waContent ? (
-            <p className="mt-1.5 text-xs text-amber-200/70 whitespace-pre-wrap max-h-24 overflow-y-auto">{waContent}</p>
-          ) : (
-            <p className="mt-1 text-xs text-amber-200/70">Revisa el ticket antes de enviarlo a cocina.</p>
-          )}
+          <p className="mt-1 text-xs text-amber-200/70">Productos cargados tal como los pidió el cliente. Envíalo a cocina o cóbralo.</p>
         </div>
       )}
       {customerSection}
@@ -1340,44 +1344,24 @@ export const POS = () => {
           <span className="text-2xl font-bold text-light-100 tabular-nums">{formatMoney(subtotal)}</span>
         </div>
 
-        {waOrderId ? (
-          <div className="flex gap-2">
-            <button
-              onClick={discardWhatsAppOrder}
-              className="flex-none flex items-center gap-1.5 px-4 py-3.5 rounded-2xl border border-rose-500/25 text-sm font-semibold text-rose-400/80 hover:border-rose-500/50 hover:bg-rose-500/[0.07] hover:text-rose-300 transition-all cursor-pointer min-h-[44px]"
-            >
-              <Trash2 size={15} />
-              Descartar
-            </button>
-            <button
-              onClick={sendWhatsAppOrderToKitchen}
-              disabled={orderItems.length === 0 || isSendingToKitchen}
-              className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl bg-main-500 hover:bg-main-400 disabled:opacity-30 disabled:cursor-not-allowed py-3.5 text-sm font-bold text-snow transition-all shadow-lg shadow-main-500/20 cursor-pointer min-h-[44px]"
-            >
-              <Send size={15} />
-              {isSendingToKitchen ? 'Enviando…' : 'Enviar a cocina'}
-            </button>
-          </div>
-        ) : (
-          <div className="flex gap-2">
-            <button
-              onClick={sendCurrentOrderToKitchen}
-              disabled={orderItems.length === 0 || isSendingToKitchen}
-              title="Enviar a cocina"
-              className="flex-none flex items-center gap-1.5 px-4 py-3.5 rounded-2xl border border-amber-500/25 text-sm font-semibold text-amber-400/70 hover:border-amber-500/50 hover:bg-amber-500/[0.07] hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer min-h-[44px]"
-            >
-              <ChefHat size={15} />
-              {isSendingToKitchen ? 'Enviando…' : 'Enviar a cocina'}
-            </button>
-            <button
-              onClick={handleCobrarClick}
-              disabled={orderItems.length === 0}
-              className="flex-1 rounded-2xl bg-main-500 hover:bg-main-400 disabled:opacity-30 disabled:cursor-not-allowed py-3.5 text-sm font-bold text-snow transition-all shadow-lg shadow-main-500/20 cursor-pointer min-h-[44px]"
-            >
-              Cobrar · {formatMoney(subtotal)}
-            </button>
-          </div>
-        )}
+        <div className="flex gap-2">
+          <button
+            onClick={sendCurrentOrderToKitchen}
+            disabled={orderItems.length === 0 || isSendingToKitchen}
+            title="Enviar a cocina"
+            className="flex-none flex items-center gap-1.5 px-4 py-3.5 rounded-2xl border border-amber-500/25 text-sm font-semibold text-amber-400/70 hover:border-amber-500/50 hover:bg-amber-500/[0.07] hover:text-amber-300 disabled:opacity-30 disabled:cursor-not-allowed transition-all cursor-pointer min-h-[44px]"
+          >
+            <ChefHat size={15} />
+            {isSendingToKitchen ? 'Enviando…' : 'Enviar a cocina'}
+          </button>
+          <button
+            onClick={handleCobrarClick}
+            disabled={orderItems.length === 0}
+            className="flex-1 rounded-2xl bg-main-500 hover:bg-main-400 disabled:opacity-30 disabled:cursor-not-allowed py-3.5 text-sm font-bold text-snow transition-all shadow-lg shadow-main-500/20 cursor-pointer min-h-[44px]"
+          >
+            Cobrar · {formatMoney(subtotal)}
+          </button>
+        </div>
       </div>
     </>
   )
@@ -1622,6 +1606,25 @@ export const POS = () => {
             canConfirm={canConfirmPayment} isProcessing={isProcessing}
             onConfirm={handlePayment} onClose={() => setIsPaymentOpen(false)}
           />
+        )}
+
+        {/* ── Web order import: ticket already has products ─────────────── */}
+        {importConflictId && (
+          <ConfirmDialog
+            title="Ya hay un ticket abierto"
+            message="Para importar el pedido del menú se reemplazarán los productos del ticket actual. Si quieres conservarlos, cóbralo o envíalo a cocina primero; el pedido seguirá esperando en la campana."
+            confirmLabel="Reemplazar ticket"
+            pendingLabel="Importando…"
+            onConfirm={() => importWebOrder(importConflictId)}
+            onCancel={() => setImportConflictId(null)}
+          />
+        )}
+        {importNotice && (
+          <div role="status" className="fixed top-20 left-1/2 -translate-x-1/2 z-[9100] w-[calc(100%-2rem)] max-w-sm rounded-2xl bg-main-900 border border-white/10 shadow-2xl px-4 py-3 flex items-start gap-3">
+            <AlertCircleIcon size={18} className="text-amber-400 shrink-0 mt-0.5" />
+            <p className="flex-1 text-sm text-light-100">{importNotice}</p>
+            <button type="button" onClick={() => setImportNotice('')} aria-label="Cerrar" className="text-light-200/60 hover:text-light-100 cursor-pointer"><X size={16} /></button>
+          </div>
         )}
 
         {/* ── Order success flash ────────────────────────────────────────── */}

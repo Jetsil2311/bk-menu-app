@@ -88,7 +88,7 @@ const BalanceModal = ({ customer, onClose }) => {
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-main-900 border border-white/10 rounded-3xl w-full max-w-sm p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-bold text-light-100">Ajustar Saldo</h3>
+          <h3 className="text-base font-bold text-light-100">Ajustar saldo de recompensas</h3>
           <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/5 text-light-200/70 cursor-pointer transition-colors">
             <X size={18} />
           </button>
@@ -354,7 +354,7 @@ const VisitHistoryModal = ({ customer, onClose }) => {
                           <span>Tarjeta: <span className="text-light-200/60">{formatMoney(visit.paymentMethods.card)}</span></span>
                         )}
                         {(visit.paymentMethods.loyalty ?? 0) > 0 && (
-                          <span>Loyalty: <span className="text-emerald-400">-{formatMoney(visit.paymentMethods.loyalty)}</span></span>
+                          <span>Recompensas: <span className="text-emerald-400">-{formatMoney(visit.paymentMethods.loyalty)}</span></span>
                         )}
                       </div>
                     )}
@@ -525,7 +525,7 @@ export const Customers = () => {
           <p className="text-3xl font-bold text-light-100 mt-2">{loading ? '—' : customers.length}</p>
         </div>
         <div className="bg-main-900 border border-white/10 rounded-3xl p-5">
-          <p className="text-xs text-light-200/65 uppercase tracking-wider">Saldo Loyalty Total</p>
+          <p className="text-xs text-light-200/65 uppercase tracking-wider">Saldo de recompensas total</p>
           <p className="text-3xl font-bold text-emerald-400 mt-2">{loading ? '—' : formatMoney(totalBalance)}</p>
         </div>
         <div className="bg-main-900 border border-white/10 rounded-3xl p-5">

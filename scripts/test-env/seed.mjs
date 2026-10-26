@@ -11,6 +11,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import admin from 'firebase-admin'
 import { ROOT, TEST_PROJECT_ID, SNAPSHOT_FILE, readEmulatorEnv, decodeValue } from './shared.mjs'
+import { addSampleSales } from './sample-sales.mjs'
 
 // ── Safety: only ever write to the emulators ───────────────────────────────
 if (!process.env.FIRESTORE_EMULATOR_HOST || !process.env.FIREBASE_AUTH_EMULATOR_HOST) {
@@ -150,6 +151,12 @@ const main = async () => {
   for (const [name, docs] of Object.entries(collections)) {
     const n = await writeDocs(name, docs)
     console.log(`  ✓ ${name.padEnd(20)} ${n} docs`)
+  }
+
+  // Demo menu only: product ids in sample-sales.mjs match the demo catalog.
+  if (!useSnapshot && !Object.keys(collections.orders || {}).length) {
+    const n = await addSampleSales(db, admin)
+    console.log(`  ✓ ventas de muestra       ${n} pedidos pagados (para revisar Finanzas)`)
   }
 
   if (env.VITE_TEST_LOGIN_EMAIL && env.VITE_TEST_LOGIN_PASSWORD) {

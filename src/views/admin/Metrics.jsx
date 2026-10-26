@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { collection, getDocs } from 'firebase/firestore'
 import { db } from '../../firebase'
+import { isPaidOrderStatus } from '../../utils/orderStatus'
+import { computeOrderRevenue, orderDate } from '../../utils/financeCalculations'
 import {
   XAxis,
   YAxis,
@@ -65,6 +67,8 @@ export const Metrics = () => {
           ...d.data(),
           id: d.id,
           createdAt: d.data().createdAt?.toDate() || new Date(),
+          paidDate: orderDate(d.data()) || new Date(0),
+          revenue: computeOrderRevenue(d.data()),
         })))
         setSessions(sessionsSnap.docs.map(d => ({ id: d.id, ...d.data() })))
       } catch (err) {
@@ -106,9 +110,11 @@ export const Metrics = () => {
   })
 
   // Top products — reads from modern items array or legacy content string
+  // Only paid orders are sales (same rule as Finanzas and Inicio) — cancelled,
+  // refunded, still-in-kitchen and old WhatsApp text snapshots don't count.
   const productCounts = {}
   orders.forEach(order => {
-    if ((order.status || '').toLowerCase() === 'reembolsado') return
+    if (!isPaidOrderStatus(order.status)) return
     getOrderItems(order).forEach(({ qty, name }) => {
       productCounts[name] = (productCounts[name] || 0) + qty
     })
@@ -125,16 +131,16 @@ export const Metrics = () => {
   const prevStart = new Date(periodStart)
   prevStart.setDate(prevStart.getDate() - days)
 
-  const isNotRefunded = o => (o.status || '').toLowerCase() !== 'reembolsado'
-  const periodOrders = orders.filter(o => isNotRefunded(o) && o.createdAt >= periodStart)
-  const prevOrders = orders.filter(o => isNotRefunded(o) && o.createdAt >= prevStart && o.createdAt < periodStart)
+  const paidOrders = orders.filter(o => isPaidOrderStatus(o.status))
+  const periodOrders = paidOrders.filter(o => o.paidDate >= periodStart)
+  const prevOrders = paidOrders.filter(o => o.paidDate >= prevStart && o.paidDate < periodStart)
 
-  const periodRev = periodOrders.reduce((s, o) => s + Number(o.total || 0), 0)
-  const prevRev = prevOrders.reduce((s, o) => s + Number(o.total || 0), 0)
+  const periodRev = periodOrders.reduce((s, o) => s + o.revenue, 0)
+  const prevRev = prevOrders.reduce((s, o) => s + o.revenue, 0)
   const revChange = prevRev > 0 ? ((periodRev - prevRev) / prevRev * 100).toFixed(1) : null
 
-  const totalAllOrders = orders.length
-  const totalAllRevenue = orders.reduce((s, o) => s + Number(o.total || 0), 0)
+  const totalAllOrders = paidOrders.length
+  const totalAllRevenue = paidOrders.reduce((s, o) => s + o.revenue, 0)
   const avgTicket = totalAllOrders > 0 ? (totalAllRevenue / totalAllOrders) : 0
 
   return (
@@ -161,7 +167,7 @@ export const Metrics = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-semibold text-light-100">Ingresos ({RANGE_OPTIONS[rangeIdx].label})</h3>
-              <p className="text-xs text-light-200/65">Ventas diarias en MXN</p>
+              <p className="text-xs text-light-200/65">Efectivo + tarjeta cobrados cada día (según la caja)</p>
             </div>
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
               <TrendingUp size={20} />
@@ -222,7 +228,7 @@ export const Metrics = () => {
         {/* Top Products */}
         <div className="bg-main-900 border border-white/10 rounded-3xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-light-100">Top 5 Productos</h3>
+            <h3 className="text-lg font-semibold text-light-100">Lo más vendido</h3>
             <Award size={20} className="text-amber-400" />
           </div>
 
@@ -233,7 +239,7 @@ export const Metrics = () => {
           ) : topProducts.length === 0 ? (
             <div className="py-10 text-center">
               <p className="text-sm text-light-200/55 italic">Datos insuficientes.</p>
-              <p className="text-xs text-light-200/45 mt-1">Se necesitan pedidos con detalle de productos.</p>
+              <p className="text-xs text-light-200/45 mt-1">Aparecerá cuando haya pedidos pagados.</p>
             </div>
           ) : (
             <div className="space-y-3">
