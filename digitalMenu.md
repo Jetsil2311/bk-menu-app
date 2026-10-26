@@ -677,6 +677,11 @@ What changed: A recipe can now be saved with ingredients only in its options (e.
 Files affected: src/views/admin/Stock.jsx, src/utils/recipeCalculations.js (+test)
 Reason: Owner report. Saving was blocked unless the recipe had a fixed ingredient.
 
+### 2026-10-26 — Weekly fixed expenses
+What changed: Finanzas → Gastos fijos now offers **Semanal** besides Mensual and Anual, for things paid every week such as wages. A weekly expense has a payment weekday instead of a day of the month and shows "Vence hoy / en Nd". In the math it counts as 1/7 per day, 52/12 ≈ 4.33 payments a month and 52 a year. That feeds "Te quedó" (Día a día / Resumen) and "Pedidos para cubrir gastos de hoy". A "Total semanal" figure was added next to the monthly, annual and daily totals. Stored as `period: 'weekly'` with `dueWeekday` (0 = domingo … 6 = sábado).
+Files affected: src/utils/expenses.js (+ new expenses.test.js), src/components/admin/finance/ExpenseManager.jsx
+Reason: Owner request.
+
 ## Known Issues / Follow-ups
 
 - **NEW (2026-10-26): `firestore.rules` MUST be deployed before (or together with) this release.** Production has no rule for the new `web_orders` collection, so menu orders would still go out by WhatsApp but would not reach the panel. The file also makes `orders` staff-only, which is now safe because the menu no longer reads or deletes it. Run `firebase deploy --only firestore:rules` after reviewing the whole file (it also adds the pending `recipes`/`stations`/`expenses` rules).

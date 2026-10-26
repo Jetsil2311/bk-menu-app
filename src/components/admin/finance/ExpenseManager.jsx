@@ -17,13 +17,19 @@ const MONTH_NAMES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
 
+// 0 = domingo, matching Date.getDay(). Listed Monday-first, like a café week.
+const WEEKDAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0]
+
+const PERIOD_LABELS = { weekly: 'Semanal', monthly: 'Mensual', annual: 'Anual' }
+
 const DeleteConfirm = ({ label, onConfirm, onCancel, loading }) => (
   <ConfirmDialog title="¿Eliminar gasto?" message={label} onConfirm={onConfirm} onCancel={onCancel} isPending={loading} />
 )
 
 const PeriodPills = ({ value, onChange }) => (
   <div className="flex items-center gap-1 p-1 rounded-xl bg-main-900 border border-white/10 w-fit">
-    {[{ key: 'monthly', label: 'Mensual' }, { key: 'annual', label: 'Anual' }].map((opt) => (
+    {[{ key: 'weekly', label: 'Semanal' }, { key: 'monthly', label: 'Mensual' }, { key: 'annual', label: 'Anual' }].map((opt) => (
       <button
         key={opt.key}
         type="button"
@@ -45,6 +51,7 @@ const ExpenseForm = ({ expense, onSaved, onCancel }) => {
   const [period, setPeriod] = useState(expense?.period || 'monthly')
   const [dueDay, setDueDay] = useState(expense?.dueDay ?? 1)
   const [dueMonth, setDueMonth] = useState(expense?.dueMonth ?? new Date().getMonth() + 1)
+  const [dueWeekday, setDueWeekday] = useState(expense?.dueWeekday ?? 1)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -71,6 +78,7 @@ const ExpenseForm = ({ expense, onSaved, onCancel }) => {
         period,
         dueDay: day,
         dueMonth: period === 'annual' ? Math.min(12, Math.max(1, Math.round(Number(dueMonth)) || 1)) : null,
+        dueWeekday: period === 'weekly' ? Math.min(6, Math.max(0, Math.round(Number(dueWeekday)) || 0)) : null,
         updatedAt: serverTimestamp(),
       }
       if (isEdit) {
@@ -100,17 +108,28 @@ const ExpenseForm = ({ expense, onSaved, onCancel }) => {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className={labelCls}>Monto *</label>
           <MoneyInput value={amount} onChange={setAmount} inputClassName={inputCls} />
         </div>
         <div>
-          <label className={labelCls}>Periodo *</label>
+          <label className={labelCls}>¿Cada cuándo lo pagas? *</label>
           <PeriodPills value={period} onChange={setPeriod} />
         </div>
       </div>
 
+      {period === 'weekly' ? (
+        <div>
+          <label className={labelCls}>Día que lo pagas *</label>
+          <select value={dueWeekday} onChange={(e) => setDueWeekday(e.target.value)} className={inputCls}>
+            {WEEKDAY_ORDER.map((d) => (
+              <option key={d} value={d}>{WEEKDAY_NAMES[d]}</option>
+            ))}
+          </select>
+          <p className="mt-1 text-[11px] text-light-200/60">Ej. sueldos o la compra de hielo que pagas cada semana.</p>
+        </div>
+      ) : (
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className={labelCls}>Día de vencimiento *</label>
@@ -131,6 +150,7 @@ const ExpenseForm = ({ expense, onSaved, onCancel }) => {
           </div>
         )}
       </div>
+      )}
 
       {error && <p className="text-xs text-red-400">{error}</p>}
 
@@ -155,7 +175,9 @@ const ExpenseForm = ({ expense, onSaved, onCancel }) => {
 
 const ExpenseRow = ({ expense, onEdit, onDelete }) => {
   const due = daysUntilDue(expense)
-  const dueLabel = due === 0 ? 'Vence hoy' : due === 1 ? 'Vence mañana' : due > 0 ? `Vence en ${due}d` : `Venció hace ${Math.abs(due)}d`
+  const dueLabel = expense.period === 'weekly' && due > 1
+    ? `Cada ${WEEKDAY_NAMES[expense.dueWeekday ?? 0].toLowerCase()} · en ${due}d`
+    : due === 0 ? 'Vence hoy' : due === 1 ? 'Vence mañana' : due > 0 ? `Vence en ${due}d` : `Venció hace ${Math.abs(due)}d`
   const dueColorCls = due <= 0 ? 'text-rose-400' : due <= 7 ? 'text-amber-400' : 'text-light-200/65'
 
   return (
@@ -164,7 +186,7 @@ const ExpenseRow = ({ expense, onEdit, onDelete }) => {
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm font-semibold text-light-100 truncate">{expense.name}</p>
           <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-white/5 text-light-200/70 border border-white/10 shrink-0">
-            {expense.period === 'annual' ? 'Anual' : 'Mensual'}
+            {PERIOD_LABELS[expense.period] || 'Mensual'}
           </span>
         </div>
         <div className="flex items-center gap-3 mt-1 text-xs">
@@ -311,7 +333,11 @@ export const ExpenseManager = ({ onTotalsChange }) => {
       )}
 
       {expenses.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-white/10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-white/10">
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-wider text-light-200/65 truncate">Total semanal</p>
+            <p className="text-sm font-bold text-light-100 tabular-nums truncate">{formatMoney(totals.weeklyTotal)}</p>
+          </div>
           <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-wider text-light-200/65 truncate">Total mensual</p>
             <p className="text-sm font-bold text-light-100 tabular-nums truncate">{formatMoney(totals.monthlyTotal)}</p>
