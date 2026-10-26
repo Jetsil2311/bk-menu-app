@@ -672,6 +672,11 @@ What changed: In Inventario → Recetas, switching between variations (e.g. Muff
 Files affected: src/views/admin/Stock.jsx
 Reason: Owner report.
 
+### 2026-10-26 — Recipes no longer require fixed ingredients
+What changed: A recipe can now be saved with ingredients only in its options (e.g. Muffin: Nuez or Chocolate, nothing shared). It needs at least one ingredient somewhere, fixed or in an option, and every row that's filled in must be complete. Option-only recipes count as recipes in the list, in "Ver receta", in Finanzas and in stock deduction; the last two already supported them. The recipe screens say "Costo" instead of "COGS".
+Files affected: src/views/admin/Stock.jsx, src/utils/recipeCalculations.js (+test)
+Reason: Owner report. Saving was blocked unless the recipe had a fixed ingredient.
+
 ## Known Issues / Follow-ups
 
 - **NEW (2026-10-26): `firestore.rules` MUST be deployed before (or together with) this release.** Production has no rule for the new `web_orders` collection, so menu orders would still go out by WhatsApp but would not reach the panel. The file also makes `orders` staff-only, which is now safe because the menu no longer reads or deletes it. Run `firebase deploy --only firestore:rules` after reviewing the whole file (it also adds the pending `recipes`/`stations`/`expenses` rules).

@@ -4,6 +4,7 @@ import {
   computeGroupBounds,
   computeIngredientTotals,
   getRecipeSummary,
+  recipeHasIngredients,
   validateIngredientRows,
 } from './recipeCalculations'
 
@@ -36,5 +37,23 @@ describe('recipe calculations', () => {
       minMarginPercent: 50,
       maxMarginPercent: 30,
     })).toMatchObject({ hasRecipe: true, hasRange: true, minCogs: 5, maxCogs: 9 })
+  })
+})
+
+describe('recipes without fixed ingredients', () => {
+  const optionOnly = {
+    fixedIngredients: [],
+    optionIngredients: { sabores: { options: { nuez: { ingredients: [{ materialId: 'm', totalCost: 19.5 }] }, chocolate: { ingredients: [] } } } },
+    minCogs: 0, maxCogs: 19.5, minMarginPercent: 22, maxMarginPercent: 100,
+  }
+
+  it('still count as a recipe when only an option has ingredients', () => {
+    expect(recipeHasIngredients(optionOnly)).toBe(true)
+    expect(getRecipeSummary({ optionGroups: [{ id: 'sabores' }] }, optionOnly)).toMatchObject({ hasRecipe: true, maxCogs: 19.5 })
+  })
+
+  it('an empty recipe is no recipe', () => {
+    expect(recipeHasIngredients({ fixedIngredients: [], optionIngredients: { s: { options: { a: { ingredients: [] } } } } })).toBe(false)
+    expect(recipeHasIngredients(null)).toBe(false)
   })
 })

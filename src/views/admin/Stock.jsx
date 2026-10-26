@@ -16,6 +16,7 @@ import {
   getRecipeSummary,
   getUnitLabel,
   getUnitShortLabel,
+  recipeHasIngredients,
   RECIPE_SORT_OPTIONS,
   UNIT_OPTIONS,
   validateIngredientRows,
@@ -895,13 +896,18 @@ const RecipeEditorModal = ({ product, existingRecipe, materials, onClose, onSucc
       return { ...prev, [groupId]: { ...g, options: { ...g.options, [optionId]: rows } } }
     })
 
+  // Fixed ingredients are optional: a recipe can be made only of per-option
+  // ingredients (e.g. Muffin Nuez / Chocolate). It just needs one ingredient
+  // somewhere, and every filled-in row must be complete.
   const cleanedFixedDraft = fixedDraft.filter((r) => r.materialId || r.quantity)
-  const isValid = cleanedFixedDraft.length > 0 && !validateIngredientRows(cleanedFixedDraft)
+  const hasAnyIngredient = cleanedFixedDraft.length > 0 || optionGroups.some((g) =>
+    Object.values(groupsDraft[g.id]?.options || {}).some((rows) => rows.some((r) => r.materialId || r.quantity)))
+  const isValid = hasAnyIngredient && !validateIngredientRows(cleanedFixedDraft)
 
   const handleSave = async () => {
     const cleanedFixed = fixedDraft.filter((r) => r.materialId || r.quantity)
-    if (cleanedFixed.length === 0) {
-      setError('Agrega al menos un ingrediente fijo — aplica a todas las variaciones.')
+    if (!hasAnyIngredient) {
+      setError('Agrega al menos un ingrediente, fijo o de alguna opción.')
       return
     }
     if (validateIngredientRows(cleanedFixed)) {
@@ -1030,10 +1036,10 @@ const RecipeEditorModal = ({ product, existingRecipe, materials, onClose, onSucc
 
         <div className="mb-5">
           <h4 className="text-sm font-semibold text-light-100 mb-1">Ingredientes Fijos</h4>
-          <p className="text-xs text-light-200/65 mb-3">Aplican a todas las variaciones de este producto.</p>
+          <p className="text-xs text-light-200/65 mb-3">Aplican a todas las variaciones de este producto. Opcional: si todo depende de la opción elegida, déjalo vacío.</p>
           <div className="space-y-2.5 mb-3">
             {fixedComputed.length === 0 ? (
-              <p className="text-sm text-light-200/55 italic text-center py-4">Agrega el primer ingrediente fijo.</p>
+              <p className="text-sm text-light-200/55 italic text-center py-4">Sin ingredientes fijos.</p>
             ) : (
               fixedComputed.map((row, idx) => (
                 <IngredientRow key={idx} index={idx} ingredient={row} materials={materials} onChange={handleFixedUpdate} onRemove={handleFixedRemove} />
@@ -1073,7 +1079,7 @@ const RecipeEditorModal = ({ product, existingRecipe, materials, onClose, onSucc
             <span className="font-semibold text-light-100 tabular-nums">{formatMoney(fixedCogs)}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-light-200/70">{hasRange ? 'Rango de COGS Total' : 'COGS Total'}</span>
+            <span className="text-light-200/70">{hasRange ? 'Te cuesta hacerlo (según la opción)' : 'Te cuesta hacerlo'}</span>
             <span className="font-semibold text-light-100 tabular-nums">
               {hasRange ? `${formatMoney(totalMinCogs)} – ${formatMoney(totalMaxCogs)}` : formatMoney(totalMinCogs)}
             </span>
@@ -1123,7 +1129,7 @@ const ViewRecipeModal = ({ product, recipe, onClose, onEdit }) => {
     Object.fromEntries(optionGroups.map((g) => [g.id, g.options?.[0]?.id ?? null]))
   )
 
-  const hasRecipe = Boolean(recipe?.fixedIngredients?.length)
+  const hasRecipe = recipeHasIngredients(recipe)
   const hasRange = optionGroups.length > 0 && hasRecipe && recipe.minCogs !== recipe.maxCogs
 
   return (
@@ -1149,8 +1155,11 @@ const ViewRecipeModal = ({ product, recipe, onClose, onEdit }) => {
           <>
             <div className="mb-4">
               <h4 className="text-sm font-semibold text-light-100 mb-2">Ingredientes Fijos</h4>
+              {!recipe.fixedIngredients?.length && (
+                <p className="text-xs text-light-200/60 italic">Sin ingredientes fijos — el costo depende de la opción elegida.</p>
+              )}
               <div className="space-y-2">
-                {recipe.fixedIngredients.map((ing, idx) => (
+                {(recipe.fixedIngredients || []).map((ing, idx) => (
                   <div key={idx} className="rounded-2xl border border-white/10 bg-white/[0.02] p-3 flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-light-100 truncate">{ing.materialName}</p>
@@ -1212,7 +1221,7 @@ const ViewRecipeModal = ({ product, recipe, onClose, onEdit }) => {
 
             <div className="rounded-2xl border border-main-500/20 bg-main-500/5 p-4 space-y-1.5 mb-4">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-light-200/70">{hasRange ? 'Rango de COGS' : 'Total COGS'}</span>
+                <span className="text-light-200/70">{hasRange ? 'Costo (según la opción)' : 'Costo total'}</span>
                 <span className="font-semibold text-light-100 tabular-nums">
                   {hasRange ? `${formatMoney(recipe.minCogs)} – ${formatMoney(recipe.maxCogs)}` : formatMoney(recipe.minCogs)}
                 </span>
@@ -1270,7 +1279,7 @@ const RecipeRow = ({ product, recipe, onEdit, onView, onDelete }) => {
           <p className="text-sm font-bold text-light-100 tabular-nums">{formatMoney(product.price || 0)}</p>
         </div>
         <div className="w-28">
-          <p className="text-xs text-light-200/65">{summary.hasRange ? 'COGS (rango)' : 'COGS'}</p>
+          <p className="text-xs text-light-200/65">{summary.hasRange ? 'Costo (rango)' : 'Costo'}</p>
           <p className="text-sm font-semibold text-light-200/70 tabular-nums">
             {!summary.hasRecipe ? '—' : summary.hasRange ? `${formatMoney(summary.minCogs)}–${formatMoney(summary.maxCogs)}` : formatMoney(summary.minCogs)}
           </p>

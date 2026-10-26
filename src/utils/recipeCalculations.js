@@ -75,9 +75,17 @@ export const buildOptionGroupsDraft = (optionGroups = [], existingRecipe) =>
     return draft
   }, {})
 
+// A recipe counts once it has at least one ingredient anywhere — fixed
+// ingredients are optional (e.g. a muffin whose whole cost depends on the
+// flavor chosen).
+export const recipeHasIngredients = (recipe) =>
+  Boolean(recipe?.fixedIngredients?.length)
+  || Object.values(recipe?.optionIngredients || {}).some((group) =>
+    Object.values(group?.options || {}).some((option) => option?.ingredients?.length))
+
 export const getRecipeSummary = (product, recipe) => {
   const optionGroups = Array.isArray(product?.optionGroups) ? product.optionGroups : []
-  if (!recipe?.fixedIngredients?.length) {
+  if (!recipeHasIngredients(recipe)) {
     return { hasRecipe: false, hasRange: false, minCogs: null, maxCogs: null, minMargin: null, maxMargin: null }
   }
 
