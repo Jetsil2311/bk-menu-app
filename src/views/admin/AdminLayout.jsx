@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { Outlet, NavLink } from 'react-router'
+import { Outlet, NavLink, useLocation } from 'react-router'
 import { useAdminAuth } from '../../hooks/useAdminAuth'
 import { useAdminTheme } from '../../hooks/useAdminTheme'
 import { Sidebar } from '../../components/admin/Sidebar'
 import { Topbar } from '../../components/admin/Topbar'
 import { BottomTabBar } from '../../components/admin/BottomTabBar'
 import { StationGate } from '../../components/admin/StationGate'
-import { WhatsAppBanner } from '../../components/admin/WhatsAppBanner'
-import { WhatsAppOrdersProvider } from '../../context/WhatsAppOrdersContext'
+import { AdminAlerts, PendingOrdersBar } from '../../components/admin/AdminAlerts'
+import { AdminAlertsProvider } from '../../context/AdminAlertsContext'
+import { PageGuide } from '../../components/admin/PageGuide'
+import { PAGE_GUIDES, navItemForPath } from '../../config/adminNav'
 import { useStationContext } from '../../context/StationContext'
 import { KitchenBoard } from './KitchenBoard'
 import Logo from '../../assets/bklogo.svg'
@@ -23,6 +25,8 @@ export const AdminLayout = () => {
   } = useAdminAuth()
 
   const { selectedStation, role, loading: stationLoading } = useStationContext()
+  const location = useLocation()
+  const currentNav = navItemForPath(location.pathname)
 
   // Admin light/dark theme (classes on <html>, see index.css)
   const { theme, toggleTheme } = useAdminTheme()
@@ -162,28 +166,28 @@ export const AdminLayout = () => {
      * (100dvh tracks mobile browsers' collapsing address bar; 100vh does not).
      * Nothing outside this box can scroll; only the inner <main> can.
      */
-    <div className="h-dvh overflow-hidden bg-main-950 text-light-100 font-body flex">
+    <AdminAlertsProvider>
+      <div className="h-dvh overflow-hidden bg-main-950 text-light-100 font-body flex">
 
-      {/* Fixed sidebar — never participates in page scroll */}
-      <Sidebar
-        isCollapsed={isCollapsed}
-        onToggle={() => setIsCollapsed((v) => !v)}
-      />
+        {/* Fixed sidebar — never participates in page scroll */}
+        <Sidebar
+          isCollapsed={isCollapsed}
+          onToggle={() => setIsCollapsed((v) => !v)}
+        />
 
-      {/*
-       * Content wrapper — offset by sidebar width via margin-left.
-       * Transitions in sync with the sidebar's own width transition
-       * so there's no gap or overlap during collapse/expand.
-       */}
-      <div
-        className={`
-          flex flex-col flex-1 min-w-0 overflow-hidden
-          transition-all duration-300
-          ${isCollapsed ? 'md:ml-20' : 'md:ml-60'}
-        `}
-      >
-        <WhatsAppOrdersProvider>
-          <WhatsAppBanner />
+        {/*
+         * Content wrapper — offset by sidebar width via margin-left.
+         * Transitions in sync with the sidebar's own width transition
+         * so there's no gap or overlap during collapse/expand.
+         */}
+        <div
+          className={`
+            flex flex-col flex-1 min-w-0 overflow-hidden
+            transition-all duration-300
+            ${isCollapsed ? 'md:ml-20' : 'md:ml-60'}
+          `}
+        >
+          <PendingOrdersBar />
 
           {/* Topbar is sticky within this column, not the whole page */}
           <Topbar
@@ -199,15 +203,20 @@ export const AdminLayout = () => {
            */}
           <main className="flex-1 overflow-y-auto bg-main-950 px-4 pt-4 pb-28 md:px-8 md:pt-6 md:pb-10">
             <div className="mx-auto w-full max-w-[1400px]">
+              {currentNav && PAGE_GUIDES[currentNav.routeKey] && (
+                <PageGuide routeKey={currentNav.routeKey} title={currentNav.name} steps={PAGE_GUIDES[currentNav.routeKey]} />
+              )}
               <Outlet />
             </div>
           </main>
-        </WhatsAppOrdersProvider>
+        </div>
+
+        {/* Bottom tab bar — mobile only */}
+        <BottomTabBar />
+
+        {/* New web order popup, stock toast, notification permission prompt */}
+        <AdminAlerts />
       </div>
-
-      {/* Bottom tab bar — mobile only */}
-      <BottomTabBar />
-
-    </div>
+    </AdminAlertsProvider>
   )
 }

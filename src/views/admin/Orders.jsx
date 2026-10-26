@@ -299,7 +299,10 @@ export const Orders = () => {
       const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'))
       unsub = onSnapshot(q, (snapshot) => {
         if (!alive) return
-        const data = snapshot.docs.map(d => ({
+        // Legacy WhatsApp snapshots (pre web_orders: source 'whatsapp' and no
+        // status) were never real tickets — normalizeStatus would show them
+        // as 'Nuevo' forever.
+        const data = snapshot.docs.filter(d => d.data().status || d.data().source !== 'whatsapp').map(d => ({
           id: d.id,
           ...d.data(),
           status: normalizeStatus(d.data().status),

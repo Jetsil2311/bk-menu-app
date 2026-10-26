@@ -168,14 +168,14 @@ export const ProfitByDayOfWeek = ({ orders, start, end }) => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard
           icon={TrendingUp}
-          label="Mejor Día"
+          label="Mejor día"
           value={bestDay.dayShort}
           subtext={`${formatMoney(bestDay.avgProfit)} promedio`}
           colorCls="bg-emerald-500/10 text-emerald-400"
         />
         <StatCard
           icon={TrendingDown}
-          label="Peor Día"
+          label="Día más flojo"
           value={worstDay.dayShort}
           subtext={`${formatMoney(worstDay.avgProfit)} promedio`}
           colorCls="bg-rose-500/10 text-rose-400"
@@ -189,7 +189,7 @@ export const ProfitByDayOfWeek = ({ orders, start, end }) => {
         />
         <StatCard
           icon={CalendarDays}
-          label="Día Promedio"
+          label="Un día normal"
           value={formatMoney(avgProfit)}
           subtext="Ganancia promedio"
           colorCls="bg-blue-500/10 text-blue-400"

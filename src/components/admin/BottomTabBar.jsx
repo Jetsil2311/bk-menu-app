@@ -3,6 +3,8 @@ import { NavLink, useLocation, useNavigate } from 'react-router'
 import { MoreHorizontal, ExternalLink } from 'lucide-react'
 import { BOTTOM_PRIMARY_ORDER, BOTTOM_MORE_ORDER, navItem } from '../../config/adminNav'
 import { useStationContext } from '../../context/StationContext'
+import { useAdminAlerts } from '../../context/AdminAlertsContext'
+import { NavBadge } from './NavBadge'
 
 export const BottomTabBar = () => {
   const [masOpen, setMasOpen] = useState(false)
@@ -10,12 +12,15 @@ export const BottomTabBar = () => {
   const navigate = useNavigate()
   const { selectedStation } = useStationContext()
   const disabledRoutes = selectedStation?.disabledRoutes || []
+  const { navBadges } = useAdminAlerts()
 
   const primaryTabs = BOTTOM_PRIMARY_ORDER.map(navItem)
   const moreItems = BOTTOM_MORE_ORDER.map(navItem)
 
   // Close drawer automatically when route changes
   useEffect(() => { setMasOpen(false) }, [location.pathname])
+
+  const masBadge = moreItems.some(item => navBadges[item.routeKey] && !disabledRoutes.includes(item.routeKey)) ? 'warn' : null
 
   const isMasActive = moreItems.some(
     item => location.pathname === item.path || location.pathname.startsWith(item.path + '/')
@@ -69,11 +74,12 @@ export const BottomTabBar = () => {
                 {({ isActive }) => (
                   <>
                     <div className={`
-                      h-8 w-14 flex items-center justify-center rounded-full
+                      relative h-8 w-14 flex items-center justify-center rounded-full
                       transition-all duration-200
                       ${isActive ? 'bg-primary text-snow' : ''}
                     `}>
                       <tab.icon size={21} />
+                      <NavBadge value={navBadges[tab.routeKey]} dot className="-top-1 right-1.5" />
                     </div>
                     <span className="text-[11px] font-bold leading-none">{tab.name}</span>
                   </>
@@ -94,11 +100,12 @@ export const BottomTabBar = () => {
             `}
           >
             <div className={`
-              h-8 w-14 flex items-center justify-center rounded-full
+              relative h-8 w-14 flex items-center justify-center rounded-full
               transition-all duration-200
               ${isMasActive || masOpen ? 'bg-primary text-snow' : ''}
             `}>
               <MoreHorizontal size={21} />
+              <NavBadge value={masBadge} dot className="-top-1 right-1.5" />
             </div>
             <span className="text-[11px] font-bold leading-none">Más</span>
           </button>
@@ -147,7 +154,7 @@ export const BottomTabBar = () => {
                     title={isDisabled ? 'No disponible para esta estación' : undefined}
                     onClick={() => handleMasNav(item.path, item.routeKey)}
                     className={`
-                      flex flex-col items-center justify-center gap-2.5 py-4 rounded-2xl border
+                      relative flex flex-col items-center justify-center gap-2.5 py-4 rounded-2xl border
                       transition-all duration-200 select-none
                       ${isDisabled
                         ? 'opacity-40 pointer-events-none bg-main-800 border-transparent text-light-200/55'
@@ -158,6 +165,7 @@ export const BottomTabBar = () => {
                   >
                     <item.icon size={22} />
                     <span className="text-xs font-bold leading-none">{item.name}</span>
+                    {!isDisabled && <NavBadge value={navBadges[item.routeKey]} dot className="top-2 right-2" />}
                   </button>
                 )
               })}

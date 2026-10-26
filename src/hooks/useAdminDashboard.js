@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { collection, getDocs, query, orderBy, limit, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
+import { isPaidOrderStatus } from '../utils/orderStatus'
+import { computeOrderRevenue, orderDate } from '../utils/financeCalculations'
 
 export const useAdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -24,7 +26,8 @@ export const useAdminDashboard = () => {
       const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(10))
       unsub = onSnapshot(q, (snapshot) => {
         if (!alive) return
-        setRecentOrders(snapshot.docs.map(doc => ({
+        // Legacy WhatsApp text snapshots (no status) were never real tickets.
+        setRecentOrders(snapshot.docs.filter(doc => doc.data().status || doc.data().source !== 'whatsapp').map(doc => ({
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate() || new Date()
@@ -53,13 +56,19 @@ export const useAdminDashboard = () => {
 
     getDocs(collection(db, 'orders')).then(allSnap => {
       if (!alive) return
-      let todayCount = 0, todayRev = 0, yesterdayCount = 0, yesterdayRev = 0, totalRev = 0
+      // Same rules as Finanzas: only paid orders are sales, dated by when they
+      // were paid, valued at what the customer paid (computeOrderRevenue).
+      let todayCount = 0, todayRev = 0, yesterdayCount = 0, yesterdayRev = 0, totalRev = 0, paidCount = 0
 
       allSnap.docs.forEach(doc => {
         const data = doc.data()
-        const time = (data.createdAt?.toDate() || new Date()).getTime()
-        const total = Number(data.total || 0)
+        if (!isPaidOrderStatus(data.status)) return
+        const date = orderDate(data)
+        if (!date) return
+        const time = date.getTime()
+        const total = computeOrderRevenue(data)
         totalRev += total
+        paidCount++
         if (time >= startOfToday) { todayCount++; todayRev += total }
         else if (time >= startOfYesterday) { yesterdayCount++; yesterdayRev += total }
       })
@@ -67,7 +76,7 @@ export const useAdminDashboard = () => {
       setStats({
         ordersToday: todayCount,
         revenueToday: todayRev,
-        avgTicket: allSnap.size > 0 ? totalRev / allSnap.size : 0,
+        avgTicket: paidCount > 0 ? totalRev / paidCount : 0,
         prevOrdersToday: yesterdayCount,
         prevRevenueToday: yesterdayRev,
       })

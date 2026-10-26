@@ -69,8 +69,8 @@ export const ProductProfitability = ({ orders }) => {
             <Table2 size={18} />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-light-100">Rentabilidad por Producto</h3>
-            <p className="text-xs text-light-200/65">Toca una columna para ordenar</p>
+            <h3 className="text-sm font-bold text-light-100">¿Cuánto te deja cada producto?</h3>
+            <p className="text-xs text-light-200/65">Ganancia = precio de venta − costo de su receta. Toca una columna para ordenar.</p>
           </div>
         </div>
         <div className="relative w-full sm:w-56">

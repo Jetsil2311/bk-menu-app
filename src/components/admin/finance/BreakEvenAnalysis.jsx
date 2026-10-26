@@ -89,20 +89,20 @@ export const BreakEvenAnalysis = ({ orders, hasAnyRecipe }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard
           icon={Target}
-          label="Órdenes para Equilibrio"
+          label="Pedidos para cubrir gastos de hoy"
           value={stats.canCalculate ? `${stats.breakEvenOrders} órdenes` : 'N/D'}
           subtext={stats.canCalculate ? undefined : !hasExpenses ? 'Agrega tus gastos fijos arriba' : 'Sin ganancia registrada hoy aún'}
           colorCls="bg-blue-500/10 text-blue-400"
         />
         <StatCard
           icon={Scale}
-          label="Ingresos para Equilibrio"
+          label="Ventas para cubrir gastos de hoy"
           value={stats.canCalculate ? formatMoney(stats.breakEvenRevenue) : 'N/D'}
           colorCls="bg-purple-500/10 text-purple-400"
         />
         <StatCard
           icon={ShoppingBag}
-          label="Órdenes Completadas Hoy"
+          label="Pedidos pagados hoy"
           value={stats.completedOrdersToday.toLocaleString('es-MX')}
           subtext={formatMoney(stats.totalRevenueToday)}
           colorCls="bg-white/10 text-light-200"

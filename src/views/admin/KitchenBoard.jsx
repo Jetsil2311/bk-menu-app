@@ -75,7 +75,9 @@ export const KitchenBoard = () => {
     let unsub = null
     const timer = setTimeout(() => {
       if (!alive) return
-      const q = query(collection(db, 'orders'), orderBy('createdAt'), limit(60))
+      // Newest 100 (desc) — an ascending limit returned the OLDEST orders, so
+      // new tickets vanished once the collection grew. Shown oldest-first below.
+      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(100))
       unsub = onSnapshot(
         q,
         (snap) => {
@@ -87,6 +89,7 @@ export const KitchenBoard = () => {
               o.status !== 'Pagado' && o.status !== 'Reembolsado' && o.status !== 'Cancelado' &&
               (o.stationItems?.[selectedStation.id]?.items?.length || 0) > 0
             )
+            .reverse()
           setOrders(filtered)
         },
         (error) => {

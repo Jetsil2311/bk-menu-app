@@ -266,7 +266,7 @@ export const ExpenseManager = ({ onTotalsChange }) => {
           </div>
           <div>
             <h3 className="text-sm font-bold text-light-100">Gastos Fijos</h3>
-            <p className="text-xs text-light-200/65">Renta, servicios, nómina y otros gastos recurrentes</p>
+            <p className="text-xs text-light-200/65">Lo que pagas aunque no vendas: renta, luz, internet, sueldos… Se reparte entre los días para calcular lo que te quedó.</p>
           </div>
         </div>
         {!showForm && !editing && (

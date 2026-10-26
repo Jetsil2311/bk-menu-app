@@ -5,6 +5,8 @@ import PropTypes from 'prop-types'
 import Logo from '../../assets/bklogo.svg'
 import { SIDEBAR_GROUPS, navItem } from '../../config/adminNav'
 import { useStationContext } from '../../context/StationContext'
+import { useAdminAlerts } from '../../context/AdminAlertsContext'
+import { NavBadge } from './NavBadge'
 
 export const Sidebar = ({ isCollapsed, onToggle }) => {
   // Persist collapse preference
@@ -14,6 +16,7 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
 
   const { selectedStation } = useStationContext()
   const disabledRoutes = selectedStation?.disabledRoutes || []
+  const { navBadges } = useAdminAlerts()
 
   const itemBase = `relative flex items-center gap-3 rounded-xl min-h-[44px] px-3 text-[0.925rem] font-semibold transition-colors duration-150 group ${
     isCollapsed ? 'justify-center' : ''
@@ -102,6 +105,9 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
                         )}
                         <Icon size={20} strokeWidth={isActive ? 2.4 : 2} className="shrink-0" />
                         {!isCollapsed && <span>{item.name}</span>}
+                        {isCollapsed
+                          ? <NavBadge value={navBadges[item.routeKey]} dot className="top-1 right-2" />
+                          : <NavBadge value={navBadges[item.routeKey]} className="ml-auto" />}
 
                         {/* Tooltip shown in icon-only mode */}
                         {isCollapsed && (

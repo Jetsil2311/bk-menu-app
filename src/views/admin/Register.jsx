@@ -73,7 +73,7 @@ export const PastSessionRow = ({ session }) => {
             ['Fondo inicial',        formatMoney(session.openingFloat || 0), ''],
             ['Ventas efectivo',      formatMoney(session.cashSales || 0),    'text-emerald-400'],
             ['Ventas tarjeta',       formatMoney(session.cardSales || 0),    'text-blue-400'],
-            ['Loyalty redimido',     formatMoney(session.loyaltyRedemptions || 0), 'text-amber-400'],
+            ['Pagado con recompensas', formatMoney(session.loyaltyRedemptions || 0), 'text-amber-400'],
             ['Depósitos',            formatMoney(totalDeposits),             'text-emerald-400/70'],
             ['Retiros',              formatMoney(totalWithdrawals),          'text-rose-400'],
             ['Efectivo esperado',    formatMoney(expected),                  'text-light-100 font-semibold'],
@@ -292,7 +292,7 @@ export const Register = () => {
             <p className="text-sm text-light-200/65 mt-1 capitalize">{fmtDate(session.date)} · Finalizó a las {closedAt}</p>
           </div>
           <div className="text-center sm:text-right px-6 py-3 rounded-2xl bg-white/[0.03] border border-white/10">
-            <p className="text-[10px] text-light-200/55 uppercase font-bold tracking-tighter">Varianza Final</p>
+            <p className="text-[10px] text-light-200/55 uppercase font-bold tracking-tighter">Diferencia al cerrar</p>
             <p className={`text-2xl font-black tabular-nums mt-0.5 ${Math.abs(closedVariance) < 0.01 ? 'text-emerald-400' : closedVariance > 0 ? 'text-blue-400' : 'text-rose-400'}`}>
               {closedVariance >= 0 ? '+' : ''}{formatMoney(closedVariance)}
             </p>
@@ -322,11 +322,11 @@ export const Register = () => {
       {/* Balance summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-main-900 border border-white/10 rounded-3xl p-6">
-          <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider">Fondo Inicial</p>
+          <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider">Efectivo al abrir</p>
           <p className="text-3xl font-bold text-light-100 mt-2 tabular-nums">{formatMoney(session.openingFloat || 0)}</p>
         </div>
         <div className="bg-main-900 border border-white/10 rounded-3xl p-6">
-          <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider">Saldo Teórico en Caja</p>
+          <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider">Debería haber en caja</p>
           <p className="text-3xl font-bold text-emerald-400 mt-2 tabular-nums">{formatMoney(theoreticalBalance)}</p>
         </div>
       </div>
@@ -336,7 +336,7 @@ export const Register = () => {
         {[
           { label: 'Ventas Efectivo', val: session.cashSales || 0, icon: Banknote, color: 'text-emerald-400' },
           { label: 'Ventas Tarjeta',  val: session.cardSales || 0, icon: CreditCard, color: 'text-blue-400' },
-          { label: 'Loyalty',         val: session.loyaltyRedemptions || 0, icon: Wallet, color: 'text-amber-400' },
+          { label: 'Recompensas',     val: session.loyaltyRedemptions || 0, icon: Wallet, color: 'text-amber-400' },
         ].map(({ label, val, icon: Icon, color }) => (
           <div key={label} className="bg-main-900 border border-white/10 rounded-2xl p-4">
             <Icon size={16} className={`${color} mb-2`} />

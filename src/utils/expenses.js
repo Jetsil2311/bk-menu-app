@@ -69,3 +69,14 @@ export const computeTotals = (expenses) => ({
   annualTotal: expenses.reduce((s, e) => s + annualEquivalent(e), 0),
   count: expenses.length,
 })
+
+// Fixed cost that falls on one specific calendar day: monthly expenses are
+// spread over that month's real length, annual ones over that year's.
+export const fixedCostForDay = (expenses, date) => {
+  const monthDays = daysInMonth(date.getFullYear(), date.getMonth())
+  const yearDays = daysInMonth(date.getFullYear(), 1) === 29 ? 366 : 365
+  return expenses.reduce((sum, e) => {
+    const amount = Number(e.amount) || 0
+    return sum + (e.period === 'annual' ? amount / yearDays : amount / monthDays)
+  }, 0)
+}
