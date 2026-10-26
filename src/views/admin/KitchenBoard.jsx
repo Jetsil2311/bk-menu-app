@@ -1,10 +1,11 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect, useCallback } from 'react'
-import { collection, query, orderBy, limit, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
 import { RefreshCw, GripVertical, ArrowLeft } from 'lucide-react'
 import { db } from '../../firebase'
 import { useStationContext } from '../../context/StationContext'
 import { deriveGroupStatus, isOrderFullyDone } from '../../utils/stations'
+import { ACTIVE_STATUSES } from '../../utils/orderStatus'
 
 const COLUMNS = [
   { key: 'pending', label: 'Pendiente' },
@@ -75,7 +76,9 @@ export const KitchenBoard = () => {
     let unsub = null
     const timer = setTimeout(() => {
       if (!alive) return
-      const q = query(collection(db, 'orders'), orderBy('createdAt'), limit(60))
+      // Only orders still being made (it used to read the OLDEST 60 orders,
+      // which only worked while the menu capped `orders` at 50).
+      const q = query(collection(db, 'orders'), where('status', 'in', ACTIVE_STATUSES))
       unsub = onSnapshot(
         q,
         (snap) => {
@@ -87,6 +90,7 @@ export const KitchenBoard = () => {
               o.status !== 'Pagado' && o.status !== 'Reembolsado' && o.status !== 'Cancelado' &&
               (o.stationItems?.[selectedStation.id]?.items?.length || 0) > 0
             )
+            .sort((a, b) => (a.createdAt?.toMillis?.() ?? 0) - (b.createdAt?.toMillis?.() ?? 0))
           setOrders(filtered)
         },
         (error) => {

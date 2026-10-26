@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import {
-  collection, query, orderBy, onSnapshot,
+  collection, query, orderBy, limit, onSnapshot,
   doc, updateDoc, serverTimestamp, increment,
 } from 'firebase/firestore'
 import { db } from '../../firebase'
@@ -28,6 +28,9 @@ const todayKey = () => {
   const d = new Date()
   return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-')
 }
+
+// History is no longer capped at 50 orders, so load it in pages.
+const PAGE_SIZE = 200
 
 // ─── Status config ─────────────────────────────────────────────────────────────
 
@@ -276,6 +279,7 @@ const RefundModal = ({ order, onClose, onConfirm, isProcessing }) => {
 export const Orders = () => {
   const [orders, setOrders]         = useState([])
   const [loading, setLoading]       = useState(true)
+  const [pageSize, setPageSize]     = useState(PAGE_SIZE)
   const [filterStatus, setFilterStatus] = useState('Activos')
   const [search, setSearch]         = useState('')
   const [expandedId, setExpandedId] = useState(null)
@@ -296,7 +300,7 @@ export const Orders = () => {
     let unsub = null
     const timer = setTimeout(() => {
       if (cancelled) return
-      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'))
+      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'), limit(pageSize))
       unsub = onSnapshot(q, (snapshot) => {
         if (!alive) return
         const data = snapshot.docs.map(d => ({
@@ -316,7 +320,7 @@ export const Orders = () => {
       clearTimeout(timer)
       if (unsub) try { unsub() } catch {}
     }
-  }, [])
+  }, [pageSize])
 
   // Reset to smart default sort whenever the active filter changes
   useEffect(() => {
@@ -792,6 +796,19 @@ export const Orders = () => {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {!loading && orders.length >= pageSize && (
+        <div className="flex flex-col items-center gap-2 pt-2">
+          <p className="text-xs text-light-200/60">Mostrando los {orders.length} pedidos más recientes. La búsqueda y los filtros cubren solo estos.</p>
+          <button
+            type="button"
+            onClick={() => setPageSize(n => n + PAGE_SIZE)}
+            className="min-h-11 rounded-xl border border-white/10 bg-main-900 px-4 text-sm font-semibold text-light-100 hover:border-main-500/40 transition-colors cursor-pointer"
+          >
+            Cargar pedidos anteriores
+          </button>
         </div>
       )}
 
