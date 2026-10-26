@@ -560,9 +560,15 @@ const AddStockPurchaseModal = ({ materials, onClose, onSuccess }) => {
 // ─── Recipe Ingredient Row (with its own material combobox) ──────────────────
 const IngredientRow = ({ index, ingredient, materials, onChange, onRemove }) => {
   const material = materials.find((m) => m.docId === ingredient.materialId)
-  const [search, setSearch] = useState(material ? `${material.name} (${unitLabel(material.unit)})` : '')
+  const materialLabel = material ? `${material.name} (${unitLabel(material.unit)})` : ''
+  const [search, setSearch] = useState(materialLabel)
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+
+  // The search box is local state, so it must follow the row's material when
+  // the row is reused for other data (another variation tab, or a row above
+  // was deleted) — otherwise it keeps showing the previous ingredient.
+  useEffect(() => { setSearch(materialLabel); setOpen(false) }, [materialLabel])
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
@@ -795,7 +801,7 @@ const OptionGroupEditor = ({ group, groupDraft, materials, onSelectOption, onUpd
         ) : (
           computedRows.map((row, idx) => (
             <IngredientRow
-              key={idx}
+              key={`${activeOptionId}-${idx}`}
               index={idx}
               ingredient={row}
               materials={materials}

@@ -667,6 +667,11 @@ What changed:
 Files affected: src/utils/webOrders.js (+test), src/utils/adminAlerts.js, src/utils/stockAlerts.js, src/context/AdminAlertsContext.jsx (replaces WhatsAppOrdersContext.jsx), src/components/admin/AdminAlerts.jsx (replaces WhatsAppBanner.jsx), src/components/admin/NavBadge.jsx, src/components/admin/PageGuide.jsx, src/hooks/useExpenses.js, src/utils/financeCalculations.js (+test), src/utils/expenses.js, src/components/admin/finance/DailyTrendChart.jsx, src/views/admin/{Finance,POS,Orders,Stock,Metrics,KitchenBoard,AdminLayout,Register,Customers}.jsx, src/components/admin/{Topbar,Sidebar,BottomTabBar}.jsx, src/components/admin/finance/{StockVariance,BreakEvenAnalysis,ProfitByDayOfWeek,ProductProfitability,ExpenseManager}.jsx, src/hooks/useAdminDashboard.js, src/config/adminNav.jsx, src/views/Home.jsx, src/index.css, firestore.rules, scripts/test-env/{seed,sample-sales}.mjs
 Reason: Owner request. Web orders arrived as plain text with a badge that never cleared, alerts were easy to miss, Finanzas earnings looked wrong, and Inventario and Finanzas were hard to understand.
 
+### 2026-10-26 — Fixed: recipe editor showed the previous variation's ingredient
+What changed: In Inventario → Recetas, switching between variations (e.g. Muffin Nuez → Chocolate) kept showing the other variation's ingredient name in the search box, even though the saved data was right. Each ingredient row kept its search text in local state that was set only once, and rows were keyed by position, so React reused the row from the other variation. The box now follows the row's ingredient, and variation rows are keyed per variation. This also fixes a stale name after deleting a row.
+Files affected: src/views/admin/Stock.jsx
+Reason: Owner report.
+
 ## Known Issues / Follow-ups
 
 - **NEW (2026-10-26): `firestore.rules` MUST be deployed before (or together with) this release.** Production has no rule for the new `web_orders` collection, so menu orders would still go out by WhatsApp but would not reach the panel. The file also makes `orders` staff-only, which is now safe because the menu no longer reads or deletes it. Run `firebase deploy --only firestore:rules` after reviewing the whole file (it also adds the pending `recipes`/`stations`/`expenses` rules).
