@@ -682,7 +682,19 @@ What changed: Finanzas → Gastos fijos now offers **Semanal** besides Mensual a
 Files affected: src/utils/expenses.js (+ new expenses.test.js), src/components/admin/finance/ExpenseManager.jsx
 Reason: Owner request.
 
+### 2026-10-26 — POS API for Tally (read-only business data endpoint)
+What changed: A read-only API at `/api/v1` lets the owner's finance app (Tally) read the café's business data with a **POS API key**, like connecting an account. The owner creates and revokes keys in **Ajustes → Conexiones (API)**. A key is shown once, and only its SHA-256 hash is stored in `api_keys`.
+Routes (full reference in `docs/POS_API.md`):
+- summary, daily, transactions (one income per day of sales, ingredient purchases, fixed-expense due dates)
+- orders (no customer data)
+- products, expenses, inventory, register
+Numbers come from the same calculations as Finanzas. Built and verified against the local emulator (every route; missing/wrong key → 401; read-only → 405; no customer fields) and with unit tests (`server/posApi/finance.test.js`). Tally doesn't consume it yet; the owner plans a "business workspace" in Tally that will.
+Files affected: api/v1/[resource].js, server/posApi/{handler,finance,auth,firebaseAdmin}.js (+test), src/utils/apiKeys.js, src/components/admin/ApiConnections.jsx, src/components/admin/MobileSettingsSheet.jsx, firestore.rules (api_keys), vercel.json (SPA rewrite no longer catches /api), eslint.config.js (Node globals for server code), docs/POS_API.md
+Reason: Owner request: use Tally as the business finance manager, including its AI features.
+
 ## Known Issues / Follow-ups
+
+- **NEW (2026-10-26): the POS API needs `FIREBASE_SERVICE_ACCOUNT` in Vercel (Production) before it can answer.** Until then every route returns 503 `not_configured`. Creating keys in Ajustes also needs the `api_keys` rule, so deploy `firestore.rules` too.
 
 - **NEW (2026-10-26): `firestore.rules` MUST be deployed before (or together with) this release.** Production has no rule for the new `web_orders` collection, so menu orders would still go out by WhatsApp but would not reach the panel. The file also makes `orders` staff-only, which is now safe because the menu no longer reads or deletes it. Run `firebase deploy --only firestore:rules` after reviewing the whole file (it also adds the pending `recipes`/`stations`/`expenses` rules).
 - **NEW (2026-10-26): system notifications need the panel open in a browser tab** (they are not push notifications). On iPhone Safari they only work if the panel is added to the Home Screen. The pop-up and chime work everywhere once someone has tapped the page.

@@ -35,4 +35,9 @@ export default [
       ],
     },
   },
+  // Server code (Vercel functions for the POS API) runs in Node
+  {
+    files: ['api/**/*.js', 'server/**/*.js', 'scripts/**/*.mjs'],
+    languageOptions: { globals: globals.node },
+  },
 ]

@@ -5,6 +5,7 @@ import { db } from '../../firebase'
 import { useNavigate } from 'react-router'
 import { MessageCircle, Shield, Printer, KeyRound, X, Plus, Check, ChevronRight } from 'lucide-react'
 import { PrinterChip } from './SettingsChips'
+import { ApiConnections } from './ApiConnections'
 
 const SETTINGS_REF = () => doc(db, 'settings', 'general')
 
@@ -196,6 +197,9 @@ export const MobileSettingsSheet = ({ settings, onClose }) => {
               <PrinterChip settings={settings} inline />
             </div>
           </section>
+
+          {/* ── Conexiones: POS API keys for Tally etc. ───────────────────── */}
+          <ApiConnections SectionHead={SectionHead} />
 
           {/* ── PINs live in Estaciones ───────────────────────────────────── */}
           <button
