@@ -45,14 +45,9 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
           to="/admin"
           end
           aria-label="Bubble Kaapeh — Inicio"
-          className={`flex items-center rounded-2xl bg-primary px-3 h-14 ${isCollapsed ? 'justify-center' : 'gap-3'}`}
+          className="flex items-center justify-center rounded-2xl bg-primary px-3 h-14"
         >
           <img src={Logo} alt="" className={isCollapsed ? 'h-6 w-auto' : 'h-8 w-auto'} />
-          {!isCollapsed && (
-            <span className="ml-auto rounded-full bg-snow/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-snow/90">
-              Panel
-            </span>
-          )}
         </NavLink>
       </div>
 
@@ -63,7 +58,7 @@ export const Sidebar = ({ isCollapsed, onToggle }) => {
             {isCollapsed ? (
               <div className="mx-auto mb-2 h-px w-8 bg-white/10" aria-hidden="true" />
             ) : (
-              <p className="px-3 mb-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-light-200/55">
+              <p className="px-3 mb-1 text-xs font-semibold text-light-200/50">
                 {group.label}
               </p>
             )}

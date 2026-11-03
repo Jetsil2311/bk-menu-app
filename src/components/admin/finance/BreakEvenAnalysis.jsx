@@ -13,7 +13,7 @@ const StatCard = ({ icon: Icon, label, value, subtext, colorCls }) => (
     <div className={`h-9 w-9 rounded-2xl flex items-center justify-center shrink-0 mb-3 ${colorCls}`}>
       <Icon size={18} />
     </div>
-    <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider truncate">{label}</p>
+    <p className="text-xs font-medium text-light-200/65 truncate">{label}</p>
     <h4 className="text-xl sm:text-2xl font-bold text-light-100 mt-1 tabular-nums truncate">{value}</h4>
     {subtext && <p className="text-[10px] text-light-200/55 mt-0.5 truncate">{subtext}</p>}
   </div>

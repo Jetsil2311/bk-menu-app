@@ -22,15 +22,26 @@ import { DRINK_BUILDER_HASH } from '../utils/drinkBuilder'
 import { flyToCart, formatMoney, getCartKey } from '../utils/cart'
 import { WEB_ORDERS_COLLECTION, buildWebOrder, newWebOrderCode } from '../utils/webOrders'
 import { db, isTestEnv } from '../firebase'
+import { ReviewPrompt } from '../components/ReviewPrompt'
+import { recordOrderSent, markReviewed } from '../utils/reviewPrompt'
+import { reviewUrlFor, openStatus, withPeriod } from '../config/business'
+import { useLandingContent } from '../hooks/useLandingContent'
+import { Star } from 'lucide-react'
 
 export const Home = () => {
   const location = useLocation()
+  // The menu lives at /; filters are /bebidas and /alimentos ('/' = whole menu).
+  const menuPath = location.pathname.replace(/\/$/, '') || '/'
   // Orders go to the number set in Admin → Ajustes → "WhatsApp para pedidos"
   // (settings/general.orderNotificationPhone). Falls back to the original
   // hardcoded number while unset.
   // In test mode (npm run dev:test) there is no fallback: test orders open
   // WhatsApp without a recipient so they never reach the café.
   const { settings } = useSettings()
+  // Review link and "Cerrado hoy" are set in Admin → Landing.
+  const { content: landing } = useLandingContent()
+  const reviewUrl = reviewUrlFor(landing.business)
+  const closedStatus = openStatus(new Date(), landing.hours, landing.closure)
   const WHATSAPP_NUMBER =
     String(settings?.orderNotificationPhone || '').replace(/\D/g, '') || (isTestEnv ? '' : '5574182443')
 
@@ -122,8 +133,8 @@ export const Home = () => {
 
   const visibleSections = sections.filter(
     (s) =>
-      `/${s.category?.toLowerCase?.()}` === location.pathname ||
-      location.pathname === '/'
+      `/${s.category?.toLowerCase?.()}` === menuPath ||
+      menuPath === '/'
   )
 
   // Load all toppings once on mount.
@@ -423,6 +434,7 @@ export const Home = () => {
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`
     window.open(url, '_blank', 'noopener,noreferrer')
     saveWebOrder(orderCode)
+    recordOrderSent() // may invite a Google review once they come back (ReviewPrompt)
   }
 
   const saveWebOrder = async (orderCode) => {
@@ -518,6 +530,18 @@ export const Home = () => {
     <div className="menu-bg font-body text-ink min-h-dvh">
       <Navbar />
       <MenuHero />
+      {closedStatus.closedToday && (
+        // md+: the hero is hidden, so the notice clears the fixed navbar itself (padding, not margin: a margin would collapse and push the navbar down too)
+        <div role="status" className="bg-fresa text-fresa-ink md:pt-[104px]">
+          <p className="container mx-auto flex items-start gap-3 px-4 py-3.5 text-[0.95rem] font-semibold">
+            <span className="mt-[0.45em] h-2.5 w-2.5 shrink-0 rounded-full bg-fresa-ink" aria-hidden="true" />
+            <span>
+              <span className="font-extrabold">{withPeriod(closedStatus.text)}</span>
+              {landing.closure.message && <> {landing.closure.message}</>}
+            </span>
+          </p>
+        </div>
+      )}
       {promotion && isPromoVisible && !isCartOpen && (
         <PromoBanner
           title={promotion.title || 'Nueva promoción'}
@@ -565,20 +589,20 @@ export const Home = () => {
           sections={visibleSections}
           activeSection={activeSection}
           onTabClick={handleTabClick}
-          onBuildDrink={builderConfig && location.pathname !== '/alimentos' ? openBuilder : undefined}
+          onBuildDrink={builderConfig && menuPath !== '/alimentos' ? openBuilder : undefined}
           buildDrinkLabel={builderConfig?.title}
         />
       )}
 
       <main className="pb-6">
-        {builderConfig && location.pathname !== '/alimentos' && (
+        {builderConfig && menuPath !== '/alimentos' && (
           <DrinkBuilderCard config={builderConfig} onOpen={openBuilder} />
         )}
         <SectionsList
           isLoading={sectionsLoading}
           error={sectionsError}
           sections={sections}
-          pathname={location.pathname}
+          pathname={menuPath}
           onAddToCart={addToCart}
           toppingsMap={toppingsMap}
         />
@@ -597,6 +621,15 @@ export const Home = () => {
         <img src={Logo} alt="Bubble Kaapeh" className="mx-auto h-12 opacity-90" />
         <p className="mt-3 font-display text-lg">Hecho con cariño y mucha tapioca</p>
         <p className="mt-1 text-sm text-surface/70">Haz tu pedido aquí y te lo confirmamos por WhatsApp.</p>
+        <a
+          href={reviewUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={markReviewed}
+          className="mt-6 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-accent px-6 text-[0.95rem] font-extrabold text-ink shadow-[0_12px_26px_-14px_var(--color-ink)] transition duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-accent/50"
+        >
+          <Star size={17} className="fill-current" aria-hidden="true" /> ¿Te gusta? Déjanos una reseña
+        </a>
       </footer>
 
       <CartButton
@@ -606,6 +639,8 @@ export const Home = () => {
         total={cartTotal}
         onClick={() => setIsCartOpen((v) => !v)}
       />
+
+      <ReviewPrompt url={reviewUrl} />
 
       <CartOverlay
         isOpen={isCartOpen}

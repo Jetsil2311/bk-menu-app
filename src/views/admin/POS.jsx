@@ -408,7 +408,7 @@ const LoyaltyLookupModal = ({ allCustomers, onSelect, onSkip, onClose }) => {
           {/* New customer inline form */}
           {showNew && (
             <div className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-4 space-y-2.5">
-              <p className="text-xs font-semibold text-amber-300/70 uppercase tracking-wider">Nuevo cliente</p>
+              <p className="text-xs font-semibold text-amber-300/70">Nuevo cliente</p>
               <input
                 type="text"
                 placeholder="Nombre completo"
@@ -1270,7 +1270,7 @@ export const POS = () => {
 
               {showNewCustomer && (
                 <div className="rounded-xl border border-white/10 bg-main-900 p-3 space-y-2">
-                  <p className="text-[11px] font-semibold text-light-200/65 uppercase tracking-wider">Nuevo cliente</p>
+                  <p className="text-[11px] font-semibold text-light-200/65">Nuevo cliente</p>
                   <input type="text" placeholder="Nombre completo" value={newCustName} onChange={e => setNewCustName(e.target.value)}
                     className="w-full rounded-xl border border-white/10 bg-main-800/60 px-3 py-2 text-sm text-light-200 placeholder-light-200/50 outline-none focus:border-main-500/40 transition" />
                   <input type="tel" placeholder="Teléfono" value={newCustPhone} onChange={e => setNewCustPhone(e.target.value)}
@@ -1639,7 +1639,7 @@ export const POS = () => {
               <p className="mt-1 text-xs text-light-200/60 font-mono">#{orderSuccess.orderId?.slice(-8)}</p>
               {orderSuccess.change > 0.005 && (
                 <div className="mt-5 rounded-2xl bg-main-950 border border-white/10 px-6 py-4">
-                  <p className="text-xs text-light-200/65 uppercase tracking-wider">Cambio a entregar</p>
+                  <p className="text-xs text-light-200/65">Cambio a entregar</p>
                   <p className="text-4xl font-bold text-emerald-400 mt-1 tabular-nums">{formatMoney(orderSuccess.change)}</p>
                 </div>
               )}

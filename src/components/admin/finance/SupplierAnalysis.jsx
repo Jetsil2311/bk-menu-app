@@ -17,7 +17,7 @@ const StatCard = ({ icon: Icon, label, value, subtext, colorCls }) => (
     <div className={`h-9 w-9 rounded-2xl flex items-center justify-center shrink-0 mb-3 ${colorCls}`}>
       <Icon size={18} />
     </div>
-    <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider truncate">{label}</p>
+    <p className="text-xs font-medium text-light-200/65 truncate">{label}</p>
     <h4 className="text-xl sm:text-2xl font-bold text-light-100 mt-1 tabular-nums truncate">{value}</h4>
     {subtext && <p className="text-[10px] text-light-200/55 mt-0.5 truncate">{subtext}</p>}
   </div>
@@ -285,10 +285,10 @@ export const SupplierAnalysis = ({ start, end }) => {
               <table className="w-full text-sm min-w-[400px]">
                 <thead>
                   <tr className="border-b border-white/10">
-                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/65 uppercase tracking-wider text-left">Fecha</th>
-                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/65 uppercase tracking-wider text-left">Material</th>
-                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/65 uppercase tracking-wider text-right">Cantidad</th>
-                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/65 uppercase tracking-wider text-right">Costo</th>
+                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/65 text-left">Fecha</th>
+                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/65 text-left">Material</th>
+                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/65 text-right">Cantidad</th>
+                    <th className="px-5 py-2.5 text-xs font-medium text-light-200/65 text-right">Costo</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
@@ -326,7 +326,7 @@ export const SupplierAnalysis = ({ start, end }) => {
                     <th
                       key={col.key}
                       onClick={() => toggleHistSort(col.key)}
-                      className={`px-5 py-3 text-xs font-medium text-light-200/65 uppercase tracking-wider cursor-pointer select-none hover:text-light-200/70 transition-colors ${col.align === 'right' ? 'text-right' : 'text-left'}`}
+                      className={`px-5 py-3 text-xs font-medium text-light-200/65 cursor-pointer select-none hover:text-light-200/70 transition-colors ${col.align === 'right' ? 'text-right' : 'text-left'}`}
                     >
                       <span className={`inline-flex items-center gap-1 ${col.align === 'right' ? 'flex-row-reverse' : ''}`}>
                         {col.label}
@@ -408,7 +408,7 @@ export const SupplierAnalysis = ({ start, end }) => {
                               <th
                                 key={col.key}
                                 onClick={() => toggleCompSort(col.key)}
-                                className={`px-5 py-3 text-xs font-medium text-light-200/65 uppercase tracking-wider cursor-pointer select-none hover:text-light-200/70 transition-colors ${col.align === 'right' ? 'text-right' : 'text-left'}`}
+                                className={`px-5 py-3 text-xs font-medium text-light-200/65 cursor-pointer select-none hover:text-light-200/70 transition-colors ${col.align === 'right' ? 'text-right' : 'text-left'}`}
                               >
                                 <span className={`inline-flex items-center gap-1 ${col.align === 'right' ? 'flex-row-reverse' : ''}`}>
                                   {col.label}

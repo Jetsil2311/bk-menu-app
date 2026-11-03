@@ -2,7 +2,7 @@
 
 Base template: https://github.com/Jetsil2311/menu-demo
 Client: Bubble Kaapeh (BK)
-Last updated: 2026-10-26 (web orders, alerts, real earnings in Finanzas, admin UX pass)
+Last updated: 2026-10-31 (Google-only admin login, admin decluttering pass, landing page + /menu)
 
 ---
 
@@ -16,6 +16,7 @@ Last updated: 2026-10-26 (web orders, alerts, real earnings in Finanzas, admin U
 - Heading font: Fredoka (Google Fonts) — `font-display`, customer menu only
 - Body font: Nunito (Google Fonts) — `font-body`. Customer menu and (since 2026-10-23) the admin panel; Fredoka used for admin page titles.
 - Admin themes (2026-10-23): **light** (default) — canvas `#f3ece3`, white cards, ink `#26100b`, primary `#743121`; **dark** — canvas `#140b08`, cards `#21130e`, text `#f7eee3`, primary fill `#9a4630`, accent text `#e3a592` (`dark:text-main-300`). Both are CSS-variable token sets in src/index.css (`html.admin-theme:not(.dark)` / `html.admin-theme.dark`); Tailwind `dark:` variant is class-based (`@custom-variant dark`). `--color-snow` (#fff) = text on solid buttons. Chart colors are tokens (`--color-chart-*`). Customer menu is never themed by these.
+- Landing page fonts (2026-11-02, second pass): Bricolage Grotesque (`font-pop`, chunky extrabold headlines) + DM Sans (`font-landing`, body). Candy color blocks use the boba-flavor tones (taro, matcha, mango, fresa, latte). `--color-espresso` #1c0d08 for photo overlays/shadows.
 - Logo: `/public/bklogo.svg` + `/src/assets/bklogo.svg`
 - Vibe: Warm, dark, cozy coffee shop. Deep browns and cream. Customer menu (since 2026-10-23): playful, rounded, bubbly — wavy edges, blob icons, pastel boba-flavor accents.
 
@@ -692,8 +693,116 @@ Numbers come from the same calculations as Finanzas. Built and verified against 
 Files affected: api/v1/[resource].js, server/posApi/{handler,finance,auth,firebaseAdmin}.js (+test), src/utils/apiKeys.js, src/components/admin/ApiConnections.jsx, src/components/admin/MobileSettingsSheet.jsx, firestore.rules (api_keys), vercel.json (SPA rewrite no longer catches /api), eslint.config.js (Node globals for server code), docs/POS_API.md
 Reason: Owner request: use Tally as the business finance manager, including its AI features.
 
+### 2026-10-31 — Admin login is now a single "Continuar con Google" button
+What changed: Removed the email/password form from the admin sign-in screen. The screen now has one large pill-shaped Google button with the official multicolor "G" icon, a spinner while connecting, and the error message underneath. It also got a fresh look: a terracotta-to-cinnamon header with rising boba bubbles and a wavy edge, a "¡Hola de nuevo!" greeting, a soft glow-and-dots background, and a gentle entrance animation (turned off for reduced-motion). It follows the admin light/dark theme. Closing the Google popup no longer shows an error. The test-mode "Entrar como usuario de prueba" button is still there for the emulator. The old legacy screen (`/admin/legacy`, Admin.jsx) is unchanged because it already sits behind this login.
+Files affected: src/views/admin/AdminLayout.jsx, src/hooks/useAdminAuth.js (removed email/password state and handleLogin), src/index.css (Google brand tokens `--color-google-*`, `.login-bg`, `.login-card-in`)
+Reason: The owner only signs in with Google, so the form was clutter.
+
+### 2026-10-31 — Admin decluttering pass (root-level: less noise, clearer hierarchy)
+What changed (admin panel only; customer menu untouched):
+- Help guides ("Cómo funciona…") are now closed by default and open from a small "?" next to the page title. Before, each page opened with a big guide panel or a reminder pill.
+- Top bar shows only the page title. The "Caja cerrada" chip appears only when the caja is closed, and it links to Caja. Removed: the date and page description line, the name/email text (still in the avatar menu), the "Caja abierta" pill, and the extra full-width Caja banner row on phones. The station chip is now quiet (icon only on phones).
+- Alerts: the low-stock toast no longer pops up on every page load. The bell and an amber dot on Inventario already show it, so it now pops up only when something newly runs low. Removed the Finanzas warning, which was really the stock warning. Nav warnings are calm dots instead of triangles.
+- Sidebar: removed the "PANEL" badge. Group labels are now soft sentence case.
+- No all-caps micro-labels anywhere in the admin (PAGADO → Pagado, TICKET PROMEDIO → Ticket promedio…).
+- New shared pieces in `ui.jsx`: `StatStrip` (key numbers in one card split by hairlines, replacing a card per number), `TabBar` (underline tabs to switch views), `FilterPills` (to pick a period or status), and `StatusPill` (quiet status badge: only live orders are colored).
+- Inicio: the date sits above "Ventas de hoy", which is the one big number, with paid orders and average ticket beside it and trends as "↑ x% vs ayer a esta hora". "N pedidos por cobrar" is a link to Pedidos. Quick actions are trimmed to the 3 that aren't already in the main nav, as label-only chips. Each recent order is one row (time, items, status, total) and tapping it opens Pedidos. The caja history moved to Caja.
+- Caja: new collapsible "Días anteriores" with past days, moved from Inicio.
+- Finanzas: views are underline tabs and the period is short pills (Hoy / Semana / Mes / 30 días / Fechas…). Before, both were identical-looking pill rows. Resumen is now one "money story" card: Vendiste − Ingredientes − Gastos fijos = Te quedó (or a "Ganancia" line plus a link to add fixed costs). Orders, ticket and margin sit in a small strip beside it. Six explained cards became one. The warnings are shorter and link to the relevant tab.
+- Métricas: key numbers moved to the top (Ingresos with trend, Pedidos pagados, Ticket promedio). Ticket promedio is now for the selected period, not all history. Removed the decorative icon tiles. Fixed the chart's money axis, which showed "$0" on every tick under $1,000.
+- Clientes: the three cards are now one stat strip.
+- Pedidos: removed the order-ID badge square (the ID is small text now). Station chips only show while the order is in progress. The "POS" chip is gone and WhatsApp orders show a small icon. The two counter boxes became one line ("N en curso · N pedidos hoy").
+- Inventario: the three cards became one toolbar: an amber "N por acabarse" filter chip (only when something is low), plus "Nuevo insumo" and "Registrar compra".
+Files affected: src/components/admin/ui.jsx, src/components/admin/PageGuide.jsx, src/components/admin/Topbar.jsx, src/components/admin/Sidebar.jsx, src/components/admin/NavBadge.jsx, src/context/AdminAlertsContext.jsx, src/config/adminNav.jsx, src/views/admin/AdminLayout.jsx, src/views/admin/Overview.jsx, src/views/admin/Register.jsx, src/views/admin/Finance.jsx, src/views/admin/Metrics.jsx, src/views/admin/Customers.jsx, src/views/admin/Orders.jsx, src/views/admin/Stock.jsx. Sentence-case labels only in: src/views/admin/{POS,MenuEditor}.jsx, src/components/admin/{AdminAlerts,SettingsChips}.jsx, src/components/admin/pos/PosDrinkBuilder.jsx, src/components/admin/drinkBuilder/DrinkBuilderEditor.jsx, src/components/admin/finance/*.jsx
+Reason: The owner felt parts of the admin were oversaturated and hard to understand. The rule for every change: show only the information needed, make the most important number the most visible, and don't repeat the same signal in several places.
+
+### 2026-10-31 — Menu moved to /menu; new landing page at /
+What changed:
+- The customer menu now lives at `/menu`, with category filters at `/menu/bebidas` and `/menu/alimentos`. Old links (`/bebidas`, `/alimentos`) redirect, unknown addresses go to the landing, and the drink builder link is now `/menu#arma-tu-bebida`. In the menu, the logo goes to the landing page. Admin "Ver menú público" and the login "Volver al menú" links point to `/menu`.
+- New landing page at `/` (Spanish, phone-first, brand colors and fonts):
+  - Hero: live "Abierto ahora / Cerrado, abrimos…" status, headline, "Ver menú y pedir" (main button) and "Cómo llegar", plus three drink photo cards.
+  - Flavor strip: a sliding row of all boba flavors, read live from the menu (biggest "Sabor" option group).
+  - "Para cada antojo": one photo tile per menu section with live "Desde $X" prices; each tile opens that category in the menu.
+  - "Arma tu bebida" block, shown only if the builder is set up.
+  - "Pedir es facilísimo": the 3 steps to order.
+  - Rewards band: "Te regresamos el 10% de cada compra" (same 10% as the POS).
+  - "Ven a visitarnos": shop photo, address, hours, Google Maps embed, and buttons for Cómo llegar, WhatsApp and Instagram.
+  - Closing call to action, then a footer with a small "Acceso del equipo" link to /admin.
+  - On phones, a sticky "Ver menú y pedir" bar appears once the hero scrolls away.
+  - Sections fade in as you scroll and the cards float gently; all motion is off for reduced-motion users.
+- Business facts (address, hours, Instagram, WhatsApp fallback) live in one file: `src/config/business.js`. The landing also publishes Google "local business" data (address, hours, menu link) and sets its page title. `index.html` has a description and share-preview tags.
+- Photos: web-optimized WebP copies in `public/landing/`, plus a 1200×630 share image `og-cafe.jpg`. These were made from the existing product photos and the banner, and the GPS location that was embedded in the banner's iPhone photo is not carried over.
+Files affected: src/main.jsx, src/views/Landing.jsx (new), src/config/business.js (new), src/views/Home.jsx (reads the path after /menu), src/components/Navbar.jsx, src/components/MenuHero.jsx, src/components/admin/Sidebar.jsx, src/components/admin/BottomTabBar.jsx, src/views/admin/AdminLayout.jsx, src/views/Admin.jsx, src/index.css (landing reveal, marquee, float-card), index.html, public/landing/* (new images)
+Reason: The owner wants the site to also work as the café's landing page. Address and hours were given by the owner on 2026-10-31.
+
+### 2026-10-31 — Landing page now built from the real menu
+What changed: The first version of the landing was checked against test data, so its tiles and photos didn't match the real menu. It is now fully driven by the live menu:
+- Hero cards show the first 3 drinks with real photos, in menu order (today: Dragon Bloom, Cloudy Taro, Matcha Blossom, from Nuestros Favoritos).
+- "Para cada antojo" shows one tile per visible section (today: Nuestros Favoritos, Bebidas Heladas, Coffee Bar, Creamy & Cozy, Combos, Panadería; Chapatas is hidden) with that section's lowest price among products that aren't sold out. The grid adapts to any number of sections without gaps.
+- Tile photos come from the section's own products, sized and converted by Cloudinary (this also makes the .heic photos viewable). The page avoids sold-out products, promo posters (PNG uploads with text and prices) and drinks already in the hero. A section with only posters (today: Combos) gets a plain brand tile.
+- The flavor strip combines every "Sabor/Sabores" option from drinks on sale (13 today) and skips plain variants like "Clásico" and "Black". The hero text no longer mentions chapatas.
+- Removed the test-era photos from `public/landing/`. Only the shop photo, the share image, and 3 fallback drink photos (used only if the menu can't load) remain.
+Files affected: src/views/Landing.jsx, public/landing/ (removed latte-helado, soda-italiana, cafe-latte, chapata, chapata-clasica, muffin, latte, americano-helado .webp)
+Reason: Owner pointed out the landing didn't match the real products and images.
+
+### 2026-10-31 — Choose each section's landing photo, or hide it from the landing
+What changed: Menú → Editar sección has a new "Página de inicio" block with:
+- A **"Mostrar en la página de inicio"** switch. When it's off, the section gets no tile on the landing (the menu itself doesn't change) and the grid re-fits. If every section is off, the "Para cada antojo" block disappears.
+- **"Foto de la tarjeta"**: tap one of the section's product photos (posters included), or leave "Automática". The choice stores the product, so if that product's photo is replaced later the landing shows the new one.
+- The automatic photo is now **the first real photo in menu order** (still skipping promo posters, sold-out products and drinks already in the hero), so reordering products also changes it. Before, it took the last one, which picked a frappe for Coffee Bar.
+New optional fields on `sections` docs: `showOnLanding` (bool, default true) and `coverProductId` (product doc id, '' = automatic). Existing sections without them behave as "shown + automatic". The old unused `image` field is untouched.
+Shared photo helpers moved to `src/utils/productImage.js` (used by the landing and the editor).
+Files affected: src/views/admin/MenuEditor.jsx, src/hooks/useAdminData.js (handleSaveSection writes the two fields), src/views/Landing.jsx, src/utils/productImage.js (new)
+Reason: Owner reported unrepresentative tile photos (a frappe on Coffee Bar and on Creamy & Cozy) and asked for control over the photo plus a switch to hide sections from the landing.
+
+### 2026-10-31 — "¿Te gusta Bubble Kaapeh?" Google review invitation after ordering
+What changed: After a customer sends an order to WhatsApp and comes back to the menu, a small card can slide up from the bottom (bottom-right on desktop, above the cart). It shows 5 stars, "¿Te gusta Bubble Kaapeh?", "Cuéntalo en Google Maps. Tu reseña ayuda a que más gente nos encuentre." and the buttons "Dejar reseña" / "Ahora no".
+- Not bothersome: there's no dark backdrop, it doesn't take focus, and ✕, Esc or "Ahora no" close it. It appears at most once per visit and only from the customer's **2nd order** on that device (they've already tried the drinks). "Ahora no" keeps it quiet for 30 days, and "Dejar reseña" opens Google and it never asks again on that device. If WhatsApp opens without leaving the menu tab, it appears after 10 seconds instead.
+- Everyone who qualifies gets the same invitation. Google's review policy forbids asking only happy customers ("review gating"), so there's no "only if you liked it" filter.
+- "Dejar reseña" opens `BUSINESS.googleReviewUrl` from `src/config/business.js`. While that's empty it opens the café on Google Maps, where the customer taps "Escribir una reseña".
+- All counters are per device in localStorage (`bk_review_prompt`); nothing is sent anywhere.
+Files affected: src/components/ReviewPrompt.jsx (new), src/utils/reviewPrompt.js (new, timing rules), src/utils/reviewPrompt.test.js (new), src/views/Home.jsx (records the order and renders the card), src/config/business.js (googleReviewUrl, REVIEW_URL), src/index.css (review-in / review-star animations, off for reduced motion)
+Reason: Owner wants more Google Maps reviews without annoying customers.
+
+### 2026-10-31 — "Leave a Google review" buttons on the landing and the menu
+What changed:
+- Landing → "Ven a visitarnos" card: a full-width honey button "Déjanos una reseña en Google" below WhatsApp and Instagram. The landing footer has a "Reseña en Google" link too.
+- Menu footer: a honey pill "¿Te gusta? Déjanos una reseña" under "Hecho con cariño y mucha tapioca".
+- All of them open the same link as the after-order card (`REVIEW_URL`: `googleReviewUrl` in src/config/business.js, or the café on Google Maps while that's empty). Tapping any of them also stops the after-order invitation from showing on that device (`markReviewed()` in utils/reviewPrompt.js).
+Files affected: src/views/Landing.jsx, src/views/Home.jsx, src/utils/reviewPrompt.js (markReviewed), src/components/ReviewPrompt.jsx (uses markReviewed)
+Reason: Owner wants an always-available way to leave a Google review.
+
+### 2026-11-02 — Admin → Landing: edit the landing page in place, plus "Cerrado hoy"
+What changed:
+- New admin page **Landing** (sidebar "Menú y clientes", and "Más" on phones; route `/admin/landing`, station key `landing`). It shows the real landing page in the customer colors, but every text is a dashed box you type into directly. The layout and sections are fixed; only the content changes.
+- What can be changed: every heading (including the highlighted words), paragraph and button label; the ticker words (add/remove, up to 10); the 3 hero drinks (camera button → pick a product or "Automática"); the two tile photos ("Ven con tu gente", "Tómale foto": upload to Cloudinary or go back to the original); "Las que todos piden" (remove with ✕, "+ Agregar bebida", up to 8); "Para cada antojo" (add/remove/reorder menu sections and pick each one's photo); which flavors show in "¿De qué sabor eres hoy?" (tap to hide/show); the 3 order steps; opening days and hours (day buttons + time inputs, these also drive "Abierto ahora" and the Google data); the rest-day text; address line, street, Instagram and the Google review link.
+- Edits are a draft until **Publicar**. "Descartar" goes back to what's live. The draft is also kept on that device (`bk_landing_draft`, 300 ms debounce) and a warning appears before closing the tab with unpublished changes.
+- **Cerrado hoy**: a switch at the top of the page, saved instantly (not with Publicar). "Solo hoy" or "Varios días" (a date, inclusive) and an optional message. The landing and the menu show a pink notice at the top ("Hoy no abrimos · volvemos mañana a las 11:30 a. m."), and "Abierto ahora" respects it. It ends by itself after the date; the next opening skips the weekly rest day.
+- The per-section "Página de inicio" switches were removed from Menú → Editar sección. Until the owner publishes the Landing page once, the landing keeps using the old per-section choices (`showOnLanding` / `coverProductId` on each section), so nothing changes on the live site.
+- The menu footer review button and the after-order review card now use the review link from Admin → Landing.
+- Stored in the new Firestore doc `settings/landing` (already covered by the existing `settings/{id}` rule: public read, signed-in write). Anything not saved there uses the defaults in `src/config/landingContent.js`.
+Files affected: src/views/admin/LandingEditor.jsx (new), src/components/landing/LandingEditable.jsx (new), src/config/landingContent.js (new), src/config/landingContent.test.js (new), src/hooks/useLandingContent.js (new), src/views/Landing.jsx (renders from content; editor mode), src/config/business.js (hours labels, closure, address-based links), src/views/Home.jsx (closed notice, live review link), src/components/ReviewPrompt.jsx (url prop), src/views/admin/MenuEditor.jsx and src/hooks/useAdminData.js (removed the landing switches), src/config/adminNav.jsx, src/utils/stations.js, src/main.jsx, src/index.css (.landing-scope, .lp-edit)
+Reason: Owner wanted one place to change everything on the landing page, shown like the real page, plus a "closed for today" option.
+
+### 2026-11-02 — Routes: menu back at /, landing moves to /home
+What changed: The customer menu is at `/` again (filters `/bebidas` and `/alimentos`), so every link already shared on social media and printed QR codes opens the menu like before. The landing page now lives at `/home`. Old `/menu`, `/menu/bebidas` and `/menu/alimentos` links redirect to `/`, `/bebidas` and `/alimentos`. Every button on the landing now points to `/`, the menu logo goes to `/home`, and "Ver menú público" in the admin and "Ver página" in Admin → Landing point to the new addresses.
+Files affected: src/main.jsx, src/views/Home.jsx (menuPath), src/views/Landing.jsx, src/components/Navbar.jsx, src/components/MenuHero.jsx, src/components/admin/Sidebar.jsx, src/components/admin/BottomTabBar.jsx, src/views/admin/AdminLayout.jsx, src/views/Admin.jsx, src/views/admin/LandingEditor.jsx
+Reason: Owner doesn't want to change the links already posted on social media.
+
 ## Known Issues / Follow-ups
 
+- **NEW (2026-11-02): to send people to the landing page, use `/home`** (Instagram bio, new QR codes). Existing links to `/` open the menu.
+
+- **NEW (2026-11-02): existing Cajero stations can open Admin → Landing.** New installs hide it from Cajero by default, but stations already saved keep their old permissions. Turn it off in Estaciones if needed.
+- **NEW (2026-11-02): the Google review link now lives in Admin → Landing** ("Datos para Google Maps y reseñas"), not in `src/config/business.js`.
+- **NEW (2026-11-02): photos uploaded in Admin → Landing go to Cloudinary `landing/`** and old ones aren't deleted when replaced.
+
+- **NEW (2026-10-31): add the direct Google review link.** In Google Business Profile → "Pedir reseñas" (Ask for reviews), copy the link and paste it in Admin → Landing → "Link para dejar reseña en Google" (was `googleReviewUrl` in `src/config/business.js`). With it, "Dejar reseña" opens the review form directly instead of the Maps page.
+- **RESOLVED 2026-10-31** ~~landing tile photos are picked automatically~~: each section's photo can now be chosen in Admin → Landing (moved from Menú → Editar sección on 2026-11-02).
+- **RESOLVED 2026-10-31** ~~confirm the hours~~: owner confirmed 11:30 a. m. a 8:30 p. m., miércoles a lunes (set in `src/config/business.js`).
+- **NEW (2026-10-31): share-preview image uses a relative URL** (`/landing/og-cafe.jpg`). Facebook/WhatsApp work best with the full domain; once the final domain is set, put it in `og:image` in index.html.
+- **RESOLVED 2026-11-02** ~~printed QR codes / Instagram bio that point to the main address now open the landing~~: the main address opens the menu again; the landing is at `/home`.
+- **NEW (2026-10-31): the decluttering pass was browser-checked on desktop (light + dark) only.** The phone layout was built mobile-first in code but not seen at phone width. Pages not restyled beyond sentence-case labels: Cobrar (POS), Menú editor, Promociones, Estaciones, and the Finanzas sub-tabs (Día a día, Por producto…).
 - **NEW (2026-10-26): the POS API needs `FIREBASE_SERVICE_ACCOUNT` in Vercel (Production) before it can answer.** Until then every route returns 503 `not_configured`. Creating keys in Ajustes also needs the `api_keys` rule, so deploy `firestore.rules` too.
 
 - **NEW (2026-10-26): `firestore.rules` MUST be deployed before (or together with) this release.** Production has no rule for the new `web_orders` collection, so menu orders would still go out by WhatsApp but would not reach the panel. The file also makes `orders` staff-only, which is now safe because the menu no longer reads or deletes it. Run `firebase deploy --only firestore:rules` after reviewing the whole file (it also adds the pending `recipes`/`stations`/`expenses` rules).
@@ -765,3 +874,13 @@ Reason: Owner request: use Tally as the business finance manager, including its 
 - Order-time deduction was only browser-verified end-to-end for the POS.jsx direct-charge path (confirmed: real payment completes, order gets cost fields, Finanzas dashboard reflects it live). The Orders.jsx Listo→Pagado path calls the exact same `computeAndDeductOrderStock` function with the same shape of arguments, but wasn't separately exercised in a browser — worth a manual click-through before relying on it for kitchen-flow orders.
 - **PinGate design note (2026-08-04)**: confirmed against the live Firestore rules that `settings/{id}` already has `allow read: if true; allow write: if request.auth != null;` — so PinGate's own needs (fetch `adminPin`/`pinGateConfig` pre-unlock, write on toggle) already work with no rule changes. But this also means the PIN provides no real security boundary beyond "you're already an authenticated admin account": (1) `adminPin` is publicly readable by anyone, even fully unauthenticated, since `read: if true`; (2) any authenticated staff account can write `pinGateConfig` (or overwrite `adminPin`) directly via the Firestore SDK/console, bypassing the `PinPrompt` UI check entirely — the "must enter the correct PIN to toggle a lock" rule is enforced only client-side in `Topbar.jsx`/`PinGate.jsx`, never by Firestore rules, because the PIN isn't tied to Firebase Auth (no custom claims). Functionally fine for its actual purpose (keeping already-trusted staff off screens they don't need day-to-day, on a shared device) — just don't rely on it as a hard security boundary against a technically-savvy authenticated user.
 - **Pedidos "Marcar como Pagado" never credits the register (2026-08-04, found while fixing the Metrics graph, left unfixed at owner's choice)**: `Orders.jsx`'s `updateStatus()` — the Listo→Pagado kitchen-flow transition — has no payment-method UI and never increments `register_sessions.cashSales`/`cardSales`, unlike POS.jsx's direct-charge flow which does both. Any order actually paid through that button today is invisible to the register history, the Metrics revenue graph, and the Caja cash-count reconciliation. Revisit if that flow turns out to be used for real payments (not just orders that were always going to be charged in POS).
+
+### 2026-11-02 — Landing page redesign: warm editorial café look
+What changed: The landing page (/) was redesigned to feel like a premium neighborhood café instead of an app. References: Ceremony Coffee and Temple Boba (editorial layout, big photography, restrained type). New look: dark espresso hero with an arched photo of the favourite drink, a small round second photo and a slowly turning "Hecho al momento · Tequixquiac" seal; serif headlines (DM Serif Display, italic for emphasis), clean body text (DM Sans) and small handwritten notes (Caveat) that echo the café's chalkboard. Flavors now scroll as a band of large italic type instead of colored pills. New "Las favoritas" gallery with big photos and prices. The section tiles became "La carta", a printed-menu style list (numbered rows, "desde $X", photo that follows the row you point at on desktop, round thumbnails on phones). "Pedir es facilísimo" uses big numerals instead of icon tiles; the 10% rewards card, visit section (hours as a small timetable, warm-toned map) and a dark footer with the final call to action were restyled. All badges/pills and colored icon squares were removed; status is plain text with a small dot. Same live data, same owner controls (show on landing, cover photo) and same review links.
+Files affected: src/views/Landing.jsx, src/index.css (tokens --color-espresso, --font-editorial, --font-landing, --font-hand; .landing-grain, .seal-spin, .rise-in, .landing-map; removed .float-card), index.html (Google Fonts: DM Serif Display, DM Sans, Caveat)
+Reason: Owner wanted the landing to look fancy, professional and cozy, the best café site in the area, without the "AI badge" look.
+
+### 2026-11-02 — Landing page, second pass: young, playful and premium
+What changed: The owner said the editorial version (serif + handwritten notes) looked old-fashioned and lost the young vibe. The landing was redone in a Gen-Z "playful premium" style (references: young boba/DTC brands like Blank Street, Chagee, Omsom): chunky Bricolage Grotesque headlines with tilted color highlights, candy color blocks, glossy photos, motion and interaction. The page now sells the visit as an experience: hero "Tu nuevo plan favorito en Tequixquiac" with three drinks in tall color capsules and a bold ticker (Boba · Café · Frappes · Antojos); "Más que un café, es un plan" bento (Ven con tu gente with the shop photo, Hazla a tu manera / Arma tu bebida, Tómale foto + Instagram tag, 10% Regresa por más); an interactive "¿De qué sabor eres hoy?" panel that cycles through the live flavors and changes color, and lets visitors tap any flavor; "Las que todos piden" color cards (swipe on phones); "Para cada antojo" section rows with photos; "¿Para llevar? Pide desde tu cel." in three color steps; "Te vemos en Porfirio Díaz 18" card with hours, buttons and map; footer "¿Nos vemos hoy?". Serif, handwritten notes, grain texture and the rotating seal were removed. Live data, section switches/covers and review links work as before.
+Files affected: src/views/Landing.jsx, src/index.css (--font-pop replaces --font-editorial/--font-hand; .pearl-bob, .flavor-pop; removed .landing-grain, .seal-spin), index.html (fonts: Bricolage Grotesque + DM Sans; removed DM Serif Display and Caveat)
+Reason: Main goal is bringing young people into the café; the page has to feel fun, fancy and like an experience.

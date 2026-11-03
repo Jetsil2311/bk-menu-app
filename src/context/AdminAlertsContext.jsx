@@ -121,11 +121,10 @@ export const AdminAlertsProvider = ({ children }) => {
         const low = lowStockList(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
         setLowStock(low)
         const ids = low.map((m) => m.id)
+        // First load: no toast — what's already low shows on the bell and the
+        // Inventario dot. Only items that run low while the panel is open pop up.
         if (knownLowIds.current === null) {
           knownLowIds.current = new Set(ids)
-          let shown = false
-          try { shown = sessionStorage.getItem('bk_stock_alert_seen') === ids.join('|') } catch { /* private mode */ }
-          if (low.length > 0 && !shown) setStockToast({ items: low, isNew: false })
           return
         }
         const fresh = low.filter((m) => !knownLowIds.current.has(m.id))
@@ -197,7 +196,6 @@ export const AdminAlertsProvider = ({ children }) => {
   const navBadges = useMemo(() => ({
     pos: pendingOrders.length || null,
     stock: lowStock.length > 0 ? 'warn' : null,
-    finanzas: lowStock.length > 0 ? 'warn' : null,
   }), [pendingOrders.length, lowStock.length])
 
   const value = useMemo(() => ({

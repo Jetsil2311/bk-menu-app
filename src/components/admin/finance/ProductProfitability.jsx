@@ -112,7 +112,7 @@ export const ProductProfitability = ({ orders }) => {
                   <th
                     key={col.key}
                     onClick={() => toggleSort(col.key)}
-                    className={`py-2.5 text-xs font-medium text-light-200/65 uppercase tracking-wider cursor-pointer select-none hover:text-light-200/70 transition-colors ${
+                    className={`py-2.5 text-xs font-medium text-light-200/65 cursor-pointer select-none hover:text-light-200/70 transition-colors ${
                       col.align === 'right' ? 'text-right' : 'text-left'
                     } ${col.hideOnMobile ? 'hidden md:table-cell' : ''}`}
                   >

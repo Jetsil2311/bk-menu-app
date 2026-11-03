@@ -6,14 +6,15 @@ import {
 } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { formatMoney } from '../../utils/cart'
+import { FilterPills, StatusPill } from '../../components/admin/ui'
 import { computeAndDeductOrderStock } from '../../utils/stockDeduction'
 import { useSettings } from '../../hooks/useSettings'
 import { useStationContext } from '../../context/StationContext'
 import { printReceipt } from '../../utils/printReceipt'
 import {
-  Clock, CheckCircle2, Package, RefreshCcw,
+  CheckCircle2, Package, RefreshCcw,
   Search, ChevronDown, X, ArrowRight, ArrowUpDown, Printer, Undo2,
-  MessageCircle, ShoppingCart,
+  MessageCircle,
 } from 'lucide-react'
 
 const STATION_PILL_STYLES = {
@@ -38,26 +39,11 @@ const STATUSES = ['Nuevo', 'Preparando', 'Listo', 'Pagado']
 
 const STATUS_PRIORITY = { nuevo: 0, preparando: 1, listo: 2, pagado: 3 }
 
-// Includes legacy aliases for backwards-compatibility with orders saved before this update
-const STATUS_COLORS = {
-  nuevo:            'bg-amber-500/10 text-amber-400 border-amber-500/20',
-  preparando:       'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  'en preparación': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  listo:            'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  pagado:           'bg-light-200/5 text-light-200/55 border-light-200/10',
-  entregado:        'bg-light-200/5 text-light-200/55 border-light-200/10',
-  reembolsado:      'bg-rose-500/10 text-rose-400 border-rose-500/20',
-  cancelado:        'bg-light-200/5 text-light-200/55 border-light-200/10',
-}
-
 const ACTION_LABELS = {
   Preparando: 'Iniciar preparación',
   Listo:      'Marcar como listo',
   Pagado:     'Registrar pago',
 }
-
-const getStatusColor = (status) =>
-  STATUS_COLORS[status?.toLowerCase()] ?? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
 
 // Migrate legacy status names to the new canonical set
 const normalizeStatus = (raw) => {
@@ -439,18 +425,10 @@ export const Orders = () => {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="sr-only">Pedidos</h2>
-        <div className="flex items-center gap-3">
-          {activeCount > 0 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs font-semibold text-amber-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              {activeCount} activo{activeCount !== 1 ? 's' : ''}
-            </div>
-          )}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-main-900 border border-white/10 rounded-xl text-xs font-medium text-light-200/60">
-            <Clock size={14} />
-            Hoy: {todayCount} pedidos
-          </div>
-        </div>
+        <p className="text-sm font-semibold text-light-200/65">
+          {activeCount > 0 && <span className="text-amber-400">{activeCount} en curso · </span>}
+          {todayCount} pedido{todayCount !== 1 ? 's' : ''} hoy
+        </p>
       </div>
 
       {/* Filters */}
@@ -476,24 +454,14 @@ export const Orders = () => {
         </div>
 
         {/* Status pills + sort button */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div
-            className="flex items-center gap-1 p-1 rounded-xl bg-main-900 border border-white/10 overflow-x-auto"
-            style={{ scrollbarWidth: 'none' }}
-          >
-            {['Activos', ...STATUSES, 'Reembolsado', 'Cancelado'].map(s => (
-              <button
-                key={s}
-                onClick={() => setFilterStatus(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap cursor-pointer min-h-9 ${
-                  filterStatus === s
-                    ? 'bg-main-500 text-snow'
-                    : 'text-light-200/70 hover:text-light-100'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="min-w-0">
+            <FilterPills
+              options={['Activos', ...STATUSES, 'Reembolsado', 'Cancelado'].map(st => ({ key: st, label: st }))}
+              value={filterStatus}
+              onChange={setFilterStatus}
+              ariaLabel="Filtrar por estado"
+            />
           </div>
 
           {/* Sort dropdown */}
@@ -590,41 +558,27 @@ export const Orders = () => {
                 {/* Card header row */}
                 <div className="p-4 flex flex-wrap items-center gap-4">
 
-                  {/* ID badge */}
-                  <div className="h-11 w-11 shrink-0 rounded-xl bg-main-800 flex items-center justify-center text-main-400 font-bold text-xs border border-white/10 select-none">
-                    #{shortId}
-                  </div>
-
                   {/* Status + meta */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-[10px] px-2.5 py-0.5 rounded-full border font-bold uppercase tracking-wider ${getStatusColor(order.status)}`}>
-                        {order.status}
-                      </span>
+                      <StatusPill status={order.status} />
                       {order.customerName && (
-                        <span className="text-xs font-medium text-light-200/70 truncate max-w-[120px]">
+                        <span className="text-sm font-semibold text-light-100 truncate max-w-[160px]">
                           {order.customerName}
                         </span>
                       )}
-                      <span className="text-xs text-light-200/65 cursor-default" title={timeTooltip}>
-                        {timeAgo}
-                      </span>
+                      {order.source === 'whatsapp' && (
+                        <MessageCircle size={14} className="text-light-200/55" aria-label="Pedido por WhatsApp" />
+                      )}
                     </div>
-                    <p className="text-xs text-light-200/65 mt-0.5 truncate max-w-[280px]">
+                    <p className="text-sm text-light-200/80 mt-1 truncate">
                       {itemPreview}
                     </p>
-                    {hasStations && (
+                    <p className="text-xs text-light-200/55 mt-0.5 tabular-nums">
+                      <span className="cursor-default" title={timeTooltip}>{timeAgo}</span> · #{shortId}
+                    </p>
+                    {hasStations && !isPagado && !isCancelado && !isReembolsado && (
                       <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                        {order.source === 'whatsapp' && (
-                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                            <MessageCircle size={9} /> WhatsApp
-                          </span>
-                        )}
-                        {order.source === 'pos' && (
-                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-light-200/65 border border-white/10">
-                            <ShoppingCart size={9} /> POS
-                          </span>
-                        )}
                         {stationEntries.map(([stationId, group]) => {
                           const station = stations.find(s => s.id === stationId)
                           return (
@@ -725,7 +679,7 @@ export const Orders = () => {
 
                     {/* Items */}
                     <div>
-                      <p className="text-xs font-semibold text-light-200/65 uppercase tracking-wider mb-2">
+                      <p className="text-xs font-semibold text-light-200/65 mb-2">
                         Productos
                       </p>
                       <ul className="space-y-2">
@@ -762,7 +716,7 @@ export const Orders = () => {
                       </div>
                     ) : (
                       <div>
-                        <p className="text-xs font-semibold text-light-200/65 uppercase tracking-wider mb-2">
+                        <p className="text-xs font-semibold text-light-200/65 mb-2">
                           Progreso
                         </p>
                         <div className="flex items-center gap-1">

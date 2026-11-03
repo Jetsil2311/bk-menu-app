@@ -7,7 +7,7 @@ import { ADMIN_PIN } from '../config/adminPin'
 // declared in src/main.jsx.
 export const ROUTE_KEYS = [
   'overview', 'pos', 'pedidos', 'clientes', 'stock',
-  'finanzas', 'metricas', 'promociones', 'menu', 'caja', 'legacy', 'estaciones',
+  'finanzas', 'metricas', 'promociones', 'menu', 'landing', 'caja', 'legacy', 'estaciones',
 ]
 
 // Shared across StationGate/StationsManager/Topbar so every station-facing
@@ -47,7 +47,7 @@ export const DEFAULT_STATIONS = [
     role: 'cajero',
     productTags: [],
     isCore: true,
-    disabledRoutes: ['estaciones', 'finanzas', 'metricas', 'promociones', 'menu', 'stock', 'legacy'],
+    disabledRoutes: ['estaciones', 'finanzas', 'metricas', 'promociones', 'menu', 'landing', 'stock', 'legacy'],
   },
   {
     id: 'cocina',

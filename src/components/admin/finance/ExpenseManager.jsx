@@ -185,7 +185,7 @@ const ExpenseRow = ({ expense, onEdit, onDelete }) => {
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm font-semibold text-light-100 truncate">{expense.name}</p>
-          <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-white/5 text-light-200/70 border border-white/10 shrink-0">
+          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white/5 text-light-200/70 border border-white/10 shrink-0">
             {PERIOD_LABELS[expense.period] || 'Mensual'}
           </span>
         </div>
@@ -335,19 +335,19 @@ export const ExpenseManager = ({ onTotalsChange }) => {
       {expenses.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-white/10">
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-light-200/65 truncate">Total semanal</p>
+            <p className="text-[10px] text-light-200/65 truncate">Total semanal</p>
             <p className="text-sm font-bold text-light-100 tabular-nums truncate">{formatMoney(totals.weeklyTotal)}</p>
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-light-200/65 truncate">Total mensual</p>
+            <p className="text-[10px] text-light-200/65 truncate">Total mensual</p>
             <p className="text-sm font-bold text-light-100 tabular-nums truncate">{formatMoney(totals.monthlyTotal)}</p>
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-light-200/65 truncate">Total anual</p>
+            <p className="text-[10px] text-light-200/65 truncate">Total anual</p>
             <p className="text-sm font-bold text-light-100 tabular-nums truncate">{formatMoney(totals.annualTotal)}</p>
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-light-200/65 truncate">Equivalente diario</p>
+            <p className="text-[10px] text-light-200/65 truncate">Equivalente diario</p>
             <p className="text-sm font-bold text-amber-400 tabular-nums truncate">{formatMoney(totals.dailyFixedCosts)}</p>
           </div>
         </div>

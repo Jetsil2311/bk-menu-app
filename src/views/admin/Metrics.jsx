@@ -12,7 +12,7 @@ import {
   AreaChart,
   Area
 } from 'recharts'
-import { TrendingUp, TrendingDown, Award, DollarSign, ShoppingBag, Calendar } from 'lucide-react'
+import { FilterPills, StatStrip } from '../../components/admin/ui'
 
 const RANGE_OPTIONS = [
   { label: 'Esta semana', days: 7 },
@@ -139,39 +139,41 @@ export const Metrics = () => {
   const prevRev = prevOrders.reduce((s, o) => s + o.revenue, 0)
   const revChange = prevRev > 0 ? ((periodRev - prevRev) / prevRev * 100).toFixed(1) : null
 
-  const totalAllOrders = paidOrders.length
-  const totalAllRevenue = paidOrders.reduce((s, o) => s + o.revenue, 0)
-  const avgTicket = totalAllOrders > 0 ? (totalAllRevenue / totalAllOrders) : 0
+  // Same period as every other number on the page
+  const avgTicket = periodOrders.length > 0 ? periodRev / periodOrders.length : 0
+  const money = (v) => `$${v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Range selector */}
-      <div className="flex items-center gap-2">
-        <Calendar size={16} className="text-light-200/65" />
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-main-900 border border-white/10">
-          {RANGE_OPTIONS.map((opt, i) => (
-            <button
-              key={opt.label}
-              onClick={() => setRangeIdx(i)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${rangeIdx === i ? 'bg-main-500 text-snow' : 'text-light-200/70 hover:text-light-100'}`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="space-y-5">
+      <FilterPills
+        options={RANGE_OPTIONS.map((opt, i) => ({ key: i, label: opt.label }))}
+        value={rangeIdx}
+        onChange={setRangeIdx}
+        ariaLabel="Periodo"
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <StatStrip
+        lead
+        loading={loading}
+        items={[
+          {
+            label: 'Ingresos',
+            value: money(periodRev),
+            ...(revChange !== null
+              ? { hint: `${Number(revChange) >= 0 ? '↑' : '↓'} ${Math.abs(Number(revChange))}% vs periodo anterior`, tone: Number(revChange) >= 0 ? 'up' : 'down' }
+              : {}),
+          },
+          { label: 'Pedidos pagados', value: periodOrders.length.toLocaleString('es-MX') },
+          { label: 'Ticket promedio', value: money(avgTicket) },
+        ]}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Revenue chart */}
-        <div className="lg:col-span-2 bg-main-900 border border-white/10 rounded-3xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-semibold text-light-100">Ingresos ({RANGE_OPTIONS[rangeIdx].label})</h3>
-              <p className="text-xs text-light-200/65">Efectivo + tarjeta cobrados cada día (según la caja)</p>
-            </div>
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
-              <TrendingUp size={20} />
-            </div>
+        <div className="lg:col-span-2 bg-main-900 border border-white/10 rounded-2xl p-5 sm:p-6">
+          <div className="mb-5">
+            <h3 className="text-lg font-semibold text-light-100">Ingresos por día</h3>
+            <p className="text-xs text-light-200/65">Efectivo + tarjeta cobrados, según la caja</p>
           </div>
 
           {loading ? (
@@ -199,7 +201,7 @@ export const Metrics = () => {
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: 'var(--color-chart-tick)', fontSize: 11 }}
-                    tickFormatter={v => v > 0 ? `$${(v / 1000).toFixed(v >= 1000 ? 1 : 0)}${v >= 1000 ? 'k' : ''}` : '0'}
+                    tickFormatter={v => v >= 1000 ? `$${(v / 1000).toFixed(1)}k` : `$${v}`}
                   />
                   <Tooltip
                     contentStyle={{
@@ -226,11 +228,8 @@ export const Metrics = () => {
         </div>
 
         {/* Top Products */}
-        <div className="bg-main-900 border border-white/10 rounded-3xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-light-100">Lo más vendido</h3>
-            <Award size={20} className="text-amber-400" />
-          </div>
+        <div className="bg-main-900 border border-white/10 rounded-2xl p-5 sm:p-6">
+          <h3 className="mb-5 text-lg font-semibold text-light-100">Lo más vendido</h3>
 
           {loading ? (
             <div className="space-y-3">
@@ -265,54 +264,6 @@ export const Metrics = () => {
         </div>
       </div>
 
-      {/* Summary row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="bg-main-900 border border-white/10 rounded-3xl p-6 shadow-sm flex items-center gap-5">
-          <div className="h-12 w-12 rounded-2xl bg-main-500/10 flex items-center justify-center text-main-400 shrink-0">
-            <DollarSign size={24} />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider">Ticket Promedio</p>
-            <h4 className="text-2xl font-bold text-light-100 mt-1">
-              {loading ? '—' : `$${avgTicket.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-            </h4>
-            <p className="text-[10px] text-light-200/55 mt-0.5">Histórico total</p>
-          </div>
-        </div>
-
-        <div className="bg-main-900 border border-white/10 rounded-3xl p-6 shadow-sm flex items-center gap-5">
-          <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 shrink-0">
-            <ShoppingBag size={24} />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider">Pedidos ({RANGE_OPTIONS[rangeIdx].label})</p>
-            <h4 className="text-2xl font-bold text-light-100 mt-1">
-              {loading ? '—' : periodOrders.length.toLocaleString('es-MX')}
-            </h4>
-            <p className="text-[10px] text-light-200/55 mt-0.5">Total histórico: {totalAllOrders}</p>
-          </div>
-        </div>
-
-        <div className="bg-main-900 border border-white/10 rounded-3xl p-6 shadow-sm flex items-center gap-5">
-          <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 shrink-0">
-            {revChange !== null && Number(revChange) >= 0 ? <TrendingUp size={24} /> : <TrendingDown size={24} />}
-          </div>
-          <div>
-            <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider">Ingresos ({RANGE_OPTIONS[rangeIdx].label})</p>
-            <h4 className="text-2xl font-bold text-light-100 mt-1">
-              {loading ? '—' : `$${periodRev.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
-            </h4>
-            {revChange !== null ? (
-              <p className={`text-[10px] flex items-center gap-0.5 mt-0.5 ${Number(revChange) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {Number(revChange) >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                {Math.abs(Number(revChange))}% vs período anterior
-              </p>
-            ) : (
-              <p className="text-[10px] text-light-200/45 mt-0.5">Sin datos de período anterior</p>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

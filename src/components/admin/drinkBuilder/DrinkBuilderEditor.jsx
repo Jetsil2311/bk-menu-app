@@ -76,7 +76,7 @@ const ConditionPicker = ({ value, earlierSteps, allSteps, onChange }) => {
       </p>
       {steps.map((s) => (
         <div key={s.id}>
-          <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-light-200/65">{s.name || 'Paso sin nombre'}</p>
+          <p className="mb-1.5 text-xs font-bold text-light-200/65">{s.name || 'Paso sin nombre'}</p>
           <div className="flex flex-wrap gap-2">
             {s.options.filter((o) => o.name.trim()).map((o) => (
               <ChipCheck
@@ -551,15 +551,15 @@ export const DrinkBuilderEditor = ({ notify }) => {
             />
             <dl className="grid grid-cols-3 gap-2 text-center">
               <div className="rounded-xl bg-main-800 px-2 py-2.5">
-                <dt className="text-[11px] font-bold uppercase tracking-wider text-light-200/65">Precio</dt>
+                <dt className="text-[11px] font-bold text-light-200/65">Precio</dt>
                 <dd className="mt-0.5 text-sm font-bold tabular-nums text-light-100">{range(ranges.minPrice, ranges.maxPrice)}</dd>
               </div>
               <div className="rounded-xl bg-main-800 px-2 py-2.5">
-                <dt className="text-[11px] font-bold uppercase tracking-wider text-light-200/65">Costo</dt>
+                <dt className="text-[11px] font-bold text-light-200/65">Costo</dt>
                 <dd className="mt-0.5 text-sm font-bold tabular-nums text-light-100">{range(ranges.minCost, ranges.maxCost)}</dd>
               </div>
               <div className="rounded-xl bg-main-800 px-2 py-2.5">
-                <dt className="text-[11px] font-bold uppercase tracking-wider text-light-200/65">Margen</dt>
+                <dt className="text-[11px] font-bold text-light-200/65">Margen</dt>
                 <dd className="mt-0.5 text-sm font-bold tabular-nums text-light-100">
                   {(() => {
                     const a = marginOf(ranges.minPrice, ranges.minCost)

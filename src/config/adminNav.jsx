@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, ClipboardList, BarChart3, Tag, UtensilsCrossed,
-  ShoppingCart, Users, Landmark, Package, Wallet, ChefHat,
+  ShoppingCart, Users, Landmark, Package, Wallet, ChefHat, PanelsTopLeft,
 } from 'lucide-react'
 
 // Single source of truth for admin nav items — used by Sidebar, BottomTabBar,
@@ -18,13 +18,14 @@ export const NAV_ITEMS = {
   metricas:    { name: 'Métricas',     path: '/admin/metricas',     icon: BarChart3,       desc: 'Cómo van las ventas y qué productos se venden más.' },
   promociones: { name: 'Promociones',  path: '/admin/promociones',  icon: Tag,             desc: 'El aviso de promoción que ven los clientes en el menú.' },
   menu:        { name: 'Menú',         path: '/admin/menu',         icon: UtensilsCrossed, desc: 'Productos, secciones, extras y el carrusel del menú digital.' },
+  landing:     { name: 'Landing',      path: '/admin/landing',      icon: PanelsTopLeft,   desc: 'La página de inicio: textos, fotos, horario y el aviso de “Cerrado hoy”.' },
   estaciones:  { name: 'Estaciones',   path: '/admin/estaciones',   icon: ChefHat,         desc: 'Dispositivos del equipo: PIN, permisos y qué pedidos recibe la cocina.' },
 }
 
 // Sidebar groups — what staff do day to day first, owner tools after.
 export const SIDEBAR_GROUPS = [
   { label: 'Operación', items: ['overview', 'pos', 'pedidos', 'caja'] },
-  { label: 'Menú y clientes', items: ['menu', 'promociones', 'clientes'] },
+  { label: 'Menú y clientes', items: ['menu', 'landing', 'promociones', 'clientes'] },
   { label: 'Negocio', items: ['stock', 'finanzas', 'metricas'] },
   { label: 'Ajustes', items: ['estaciones'] },
 ]
@@ -32,16 +33,16 @@ export const SIDEBAR_GROUPS = [
 export const SIDEBAR_ORDER = SIDEBAR_GROUPS.flatMap((g) => g.items)
 
 export const BOTTOM_PRIMARY_ORDER = ['overview', 'pos', 'pedidos', 'caja']
-export const BOTTOM_MORE_ORDER = ['menu', 'promociones', 'clientes', 'stock', 'finanzas', 'metricas', 'estaciones']
+export const BOTTOM_MORE_ORDER = ['menu', 'landing', 'promociones', 'clientes', 'stock', 'finanzas', 'metricas', 'estaciones']
 
 // "¿Cómo funciona esta sección?" — 2–4 plain-language steps shown at the top
 // of each page (PageGuide in AdminLayout). Cobrar has none on purpose: the
 // till needs every pixel and is learned by doing.
 export const PAGE_GUIDES = {
   overview: [
-    'Arriba ves cuánto llevas vendido hoy comparado con ayer.',
-    'Los accesos rápidos te llevan a lo que más se usa durante el día.',
-    'Los pedidos recientes y el historial de caja te dicen cómo va el turno.',
+    'Arriba ves cuánto llevas vendido hoy comparado con ayer a esta hora.',
+    'Si hay pedidos sin cobrar, aparece un aviso que te lleva a Pedidos.',
+    'Abajo están los últimos pedidos; tócalos para ir a Pedidos.',
   ],
   pedidos: [
     'Aquí aparece cada pedido desde que se toma hasta que se cobra.',
@@ -53,11 +54,18 @@ export const PAGE_GUIDES = {
     'Al empezar el día, abre la caja con el efectivo que hay en el cajón.',
     'Cada cobro en efectivo o tarjeta se suma solo; registra aquí entradas y salidas de efectivo (cambio, compras).',
     'Al cerrar, cuenta el efectivo: verás si sobra o falta contra lo que debería haber.',
+    'En "Días anteriores" ves cómo cerró la caja cada día.',
   ],
   menu: [
     'Productos y secciones son lo que ven tus clientes en el menú digital.',
     'Los cambios se publican al guardar; puedes marcar un producto como agotado sin borrarlo.',
     'Las opciones (tamaño, sabor) y extras cambian el precio automáticamente.',
+  ],
+  landing: [
+    'Esta es tu página de inicio tal como la ven tus clientes. Toca cualquier texto para cambiarlo.',
+    'Con las cámaras y los botones + eliges fotos, bebidas y secciones del menú.',
+    'Nada cambia para tus clientes hasta que tocas Publicar.',
+    '“Cerrado hoy” se aplica al instante y se apaga solo al día siguiente.',
   ],
   promociones: [
     'Escribe un aviso corto (ej. "2×1 en frappés los martes").',

@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect } from 'react'
 import {
-  doc, onSnapshot, updateDoc,
+  doc, onSnapshot, updateDoc, collection, getDocs, query, orderBy, limit,
 } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { formatMoney } from '../../utils/cart'
@@ -92,9 +92,64 @@ export const PastSessionRow = ({ session }) => {
   )
 }
 
+// ─── Past sessions (collapsed; loads on first open) ───────────────────────────
+
+const RegisterHistory = () => {
+  const [open, setOpen] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const [loadingHist, setLoadingHist] = useState(false)
+  const [sessions, setSessions] = useState([])
+
+  const toggle = async () => {
+    const next = !open
+    setOpen(next)
+    if (!next || loaded) return
+    setLoadingHist(true)
+    try {
+      const snap = await getDocs(query(collection(db, 'register_sessions'), orderBy('date', 'desc'), limit(31)))
+      const today = todayKey()
+      setSessions(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(s => s.date !== today).slice(0, 30))
+      setLoaded(true)
+    } catch { /* stays empty — non-fatal */ }
+    finally { setLoadingHist(false) }
+  }
+
+  return (
+    <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-main-900">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        className="flex min-h-[52px] w-full items-center justify-between gap-3 px-5 text-left transition-colors hover:bg-white/5 cursor-pointer"
+      >
+        <span className="text-sm font-bold text-light-100">Días anteriores</span>
+        {open ? <ChevronUp size={16} className="text-light-200/55" /> : <ChevronDown size={16} className="text-light-200/55" />}
+      </button>
+      {open && (
+        <div className="border-t border-white/10">
+          {loadingHist ? (
+            <p className="py-8 text-center text-sm text-light-200/60">Cargando…</p>
+          ) : sessions.length === 0 ? (
+            <p className="py-8 text-center text-sm text-light-200/60">Sin días anteriores.</p>
+          ) : (
+            sessions.map(s => <PastSessionRow key={s.id} session={s} />)
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Register View ────────────────────────────────────────────────────────────
 
-export const Register = () => {
+export const Register = () => (
+  <>
+    <RegisterToday />
+    <RegisterHistory />
+  </>
+)
+
+const RegisterToday = () => {
   const { isRegisterOpen, openRegister, closeRegister, loading: sessionLoading } = useRegister()
   const [session, setSession] = useState(null)
 
@@ -222,7 +277,7 @@ export const Register = () => {
         <p className="mb-6 text-sm text-light-200/65">Ingresa el fondo inicial de efectivo para comenzar el día</p>
         <div className="space-y-6">
           <div className="space-y-2">
-            <label className="text-left block text-xs font-medium text-light-200/65 uppercase tracking-wider">
+            <label className="text-left block text-xs font-medium text-light-200/65">
               Fondo inicial
             </label>
             <MoneyInput
@@ -292,7 +347,7 @@ export const Register = () => {
             <p className="text-sm text-light-200/65 mt-1 capitalize">{fmtDate(session.date)} · Finalizó a las {closedAt}</p>
           </div>
           <div className="text-center sm:text-right px-6 py-3 rounded-2xl bg-white/[0.03] border border-white/10">
-            <p className="text-[10px] text-light-200/55 uppercase font-bold tracking-tighter">Diferencia al cerrar</p>
+            <p className="text-[10px] text-light-200/55 font-bold">Diferencia al cerrar</p>
             <p className={`text-2xl font-black tabular-nums mt-0.5 ${Math.abs(closedVariance) < 0.01 ? 'text-emerald-400' : closedVariance > 0 ? 'text-blue-400' : 'text-rose-400'}`}>
               {closedVariance >= 0 ? '+' : ''}{formatMoney(closedVariance)}
             </p>
@@ -322,11 +377,11 @@ export const Register = () => {
       {/* Balance summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-main-900 border border-white/10 rounded-3xl p-6">
-          <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider">Efectivo al abrir</p>
+          <p className="text-xs font-medium text-light-200/65">Efectivo al abrir</p>
           <p className="text-3xl font-bold text-light-100 mt-2 tabular-nums">{formatMoney(session.openingFloat || 0)}</p>
         </div>
         <div className="bg-main-900 border border-white/10 rounded-3xl p-6">
-          <p className="text-xs font-medium text-light-200/65 uppercase tracking-wider">Debería haber en caja</p>
+          <p className="text-xs font-medium text-light-200/65">Debería haber en caja</p>
           <p className="text-3xl font-bold text-emerald-400 mt-2 tabular-nums">{formatMoney(theoreticalBalance)}</p>
         </div>
       </div>
@@ -461,7 +516,7 @@ export const Register = () => {
 
             {/* Closing cash input */}
             <div className="space-y-2">
-              <label className="text-xs font-medium text-light-200/65 uppercase tracking-wider">Efectivo contado físicamente</label>
+              <label className="text-xs font-medium text-light-200/65">Efectivo contado físicamente</label>
               <MoneyInput
                 value={closingCash}
                 onChange={setClosingCash}
@@ -505,7 +560,7 @@ export const Register = () => {
       {/* Transaction log */}
       {transactions.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-light-200/70 uppercase tracking-wider px-2">Movimientos de hoy</h2>
+          <h2 className="text-sm font-semibold text-light-200/70 px-2">Movimientos de hoy</h2>
           <div className="bg-main-900 border border-white/10 rounded-3xl overflow-hidden divide-y divide-white/10 shadow-xl">
             {transactions.map((tx, i) => (
               <div key={i} className="flex items-center gap-3 px-5 py-3">

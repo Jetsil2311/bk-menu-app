@@ -17,7 +17,7 @@ const LINKS = [
 export const Navbar = () => (
   <div className="hidden sm:block fixed w-full z-40 bg-primary text-surface">
     <div className="container mx-auto h-[104px] px-4 flex items-center justify-between gap-6">
-      <NavLink to="/" aria-label="Bubble Kaapeh — inicio">
+      <NavLink to="/home" aria-label="Bubble Kaapeh, página de inicio">
         <img src={Logo} alt="Bubble Kaapeh" className="h-14" />
       </NavLink>
 

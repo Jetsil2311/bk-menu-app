@@ -352,7 +352,7 @@ export const PrinterChip = ({ settings, inline = false }) => {
       {open && (
         <PopoverOrInline inline={inline}>
           <div className={inline ? 'space-y-4' : 'w-80 p-4 space-y-4'}>
-            {!inline && <p className="text-[11px] font-semibold text-light-200/70 uppercase tracking-wider">Impresora térmica</p>}
+            {!inline && <p className="text-[11px] font-semibold text-light-200/70">Impresora térmica</p>}
 
             {/* Master enable toggle */}
             <div className="flex items-center justify-between gap-3">
@@ -370,7 +370,7 @@ export const PrinterChip = ({ settings, inline = false }) => {
             {printingEnabled && <>
               {/* Method selector */}
               <div className="space-y-2">
-                <p className="text-[10px] font-medium text-light-200/65 uppercase tracking-wide">Método de impresión</p>
+                <p className="text-[10px] font-medium text-light-200/65">Método de impresión</p>
                 <div className="flex gap-2">
                   {[['usb', 'USB Directo'], ['windows', 'Impresora Windows']].map(([m, label]) => (
                     <button
@@ -458,7 +458,7 @@ export const PrinterChip = ({ settings, inline = false }) => {
             {/* Shared fields — always shown */}
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-medium text-light-200/65 uppercase tracking-wide">
+                <label className="text-[10px] font-medium text-light-200/65">
                   Nombre del negocio en el ticket
                 </label>
                 <input
@@ -471,7 +471,7 @@ export const PrinterChip = ({ settings, inline = false }) => {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-medium text-light-200/65 uppercase tracking-wide">
+                <label className="text-[10px] font-medium text-light-200/65">
                   Mensaje de pie de ticket
                 </label>
                 <input

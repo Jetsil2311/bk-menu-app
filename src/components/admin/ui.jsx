@@ -206,6 +206,111 @@ export const Drawer = ({ isOpen, onClose, title, subtitle, children, footer, wid
   )
 }
 
+// A row of key numbers in ONE card, split by hairlines — instead of a card per
+// number. items: [{ label, value, hint?, tone?: 'up' | 'down' | 'warn' }].
+// The first item can be the "hero" number (bigger) with `lead`.
+const STAT_TONES = { up: 'text-emerald-400', down: 'text-rose-400', warn: 'text-amber-400' }
+export const StatStrip = ({ items, loading = false, lead = false }) => (
+  <dl
+    className={`grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 ${
+      items.length >= 3 ? 'grid-cols-2 sm:grid-cols-3 [&>*:first-child]:col-span-2 sm:[&>*:first-child]:col-span-1' : 'grid-cols-2'
+    } ${items.length >= 4 ? 'lg:grid-cols-4 lg:[&>*:first-child]:col-span-1' : ''}`}
+  >
+    {items.map((item, i) => (
+      <div key={item.label} className="flex flex-col bg-main-900 px-4 py-4 sm:px-5">
+        <dt className="text-sm font-semibold text-light-200/70">{item.label}</dt>
+        <dd
+          className={`mt-1 font-bold tabular-nums leading-tight ${
+            lead && i === 0 ? 'font-display text-3xl sm:text-4xl' : 'text-2xl'
+          } ${item.valueCls || 'text-light-100'}`}
+        >
+          {loading ? '—' : item.value}
+        </dd>
+        {!loading && item.hint && (
+          <dd className={`mt-1 text-xs font-semibold ${STAT_TONES[item.tone] || 'text-light-200/60'}`}>{item.hint}</dd>
+        )}
+      </div>
+    ))}
+  </dl>
+)
+
+// Underline tabs — for switching between VIEWS of a page. Kept visually
+// different from pill/segmented controls, which pick a FILTER (period, status).
+export const TabBar = ({ tabs, value, onChange, ariaLabel }) => (
+  <div
+    role="tablist"
+    aria-label={ariaLabel}
+    className="-mx-4 flex gap-1 overflow-x-auto border-b border-white/10 px-4 md:mx-0 md:px-0"
+    style={{ scrollbarWidth: 'none' }}
+  >
+    {tabs.map((tab) => {
+      const active = tab.key === value
+      return (
+        <button
+          key={tab.key}
+          type="button"
+          role="tab"
+          aria-selected={active}
+          onClick={() => onChange(tab.key)}
+          className={`relative shrink-0 min-h-[44px] whitespace-nowrap px-3 text-sm font-bold transition-colors cursor-pointer ${
+            active ? 'text-light-100' : 'text-light-200/60 hover:text-light-100'
+          }`}
+        >
+          {tab.label}
+          {active && <span aria-hidden="true" className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary dark:bg-main-300" />}
+        </button>
+      )
+    })}
+  </div>
+)
+
+// Compact pill group for a FILTER (period, status). Scrolls sideways on phones.
+export const FilterPills = ({ options, value, onChange, ariaLabel }) => (
+  <div
+    role="radiogroup"
+    aria-label={ariaLabel}
+    className="flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-xl bg-main-800 p-1"
+    style={{ scrollbarWidth: 'none' }}
+  >
+    {options.map((opt) => {
+      const active = opt.key === value
+      return (
+        <button
+          key={opt.key}
+          type="button"
+          role="radio"
+          aria-checked={active}
+          onClick={() => onChange(opt.key)}
+          className={`min-h-[36px] shrink-0 whitespace-nowrap rounded-lg px-3 text-sm font-semibold transition-colors cursor-pointer ${
+            active ? 'bg-main-900 text-light-100 shadow-sm ring-1 ring-white/10' : 'text-light-200/65 hover:text-light-100'
+          }`}
+        >
+          {opt.label}
+        </button>
+      )
+    })}
+  </div>
+)
+
+// Order status as a quiet, sentence-case pill. Active states get color;
+// finished ones (pagado, cancelado…) stay neutral so live orders stand out.
+const STATUS_PILL = {
+  nuevo: 'bg-amber-500/12 text-amber-400',
+  preparando: 'bg-blue-500/12 text-blue-400',
+  'en preparación': 'bg-blue-500/12 text-blue-400',
+  listo: 'bg-emerald-500/12 text-emerald-400',
+  reembolsado: 'bg-rose-500/10 text-rose-400',
+}
+export const StatusPill = ({ status }) => {
+  const label = status || 'Nuevo'
+  const key = label.toLowerCase()
+  return (
+    <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_PILL[key] || 'bg-white/5 text-light-200/65'}`}>
+      {label.charAt(0).toUpperCase() + label.slice(1)}
+    </span>
+  )
+}
+
 // Empty state with a short explanation and an optional action.
 export const EmptyState = ({ icon: Icon, title, children, action }) => (
   <div className="rounded-2xl border border-dashed border-white/20 bg-main-900 px-6 py-10 text-center">

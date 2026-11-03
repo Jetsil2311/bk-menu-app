@@ -3,7 +3,6 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
-  signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth'
 import { getDoc, doc } from 'firebase/firestore'
@@ -28,8 +27,6 @@ const checkEmailAuthorized = async (email) => {
 export const useAdminAuth = () => {
   const [user, setUser] = useState(null)
   const [isAuthReady, setIsAuthReady] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -60,20 +57,6 @@ export const useAdminAuth = () => {
     }
   }, [])
 
-  const handleLogin = async (event) => {
-    event.preventDefault()
-    setIsSubmitting(true)
-    setError('')
-    try {
-      await signInWithEmailAndPassword(auth, email.trim(), password)
-      setPassword('')
-    } catch (err) {
-      setError('No se pudo iniciar sesión. Revisa tu correo y contraseña.')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true)
     setError('')
@@ -85,6 +68,8 @@ export const useAdminAuth = () => {
         await signOut(auth)
       }
     } catch (err) {
+      // Closing the Google popup isn't an error worth showing
+      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') return
       setError('No se pudo iniciar sesión con Google. Intenta de nuevo.')
     } finally {
       setIsSubmitting(false)
@@ -98,13 +83,8 @@ export const useAdminAuth = () => {
   return {
     user,
     isAuthReady,
-    email,
-    setEmail,
-    password,
-    setPassword,
     isSubmitting,
     error,
-    handleLogin,
     handleGoogleSignIn,
     handleLogout,
     isAuthenticated: Boolean(user),

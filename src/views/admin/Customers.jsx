@@ -5,6 +5,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../../firebase'
 import { formatMoney } from '../../utils/cart'
+import { StatStrip } from '../../components/admin/ui'
 import {
   Users, Search, Phone, Star, ShoppingBag, Plus, Minus,
   ChevronRight, X, Check, ChevronsUpDown, Pencil, History, Clock,
@@ -517,22 +518,15 @@ export const Customers = () => {
   const totalVisits = customers.reduce((s, c) => s + (c.visitCount || 0), 0)
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-main-900 border border-white/10 rounded-3xl p-5">
-          <p className="text-xs text-light-200/65 uppercase tracking-wider">Clientes Registrados</p>
-          <p className="text-3xl font-bold text-light-100 mt-2">{loading ? '—' : customers.length}</p>
-        </div>
-        <div className="bg-main-900 border border-white/10 rounded-3xl p-5">
-          <p className="text-xs text-light-200/65 uppercase tracking-wider">Saldo de recompensas total</p>
-          <p className="text-3xl font-bold text-emerald-400 mt-2">{loading ? '—' : formatMoney(totalBalance)}</p>
-        </div>
-        <div className="bg-main-900 border border-white/10 rounded-3xl p-5">
-          <p className="text-xs text-light-200/65 uppercase tracking-wider">Total Visitas</p>
-          <p className="text-3xl font-bold text-light-100 mt-2">{loading ? '—' : totalVisits.toLocaleString()}</p>
-        </div>
-      </div>
+    <div className="space-y-5">
+      <StatStrip
+        loading={loading}
+        items={[
+          { label: 'Clientes', value: customers.length.toLocaleString('es-MX') },
+          { label: 'Saldo de recompensas', value: formatMoney(totalBalance), hint: 'por usar entre todos' },
+          { label: 'Visitas', value: totalVisits.toLocaleString('es-MX') },
+        ]}
+      />
 
       {/* Search + list */}
       <div className="bg-main-900 border border-white/10 rounded-3xl overflow-hidden">

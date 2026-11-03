@@ -241,7 +241,7 @@ const ProductDrawer = ({
       <div className="space-y-4">
         {/* Live preview — the exact card customers see */}
         <div className="customer-preview rounded-2xl bg-bg p-3 sm:p-4 ring-1 ring-white/10">
-          <p className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-ink-soft">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-ink-soft">
             <Smartphone size={13} /> Así se verá en el menú
           </p>
           <ul className="pointer-events-none font-body text-ink sm:max-w-[290px] sm:mx-auto" aria-hidden="true">

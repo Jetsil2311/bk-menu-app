@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useLocation } from 'react-router'
 import { useAdminAuth } from '../../hooks/useAdminAuth'
 import { useAdminTheme } from '../../hooks/useAdminTheme'
@@ -14,19 +14,34 @@ import { useStationContext } from '../../context/StationContext'
 import { KitchenBoard } from './KitchenBoard'
 import Logo from '../../assets/bklogo.svg'
 import { signInWithEmailAndPassword } from 'firebase/auth'
-import { FlaskConical } from 'lucide-react'
+import { FlaskConical, ShieldCheck } from 'lucide-react'
 import { auth, isTestEnv } from '../../firebase'
+
+// Official multicolor Google "G" mark (colors are tokens in index.css)
+const GoogleIcon = () => (
+  <svg viewBox="0 0 48 48" aria-hidden="true" className="h-5 w-5 transition-transform duration-200 group-hover:scale-110">
+    <path fill="var(--color-google-red)" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+    <path fill="var(--color-google-blue)" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+    <path fill="var(--color-google-yellow)" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+    <path fill="var(--color-google-green)" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+  </svg>
+)
 
 export const AdminLayout = () => {
   const {
     isAuthReady, isAuthenticated, user, handleLogout,
-    email, setEmail, password, setPassword,
-    error, isSubmitting, handleLogin, handleGoogleSignIn,
+    error, isSubmitting, handleGoogleSignIn,
   } = useAdminAuth()
 
   const { selectedStation, role, loading: stationLoading } = useStationContext()
   const location = useLocation()
   const currentNav = navItemForPath(location.pathname)
+  const guideSteps = currentNav ? PAGE_GUIDES[currentNav.routeKey] : null
+
+  // Page help is opened on demand from the "?" in the Topbar; it closes
+  // again whenever the page changes.
+  const [guideOpen, setGuideOpen] = useState(false)
+  useEffect(() => { setGuideOpen(false) }, [location.pathname])
 
   // Admin light/dark theme (classes on <html>, see index.css)
   const { theme, toggleTheme } = useAdminTheme()
@@ -50,89 +65,67 @@ export const AdminLayout = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-dvh bg-main-950 text-light-100 font-body flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="rounded-[28px] bg-main-900 shadow-[0_30px_60px_-30px_var(--color-ink)] overflow-hidden">
-            <div className="bg-primary px-8 pt-8 pb-7 text-center">
-              <img src={Logo} alt="Bubble Kaapeh" className="mx-auto h-12" />
-              <p className="mt-3 text-sm font-semibold text-snow/80">Panel de administración</p>
+      <div className="login-bg min-h-dvh text-light-100 font-body flex items-center justify-center p-4">
+        <div className="login-card-in w-full max-w-sm">
+          <div className="rounded-[32px] bg-main-900 shadow-[0_40px_80px_-40px_var(--color-ink)] overflow-hidden">
+            {/* Brand header with rising boba bubbles */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-primary to-secondary px-8 pt-10 pb-12 text-center">
+              <span className="bubble" style={{ left: '12%', width: 18, height: 18, animationDelay: '0s' }} />
+              <span className="bubble" style={{ left: '30%', width: 10, height: 10, animationDelay: '2.4s' }} />
+              <span className="bubble" style={{ left: '68%', width: 22, height: 22, animationDelay: '1.2s' }} />
+              <span className="bubble" style={{ left: '86%', width: 12, height: 12, animationDelay: '3.6s' }} />
+              <img src={Logo} alt="Bubble Kaapeh" className="relative mx-auto h-14" />
+              <p className="relative mt-3 text-xs font-bold uppercase tracking-[0.3em] text-snow/75">Panel de administración</p>
+              {/* Wavy bottom edge */}
+              <svg aria-hidden="true" viewBox="0 0 400 24" preserveAspectRatio="none" className="absolute inset-x-0 -bottom-px h-6 w-full fill-main-900">
+                <path d="M0 24V12c40-10 80-10 120 0s80 10 120 0 80-10 120 0c16 4 28 6 40 6v6z" />
+              </svg>
             </div>
 
-            <form className="p-6 sm:p-8 space-y-4" onSubmit={handleLogin}>
-              <div>
-                <h2 className="font-display text-2xl font-semibold">Inicia sesión</h2>
-                <p className="mt-1 text-sm text-light-200/70">Usa la cuenta autorizada del negocio.</p>
-              </div>
+            <div className="px-6 pb-8 pt-4 sm:px-8 text-center">
+              <h2 className="font-display text-3xl font-semibold">¡Hola de nuevo!</h2>
+              <p className="mt-2 text-sm text-light-200/70">Entra con la cuenta de Google del negocio para abrir el panel.</p>
+
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={isSubmitting}
+                aria-busy={isSubmitting}
+                className="group mt-7 w-full min-h-[56px] inline-flex items-center justify-center gap-3 rounded-full bg-snow px-6 text-base font-bold text-ink shadow-[0_10px_24px_-12px_var(--color-ink)] ring-1 ring-ink/10 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_30px_-14px_var(--color-ink)] active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-secondary/40 disabled:cursor-wait disabled:opacity-70 disabled:hover:translate-y-0 cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <span aria-hidden="true" className="h-5 w-5 rounded-full border-2 border-ink/20 border-t-primary animate-spin" />
+                ) : (
+                  <GoogleIcon />
+                )}
+                {isSubmitting ? 'Conectando…' : 'Continuar con Google'}
+              </button>
+
+              {error && (
+                <div role="alert" className="mt-4 rounded-2xl bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-400">
+                  {error}
+                </div>
+              )}
 
               {/* Test mode only: the login exists solely in the local Auth emulator */}
               {isTestEnv && import.meta.env.VITE_TEST_LOGIN_EMAIL && (
                 <button
                   type="button"
                   onClick={() => signInWithEmailAndPassword(auth, import.meta.env.VITE_TEST_LOGIN_EMAIL, import.meta.env.VITE_TEST_LOGIN_PASSWORD).catch(() => {})}
-                  className="w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 text-sm font-bold text-amber-950 transition hover:brightness-105 cursor-pointer"
+                  className="mt-3 w-full min-h-[48px] inline-flex items-center justify-center gap-2 rounded-full bg-amber-500 px-4 text-sm font-bold text-amber-950 transition hover:brightness-105 cursor-pointer"
                 >
                   <FlaskConical size={16} /> Entrar como usuario de prueba
                 </button>
               )}
 
-              <div className="space-y-1.5">
-                <label htmlFor="admin-email" className="text-sm font-semibold">Correo</label>
-                <input
-                  id="admin-email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full min-h-[48px] rounded-xl border border-white/15 bg-main-800 px-4 text-light-100 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label htmlFor="admin-password" className="text-sm font-semibold">Contraseña</label>
-                <input
-                  id="admin-password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full min-h-[48px] rounded-xl border border-white/15 bg-main-800 px-4 text-light-100 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
-                  required
-                />
-              </div>
-
-              {error && (
-                <div role="alert" className="rounded-xl bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-400">
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full min-h-[48px] rounded-xl bg-primary px-4 text-sm font-bold text-snow transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
-              >
-                {isSubmitting ? 'Entrando…' : 'Entrar'}
-              </button>
-
-              <div className="flex items-center gap-3 text-xs text-light-200/60">
-                <span className="h-px flex-1 bg-white/10" />
-                o
-                <span className="h-px flex-1 bg-white/10" />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={isSubmitting}
-                className="w-full min-h-[48px] rounded-xl border border-white/15 bg-main-900 px-4 text-sm font-bold text-light-100 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
-              >
-                {isSubmitting ? 'Conectando…' : 'Entrar con Google'}
-              </button>
-            </form>
+              <p className="mt-6 inline-flex items-center gap-1.5 text-xs font-semibold text-light-200/55">
+                <ShieldCheck size={14} aria-hidden="true" /> Solo cuentas autorizadas
+              </p>
+            </div>
           </div>
 
           <div className="mt-6 text-center">
-            <NavLink to="/" className="text-sm font-semibold text-light-200/70 hover:text-primary dark:hover:text-main-300 transition">
+            <NavLink to="/" className="inline-flex min-h-[44px] items-center text-sm font-semibold text-light-200/70 hover:text-primary dark:hover:text-main-300 transition">
               ← Volver al menú
             </NavLink>
           </div>
@@ -195,6 +188,9 @@ export const AdminLayout = () => {
             handleLogout={handleLogout}
             theme={theme}
             onToggleTheme={toggleTheme}
+            hasGuide={Boolean(guideSteps?.length)}
+            guideOpen={guideOpen}
+            onToggleGuide={() => setGuideOpen((v) => !v)}
           />
 
           {/*
@@ -203,8 +199,8 @@ export const AdminLayout = () => {
            */}
           <main className="flex-1 overflow-y-auto bg-main-950 px-4 pt-4 pb-28 md:px-8 md:pt-6 md:pb-10">
             <div className="mx-auto w-full max-w-[1400px]">
-              {currentNav && PAGE_GUIDES[currentNav.routeKey] && (
-                <PageGuide routeKey={currentNav.routeKey} title={currentNav.name} steps={PAGE_GUIDES[currentNav.routeKey]} />
+              {guideOpen && guideSteps && (
+                <PageGuide title={currentNav.name} steps={guideSteps} onClose={() => setGuideOpen(false)} />
               )}
               <Outlet />
             </div>

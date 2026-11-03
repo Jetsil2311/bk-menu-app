@@ -20,16 +20,15 @@ import { BreakEvenAnalysis } from '../../components/admin/finance/BreakEvenAnaly
 import { StockVariance } from '../../components/admin/finance/StockVariance'
 import { SupplierAnalysis } from '../../components/admin/finance/SupplierAnalysis'
 import { ProfitByDayOfWeek } from '../../components/admin/finance/ProfitByDayOfWeek'
-import {
-  Calendar, DollarSign, Package, TrendingUp, ShoppingBag, Receipt, AlertTriangle, Wallet,
-} from 'lucide-react'
+import { Receipt, AlertTriangle } from 'lucide-react'
+import { TabBar, FilterPills, StatStrip } from '../../components/admin/ui'
 
 const RANGE_OPTIONS = [
   { key: 'today',  label: 'Hoy' },
-  { key: 'week',   label: 'Esta Semana' },
-  { key: 'month',  label: 'Este Mes' },
-  { key: 'last30', label: 'Últimos 30 Días' },
-  { key: 'custom', label: 'Personalizado' },
+  { key: 'week',   label: 'Semana' },
+  { key: 'month',  label: 'Mes' },
+  { key: 'last30', label: '30 días' },
+  { key: 'custom', label: 'Fechas…' },
 ]
 
 // Keys are saved in localStorage — keep them; only labels/help changed.
@@ -77,16 +76,14 @@ const getRangeBounds = (rangeKey, customStart, customEnd) => {
   return { start: startOfDay(first), end: endOfDay(now) }
 }
 
-const MetricCard = ({ icon: Icon, label, value, subtext, colorCls, valueCls = 'text-light-100' }) => (
-  <div className="bg-main-900 border border-white/10 rounded-3xl p-5 sm:p-6 shadow-sm flex items-start gap-4 sm:gap-5">
-    <div className={`h-11 w-11 sm:h-12 sm:w-12 rounded-2xl flex items-center justify-center shrink-0 ${colorCls}`}>
-      <Icon size={22} />
-    </div>
-    <div className="min-w-0">
-      <p className="text-sm font-semibold text-light-200/75">{label}</p>
-      <h4 className={`text-xl sm:text-2xl font-bold mt-0.5 tabular-nums truncate ${valueCls}`}>{value}</h4>
-      {subtext && <p className="text-xs text-light-200/65 mt-1 leading-snug">{subtext}</p>}
-    </div>
+// One line of the "where did the money go" card.
+const FlowRow = ({ label, value, sign, strong = false, valueCls = 'text-light-100' }) => (
+  <div className={`flex items-baseline justify-between gap-4 py-3 ${strong ? 'border-t border-white/10 pt-4' : ''}`}>
+    <dt className={strong ? 'text-base font-bold text-light-100' : 'text-sm font-semibold text-light-200/75'}>{label}</dt>
+    <dd className={`tabular-nums font-bold ${strong ? 'font-display text-3xl sm:text-4xl' : 'text-lg'} ${valueCls}`}>
+      {sign && <span className="mr-1 text-light-200/50">{sign}</span>}
+      {value}
+    </dd>
   </div>
 )
 
@@ -248,75 +245,49 @@ export const Finance = () => {
     } catch { /* noop */ }
   }
 
-  const activeLabel = RANGE_OPTIONS.find((o) => o.key === rangeKey)?.label ?? 'Este Mes'
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Calendar size={16} className="text-light-200/65 shrink-0" />
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-main-900 border border-white/10 flex-wrap">
-            {RANGE_OPTIONS.map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setRangeKey(opt.key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                  rangeKey === opt.key ? 'bg-main-500 text-snow' : 'text-light-200/70 hover:text-light-100'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+    <div className="space-y-5">
+      <TabBar tabs={TAB_OPTIONS} value={activeTab} onChange={setActiveTab} ariaLabel="Vistas de finanzas" />
 
+      <div className="space-y-3">
+        <FilterPills options={RANGE_OPTIONS} value={rangeKey} onChange={setRangeKey} ariaLabel="Periodo" />
         {rangeKey === 'custom' && (
           <div className="flex flex-wrap items-end gap-3 bg-main-900 border border-white/10 rounded-2xl p-4">
             <div>
-              <label className="block text-xs font-medium text-light-200/60 mb-1.5">Desde</label>
+              <label htmlFor="fin-from" className="block text-sm font-semibold text-light-200/75 mb-1.5">Desde</label>
               <input
+                id="fin-from"
                 type="date"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="rounded-xl border border-white/10 bg-main-900 px-3 py-2 text-sm text-light-100 outline-none focus:border-main-500/50 transition-colors"
+                className="min-h-[44px] rounded-xl border border-white/15 bg-main-900 px-3 text-sm text-light-100 outline-none focus:border-primary transition-colors"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-light-200/60 mb-1.5">Hasta</label>
+              <label htmlFor="fin-to" className="block text-sm font-semibold text-light-200/75 mb-1.5">Hasta</label>
               <input
+                id="fin-to"
                 type="date"
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="rounded-xl border border-white/10 bg-main-900 px-3 py-2 text-sm text-light-100 outline-none focus:border-main-500/50 transition-colors"
+                className="min-h-[44px] rounded-xl border border-white/15 bg-main-900 px-3 text-sm text-light-100 outline-none focus:border-primary transition-colors"
               />
             </div>
             <button
               onClick={handleApplyCustom}
-              className="px-4 py-2 rounded-xl bg-main-500 hover:bg-main-400 text-snow text-sm font-semibold transition-colors cursor-pointer"
+              className="min-h-[44px] px-4 rounded-xl bg-primary hover:bg-secondary text-snow text-sm font-bold transition-colors cursor-pointer"
             >
               Aplicar
             </button>
           </div>
         )}
+        {activeTab !== 'resumen' && (
+          <p className="text-sm text-light-200/65 max-w-3xl">
+            {TAB_OPTIONS.find((t) => t.key === activeTab)?.help}
+          </p>
+        )}
       </div>
-
-      <div className="flex items-center gap-1 p-1 rounded-xl bg-main-900 border border-white/10 flex-wrap w-fit">
-        {TAB_OPTIONS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-              activeTab === tab.key ? 'bg-main-500 text-snow' : 'text-light-200/70 hover:text-light-100'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <p className="text-sm text-light-200/75 -mt-2 max-w-3xl">
-        {TAB_OPTIONS.find((t) => t.key === activeTab)?.help}
-      </p>
 
       {loadError && (
         <div role="alert" className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -340,73 +311,62 @@ export const Finance = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              <MetricCard
-                icon={DollarSign}
-                label="Vendiste"
-                value={formatMoney(metrics.totalRevenue)}
-                subtext={`Lo que pagaron tus clientes en ${metrics.orderCount} pedido${metrics.orderCount !== 1 ? 's' : ''} (${activeLabel.toLowerCase()}).`}
-                colorCls="bg-emerald-500/10 text-emerald-400"
-              />
-              <MetricCard
-                icon={Package}
-                label="Te costaron los ingredientes"
-                value={formatMoney(metrics.totalCogs)}
-                subtext="Calculado con las recetas de cada producto vendido."
-                colorCls="bg-amber-500/10 text-amber-400"
-              />
-              <MetricCard
-                icon={TrendingUp}
-                label="Ganancia antes de gastos fijos"
-                value={formatMoney(metrics.grossProfit)}
-                subtext={`Vendiste − ingredientes. Es el ${metrics.profitMargin.toFixed(0)}% de lo vendido.`}
-                colorCls="bg-blue-500/10 text-blue-400"
-              />
-              <MetricCard
-                icon={Wallet}
-                label="Te quedó"
-                value={hasExpenses ? formatMoney(trendSummary.netProfit) : '—'}
-                valueCls={hasExpenses && trendSummary.netProfit < 0 ? 'text-rose-400' : 'text-light-100'}
-                subtext={hasExpenses
-                  ? `Después de ${formatMoney(trendSummary.fixedCosts)} de gastos fijos (renta, sueldos…) de estos días.`
-                  : 'Registra tus gastos fijos en la pestaña Gastos fijos para ver tu ganancia real.'}
-                colorCls="bg-purple-500/10 text-purple-400"
-              />
-              <MetricCard
-                icon={ShoppingBag}
-                label="Pedidos pagados"
-                value={metrics.orderCount.toLocaleString('es-MX')}
-                subtext="No cuenta pedidos cancelados, reembolsados ni pendientes de cobro."
-                colorCls="bg-white/10 text-light-200"
-              />
-              <MetricCard
-                icon={Receipt}
-                label="Ticket promedio"
-                value={formatMoney(metrics.avgOrderValue)}
-                subtext="Lo que gasta en promedio cada cliente por pedido."
-                colorCls="bg-teal-500/10 text-teal-400"
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
+              {/* The money story: sold − ingredients − fixed costs = what's left */}
+              <dl className="rounded-2xl border border-white/10 bg-main-900 px-5 py-2 sm:px-6">
+                <FlowRow label="Vendiste" value={formatMoney(metrics.totalRevenue)} />
+                <FlowRow label="Ingredientes" sign="−" value={formatMoney(metrics.totalCogs)} />
+                {hasExpenses ? (
+                  <>
+                    <FlowRow label="Gastos fijos" sign="−" value={formatMoney(trendSummary.fixedCosts)} />
+                    <FlowRow
+                      strong
+                      label="Te quedó"
+                      value={formatMoney(trendSummary.netProfit)}
+                      valueCls={trendSummary.netProfit < 0 ? 'text-rose-400' : 'text-emerald-400'}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <FlowRow strong label="Ganancia" value={formatMoney(metrics.grossProfit)} />
+                    <p className="pb-3 text-xs text-light-200/65">
+                      Sin gastos fijos (renta, sueldos…).{' '}
+                      <button type="button" onClick={() => setActiveTab('equilibrio')} className="font-bold text-primary dark:text-main-300 hover:underline cursor-pointer">
+                        Agrégalos
+                      </button>{' '}
+                      para ver lo que de verdad te quedó.
+                    </p>
+                  </>
+                )}
+              </dl>
+
+              <StatStrip
+                items={[
+                  { label: 'Pedidos pagados', value: metrics.orderCount.toLocaleString('es-MX') },
+                  { label: 'Ticket promedio', value: formatMoney(metrics.avgOrderValue) },
+                  { label: 'Margen', value: `${metrics.profitMargin.toFixed(0)}%`, hint: 'de lo vendido, tras ingredientes' },
+                ]}
               />
             </div>
-
             {trendSummary.uncostedRevenue > 0 && hasAnyRecipe && (
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-300 flex items-start gap-2">
+              <div className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-400 flex items-start gap-2">
                 <AlertTriangle size={16} className="shrink-0 mt-0.5" />
                 <span>
-                  {formatMoney(trendSummary.uncostedRevenue)} de lo vendido es de productos sin receta: su costo cuenta como $0,
-                  así que la ganancia real es menor. Ve a <strong>Día a día</strong> para ver cuáles son.
+                  {formatMoney(trendSummary.uncostedRevenue)} vendidos no tienen receta, así que la ganancia real es menor.{' '}
+                  <button type="button" onClick={() => setActiveTab('tendencia')} className="underline cursor-pointer">Ver cuáles</button>
                 </span>
               </div>
             )}
 
             {!hasAnyRecipe && (
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-300 flex items-start gap-2">
+              <div className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-400 flex items-start gap-2">
                 <AlertTriangle size={16} className="shrink-0 mt-0.5" />
-                <span>Todavía no hay recetas, así que no se puede saber cuánto te cuestan tus productos. Crea las recetas en Inventario → Recetas.</span>
+                <span>Sin recetas no se sabe cuánto te cuesta cada producto. Créalas en Inventario → Recetas.</span>
               </div>
             )}
             {hasAnyRecipe && anyEstimated && (
               <p className="text-xs text-light-200/65 px-1">
-                Algunos pedidos de este período son de antes de que se registrara el costo por venta — su ganancia se estima con las recetas actuales, no con el costo real de ese día.
+                Algunos pedidos son de antes de que se guardara el costo por venta; su costo se estima con las recetas actuales.
               </p>
             )}
           </>

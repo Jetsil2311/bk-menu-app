@@ -68,7 +68,7 @@ const WebOrderPopup = () => {
               <BellRing size={24} className="alert-shake" />
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wider text-snow/75">
+              <p className="text-xs font-bold text-snow/75">
                 {count > 1 ? `${index + 1} de ${count} pedidos esperando` : 'Pedido por WhatsApp'}
               </p>
               <h2 id="web-order-title" className="font-display text-2xl font-semibold leading-tight">

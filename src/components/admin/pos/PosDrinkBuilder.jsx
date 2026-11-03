@@ -91,7 +91,7 @@ export const PosDrinkBuilder = ({ isOpen, config, initialItem, onClose, onConfir
             <DrinkCup visual={deriveCupVisual(live, selections)} label="Vista de la bebida" size="sm" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold uppercase tracking-wider text-snow/70">Precio</p>
+            <p className="text-xs font-bold text-snow/70">Precio</p>
             <p className="font-display text-3xl font-semibold tabular-nums">{formatMoney(unit)}</p>
             <p className="text-xs text-snow/70">Base {formatMoney(config.basePrice)} + extras</p>
           </div>

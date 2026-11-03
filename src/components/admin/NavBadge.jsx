@@ -1,9 +1,8 @@
 import PropTypes from 'prop-types'
-import { AlertTriangle } from 'lucide-react'
 
 // Badge next to a nav label (see AdminAlertsContext → navBadges):
 // a number = things waiting (e.g. web orders on Cobrar),
-// 'warn' = something needs attention (e.g. stock running out).
+// 'warn' = something needs attention (e.g. stock running out) → small amber dot.
 // `dot` is the compact form for icon-only navs.
 export const NavBadge = ({ value, dot = false, className = '' }) => {
   if (!value) return null
@@ -14,17 +13,16 @@ export const NavBadge = ({ value, dot = false, className = '' }) => {
       <span
         aria-label={label}
         className={`absolute flex items-center justify-center rounded-full border-2 border-main-900 ${
-          value === 'warn' ? 'h-4 w-4 bg-amber-500 text-snow' : 'h-[18px] min-w-[18px] px-1 bg-rose-600 text-[10px] font-bold text-snow'
+          value === 'warn' ? 'h-3 w-3 bg-amber-500' : 'h-[18px] min-w-[18px] px-1 bg-rose-600 text-[10px] font-bold text-snow'
         } ${className}`}
       >
-        {value === 'warn' ? <AlertTriangle size={9} strokeWidth={3} /> : value}
+        {value === 'warn' ? null : value}
       </span>
     )
   }
 
   return value === 'warn' ? (
-    <span title={label} className={`inline-flex text-amber-400 ${className}`}>
-      <AlertTriangle size={16} aria-hidden="true" />
+    <span title={label} className={`inline-flex h-2 w-2 rounded-full bg-amber-500 ${className}`}>
       <span className="sr-only">{label}</span>
     </span>
   ) : (

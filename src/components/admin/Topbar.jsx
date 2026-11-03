@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
-import { LogOut, Bell, BellOff, BellRing, Settings, Package, PackageX, ChefHat, RefreshCw, Sun, Moon, Download } from 'lucide-react'
+import { LogOut, Bell, BellOff, BellRing, Settings, Package, PackageX, ChefHat, Sun, Moon, Download, CircleHelp, Lock } from 'lucide-react'
 import { ROLE_ICONS } from '../../utils/stations'
 import { formatMoney } from '../../utils/cart'
 import { timeAgo, webOrderPreview } from '../../utils/webOrders'
@@ -13,10 +13,9 @@ import { useStationContext } from '../../context/StationContext'
 import { navItemForPath } from '../../config/adminNav'
 import { MobileSettingsSheet } from './MobileSettingsSheet'
 
-export const Topbar = ({ user, handleLogout, theme = 'light', onToggleTheme }) => {
+export const Topbar = ({ user, handleLogout, theme = 'light', onToggleTheme, hasGuide = false, guideOpen = false, onToggleGuide }) => {
   const location = useLocation()
   const navigate  = useNavigate()
-  const [dateTime, setDateTime] = useState(new Date())
   const { isRegisterOpen, loading } = useRegister()
   const { settings } = useSettings()
   const { selectedStation, clearStation, role } = useStationContext()
@@ -38,11 +37,6 @@ export const Topbar = ({ user, handleLogout, theme = 'light', onToggleTheme }) =
   const [bellOpen, setBellOpen]   = useState(false)
   const bellRef = useRef(null)
   const canOpenStock = !(selectedStation?.disabledRoutes || []).includes('stock')
-
-  useEffect(() => {
-    const timer = setInterval(() => setDateTime(new Date()), 60000)
-    return () => clearInterval(timer)
-  }, [])
 
   // Close avatar dropdown when clicking outside
   useEffect(() => {
@@ -73,37 +67,40 @@ export const Topbar = ({ user, handleLogout, theme = 'light', onToggleTheme }) =
   const pageTitle = location.pathname.startsWith('/admin/legacy')
     ? 'Editor de menú (anterior)'
     : currentNav?.name ?? 'Panel'
-  const pageDesc = currentNav?.desc ?? ''
-
-  const formattedDate = dateTime.toLocaleDateString('es-MX', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
 
   return (
     <>
       <header className="h-16 md:h-[72px] flex items-center justify-between gap-3 px-4 md:px-8 bg-main-950/90 backdrop-blur-md border-b border-white/10 sticky top-0 z-40 shrink-0">
 
-        {/* ── Left: page title + what this screen is for ── */}
-        <div className="min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="font-display text-xl md:text-2xl font-semibold text-light-100 truncate leading-tight">{pageTitle}</h1>
-            {!loading && (
-              <span
-                className={`hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                  isRegisterOpen ? 'bg-emerald-500/12 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
-                }`}
-              >
-                <span className={`w-1.5 h-1.5 rounded-full ${isRegisterOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-                {isRegisterOpen ? 'Caja abierta' : 'Caja cerrada'}
-              </span>
-            )}
-          </div>
-          <p className="hidden md:block text-xs text-light-200/70 truncate mt-0.5">
-            <span className="capitalize">{formattedDate}</span>
-            {pageDesc && <span> · {pageDesc}</span>}
-          </p>
+        {/* ── Left: page title (+ help), and the Caja chip only when it needs action ── */}
+        <div className="min-w-0 flex items-center gap-1.5 md:gap-2">
+          <h1 className="font-display text-xl md:text-2xl font-semibold text-light-100 truncate leading-tight">{pageTitle}</h1>
+          {hasGuide && (
+            <button
+              type="button"
+              onClick={onToggleGuide}
+              aria-expanded={guideOpen}
+              aria-controls="page-guide"
+              aria-label={`¿Cómo funciona ${pageTitle}?`}
+              title="¿Cómo funciona?"
+              className={`h-10 w-10 shrink-0 flex items-center justify-center rounded-xl transition-colors cursor-pointer ${
+                guideOpen ? 'bg-primary/10 text-primary dark:text-main-300' : 'text-light-200/50 hover:bg-white/5 hover:text-light-100'
+              }`}
+            >
+              <CircleHelp size={18} />
+            </button>
+          )}
+          {!loading && !isRegisterOpen && (
+            <button
+              type="button"
+              onClick={() => navigate('/admin/caja')}
+              className="shrink-0 inline-flex items-center gap-1.5 min-h-[32px] px-2.5 rounded-full bg-rose-500/10 text-rose-400 text-xs font-bold hover:bg-rose-500/15 transition-colors cursor-pointer"
+            >
+              <Lock size={12} aria-hidden="true" />
+              <span className="hidden sm:inline">Caja cerrada</span>
+              <span className="sm:hidden">Cerrada</span>
+            </button>
+          )}
         </div>
 
         {/* ── Right: controls ── */}
@@ -148,11 +145,11 @@ export const Topbar = ({ user, handleLogout, theme = 'light', onToggleTheme }) =
                 type="button"
                 onClick={clearStation}
                 title="Cambiar estación"
-                className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-primary/8 hover:bg-primary/15 text-primary dark:text-main-300 text-xs font-bold transition-colors cursor-pointer"
+                aria-label={`Estación: ${selectedStation.name}. Cambiar estación`}
+                className="flex items-center gap-1.5 h-10 min-w-10 justify-center px-2.5 rounded-xl text-light-200/80 hover:bg-white/5 hover:text-light-100 text-sm font-semibold transition-colors cursor-pointer"
               >
-                <StationIcon size={13} />
-                <span className="max-w-[70px] sm:max-w-none truncate">{selectedStation.name}</span>
-                <RefreshCw size={11} className="opacity-60 shrink-0" />
+                <StationIcon size={17} />
+                <span className="hidden lg:inline truncate max-w-[140px]">{selectedStation.name}</span>
               </button>
             )
           })()}
@@ -178,7 +175,7 @@ export const Topbar = ({ user, handleLogout, theme = 'light', onToggleTheme }) =
                   {/* Web orders */}
                   {canTakeOrders && (
                     <section>
-                      <p className="px-4 pt-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-light-200/60">Pedidos del menú</p>
+                      <p className="px-4 pt-3 pb-1.5 text-[11px] font-bold text-light-200/60">Pedidos del menú</p>
                       {pendingOrders.length === 0 ? (
                         <p className="px-4 pb-3 text-sm text-light-200/60">Ninguno esperando. Cuando un cliente pida por WhatsApp aparecerá aquí.</p>
                       ) : (
@@ -209,7 +206,7 @@ export const Topbar = ({ user, handleLogout, theme = 'light', onToggleTheme }) =
 
                   {/* Stock */}
                   <section className="border-t border-white/10">
-                    <p className="px-4 pt-3 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-light-200/60">Inventario por agotarse</p>
+                    <p className="px-4 pt-3 pb-1.5 text-[11px] font-bold text-light-200/60">Inventario por agotarse</p>
                     {lowStock.length === 0 ? (
                       <p className="px-4 pb-3 text-sm text-light-200/60 flex items-center gap-2"><Package size={15} /> Todo con buen nivel.</p>
                     ) : (
@@ -259,16 +256,8 @@ export const Topbar = ({ user, handleLogout, theme = 'light', onToggleTheme }) =
             )}
           </div>
 
-          {/* Divider — desktop only */}
-          <div className="hidden md:block h-8 w-px bg-white/10" />
-
           {/* User name + avatar */}
           <div className="flex items-center gap-2 md:gap-3">
-            <div className="text-right hidden xl:block">
-              <p className="text-sm font-medium text-light-100">{user?.displayName || 'Admin'}</p>
-              <p className="text-[10px] text-light-200/65 truncate max-w-[120px]">{user?.email}</p>
-            </div>
-
             <div className="relative" ref={avatarRef}>
               <button
                 onClick={() => setAvatarOpen(v => !v)}
@@ -301,18 +290,6 @@ export const Topbar = ({ user, handleLogout, theme = 'light', onToggleTheme }) =
           </div>
         </div>
       </header>
-
-      {/* ── Mobile Caja status banner — full-width, below header ── */}
-      {!loading && (
-        <div className={`md:hidden flex items-center justify-center gap-2 py-1.5 text-xs font-bold shrink-0 transition-all ${
-          isRegisterOpen
-            ? 'bg-emerald-500/10 text-emerald-400'
-            : 'bg-rose-500/8 text-rose-400'
-        }`}>
-          <div className={`w-1.5 h-1.5 rounded-full ${isRegisterOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-          {isRegisterOpen ? 'Caja abierta' : 'Caja cerrada'}
-        </div>
-      )}
 
       {/* Mobile settings sheet */}
       {mobileSettingsOpen && (

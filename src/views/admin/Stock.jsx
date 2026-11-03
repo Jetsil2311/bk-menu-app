@@ -1676,7 +1676,8 @@ export const Stock = () => {
 
   const lowStockCount = materials.filter(isLowStock).length
   const [onlyLow, setOnlyLow] = useState(false)
-  const shown = onlyLow ? filtered.filter(isLowStock) : filtered
+  // The filter chip hides once nothing is low, so the filter turns off with it
+  const shown = onlyLow && lowStockCount > 0 ? filtered.filter(isLowStock) : filtered
 
   // Insumos | Recetas — remembered on this device.
   const [tab, setTab] = useState(() => {
@@ -1726,54 +1727,38 @@ export const Stock = () => {
         <RecipesSection materials={materials} />
       ) : (
       <>
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-main-900 border border-white/10 rounded-3xl p-5">
-          <p className="text-sm font-semibold text-light-200/75">Insumos registrados</p>
-          <p className="text-3xl font-bold text-light-100 mt-1">{loading ? '—' : materials.length}</p>
-          <p className="text-xs text-light-200/60 mt-1">Todo lo que compras para preparar tus productos.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setOnlyLow((v) => !v)}
-          disabled={lowStockCount === 0}
-          aria-pressed={onlyLow}
-          className={`text-left rounded-3xl p-5 border transition-colors cursor-pointer disabled:cursor-default ${
-            onlyLow ? 'bg-amber-500/10 border-amber-500/40' : 'bg-main-900 border-white/10 hover:border-amber-500/30'
-          }`}
-        >
-          <p className="text-sm font-semibold text-light-200/75 flex items-center gap-1.5">
-            {lowStockCount > 0 && <AlertTriangle size={14} className="text-amber-400" />} Por acabarse
-          </p>
-          <p className={`text-3xl font-bold mt-1 ${lowStockCount > 0 ? 'text-amber-400' : 'text-light-100'}`}>
-            {loading ? '—' : lowStockCount}
-          </p>
-          <p className="text-xs text-light-200/60 mt-1">
-            {lowStockCount === 0 ? 'Todo arriba de su nivel de aviso.' : onlyLow ? 'Mostrando solo estos. Toca para ver todos.' : 'Toca para ver solo estos.'}
-          </p>
-        </button>
-        <div className="bg-main-900 border border-white/10 rounded-3xl p-5 flex flex-col justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-light-200/75">¿Compraste algo?</p>
-            <p className="text-xs text-light-200/60 mt-1">Regístralo para sumar al inventario. Si es algo nuevo, primero créalo.</p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPurchaseModalOpen(true)}
-              disabled={!materials.length}
-              className="flex-1 flex items-center justify-center gap-2 px-3 min-h-[44px] rounded-xl bg-main-500 hover:bg-main-400 text-snow text-sm font-semibold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <PackagePlus size={16} />
-              Registrar compra
-            </button>
-            <button
-              onClick={() => setModalMode('add')}
-              className="flex items-center justify-center gap-2 px-3 min-h-[44px] rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-light-100 text-sm font-semibold transition-colors cursor-pointer shrink-0"
-            >
-              <Plus size={16} />
-              Nuevo insumo
-            </button>
-          </div>
+      {/* Toolbar: what needs attention on the left, actions on the right */}
+      <div className="flex flex-wrap items-center gap-2">
+        {!loading && lowStockCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setOnlyLow((v) => !v)}
+            aria-pressed={onlyLow}
+            className={`inline-flex min-h-[44px] items-center gap-2 rounded-xl px-3.5 text-sm font-bold transition-colors cursor-pointer ${
+              onlyLow ? 'bg-amber-500 text-amber-950' : 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/15'
+            }`}
+          >
+            <AlertTriangle size={15} aria-hidden="true" />
+            {lowStockCount} por acabarse
+            {onlyLow && <X size={14} aria-label="Quitar filtro" />}
+          </button>
+        )}
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() => setModalMode('add')}
+            className="flex items-center justify-center gap-2 px-3.5 min-h-[44px] rounded-xl border border-white/15 bg-main-900 hover:bg-white/5 text-light-100 text-sm font-bold transition-colors cursor-pointer"
+          >
+            <Plus size={16} />
+            Nuevo insumo
+          </button>
+          <button
+            onClick={() => setPurchaseModalOpen(true)}
+            disabled={!materials.length}
+            className="flex items-center justify-center gap-2 px-3.5 min-h-[44px] rounded-xl bg-primary hover:bg-secondary text-snow text-sm font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <PackagePlus size={16} />
+            Registrar compra
+          </button>
         </div>
       </div>
 

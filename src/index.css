@@ -54,6 +54,12 @@
   /* Always-white text on solid colored buttons (not remapped by admin theme) */
   --color-snow: #ffffff;
 
+  /* Google brand mark (admin sign-in button) */
+  --color-google-blue: #4285f4;
+  --color-google-red: #ea4335;
+  --color-google-yellow: #fbbc05;
+  --color-google-green: #34a853;
+
   /* Chart tokens (dark-surface defaults; admin light theme overrides) */
   --color-chart-grid: rgba(255, 255, 255, 0.06);
   --color-chart-tick: rgba(254, 248, 225, 0.45);
@@ -66,6 +72,11 @@
   --color-chart-good: #10b981;
   --color-chart-mid: #f59e0b;
   --color-chart-bad: #f43f5e;
+
+  /* Landing page (Landing.jsx): chunky display + clean body */
+  --color-espresso: #1c0d08;
+  --font-pop: 'Bricolage Grotesque', 'DM Sans', system-ui, sans-serif;
+  --font-landing: 'DM Sans', system-ui, sans-serif;
 
   --font-display: 'Fredoka', 'Nunito', ui-rounded, system-ui, sans-serif;
   --font-body: 'Nunito', ui-rounded, system-ui, sans-serif;
@@ -141,6 +152,124 @@ body {
 .alert-shake { animation: alert-shake 900ms ease-in-out infinite; transform-origin: 50% 10%; }
 @media (prefers-reduced-motion: reduce) {
   .alert-pop, .alert-ring, .alert-slide, .alert-shake { animation: none; }
+}
+
+/* ── Admin sign-in screen ─────────────────────────────────────────────── */
+/* Warm glows + boba-pearl dots on the admin canvas (follows light/dark theme) */
+.login-bg {
+  background-color: var(--color-main-950);
+  background-image:
+    radial-gradient(circle at 15% 10%, color-mix(in srgb, var(--color-secondary) 22%, transparent), transparent 45%),
+    radial-gradient(circle at 85% 90%, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent 45%),
+    radial-gradient(color-mix(in srgb, var(--color-primary) 9%, transparent) 2px, transparent 2.5px);
+  background-size: auto, auto, 30px 30px;
+}
+@keyframes login-card-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+.login-card-in { animation: login-card-in 420ms cubic-bezier(0.22, 1, 0.36, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .login-card-in { animation: none; }
+}
+
+/* ── Landing page ─────────────────────────────────────────────────────── */
+/* Sections fade up once as they scroll into view (Landing.jsx adds .is-visible) */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1), transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal.is-visible { opacity: 1; transform: none; }
+
+/* Flavor band: the list is rendered twice and slides by half its width */
+@keyframes marquee { to { transform: translateX(-50%); } }
+.marquee-track { animation: marquee 48s linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+
+/* Hero + flavor panel: tapioca pearls bob up and down */
+@keyframes pearl-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-14px); }
+}
+.pearl-bob { animation: pearl-bob 3.6s ease-in-out infinite; }
+
+/* Hero: headline, text and photos pop in one after another */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(22px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+.rise-in { animation: rise-in 800ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* "¿De qué sabor eres hoy?": the flavor name bounces in on every change */
+@keyframes flavor-pop {
+  0%   { opacity: 0; transform: translateY(18px) scale(0.92) rotate(-2deg); }
+  60%  { opacity: 1; transform: translateY(-4px) scale(1.02) rotate(0.5deg); }
+  100% { opacity: 1; transform: none; }
+}
+.flavor-pop { animation: flavor-pop 520ms cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+
+/* Map in the café's warm tones */
+.landing-map { filter: sepia(0.35) saturate(0.85) contrast(0.98); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .marquee-track { animation: none; flex-wrap: wrap; justify-content: center; width: auto !important; }
+  .marquee-track [data-dup] { display: none; }
+  .pearl-bob, .rise-in, .flavor-pop { animation: none; }
+}
+
+/* ── Landing editor (Admin → Landing) ─────────────────────────────────── */
+/* The page always shows the customer palette, whatever the admin theme. */
+.landing-scope {
+  color-scheme: light;
+  --color-primary: var(--color-main-500);
+  --color-secondary: var(--color-main-400);
+  --color-light-300: #fdf1c4; /* the admin light theme re-points light-* */
+}
+/* Everything visible at once, no entrance animations while editing */
+.lp-editing .reveal { opacity: 1; transform: none; transition: none; }
+.lp-editing .rise-in { animation: none; }
+
+/* Each editable text: a dashed box around the words, typed in place */
+.lp-edit {
+  outline: 2px dashed color-mix(in srgb, currentColor 35%, transparent);
+  outline-offset: 3px;
+  border-radius: 0.2em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  cursor: text;
+  transition: outline-color 150ms ease, background-color 150ms ease;
+  min-width: 1.5ch;
+  display: inline;
+  white-space: pre-wrap;
+}
+.lp-edit:hover { outline-color: color-mix(in srgb, currentColor 65%, transparent); }
+.lp-edit:focus {
+  outline: 3px solid var(--color-secondary);
+  background-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+.lp-edit:empty::before {
+  content: attr(data-placeholder);
+  opacity: 0.45;
+}
+/* Editor-only controls keep plain body type inside display headings */
+.lp-control { font-family: var(--font-landing); letter-spacing: normal; text-transform: none; }
+
+/* Review invitation card (ReviewPrompt.jsx): rises in, stars pop one by one */
+@keyframes review-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+.review-in { animation: review-in 320ms cubic-bezier(0.22, 1, 0.36, 1); }
+@keyframes review-star {
+  0%   { opacity: 0; transform: scale(0.4) rotate(-20deg); }
+  70%  { opacity: 1; transform: scale(1.15) rotate(4deg); }
+  100% { opacity: 1; transform: none; }
+}
+.review-star { animation: review-star 420ms cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .review-in, .review-star { animation: none; }
 }
 
 /* ── Customer menu: playful café theme ────────────────────────────────── */
