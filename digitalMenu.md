@@ -652,6 +652,11 @@ What changed: In the drink builder cup, the flavors now color the drink on their
 Files affected: src/components/drinkBuilder/DrinkCup.jsx, src/utils/drinkBuilder.js, src/utils/drinkBuilder.test.js, src/views/admin/LandingEditor.jsx
 Reason: Owner feedback. The colors blended over the whole cup so it looked muddy, drinks looked half empty, and four ice cubes didn't read as a full iced drink. The bar's gap came from `sticky top-0` respecting the page's top padding (fixed with a matching negative top).
 
+### 2026-11-03 — Drink cup: fewer, bigger ice cubes and a softer color blend
+What changed: Ice in the "Arma tu bebida" cup is now fewer, bigger cubes laid out like bricks (rows of 3 and 2), still reaching ¾ of the drink for Normal and ⅓ for Poco hielo. The two flavor colors now fade into each other over a much wider stretch in the middle.
+Files affected: src/components/drinkBuilder/DrinkCup.jsx
+Reason: Owner feedback. The many small cubes looked cluttered and the color change was too abrupt.
+
 ---
 
 ### 2026-10-26 — Web orders saved as real orders, pop-up alerts with sound, stock warnings, real earnings in Finanzas

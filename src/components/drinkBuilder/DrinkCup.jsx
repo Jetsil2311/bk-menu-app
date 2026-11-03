@@ -36,36 +36,38 @@ const PEARL_SPOTS = [
 // 0.5 (Poco) → ⅓, 0 (Sin) → none, in between follows the same line.
 const iceShare = (amount) => (amount <= 0.5 ? (amount / 0.5) / 3 : 1 / 3 + ((amount - 0.5) / 0.5) * (3 / 4 - 1 / 3))
 
-const ICE_SIZE = 24
-const ICE_ROW = 20
-const TILTS = [-12, 8, -4, 16, -9, 5, 12, -15]
+const ICE_SIZE = 30
+const ICE_ROW = 31
+const ICE_GAP = 12
+const TILTS = [-12, 8, -4, 14, -9, 5, 11, -14]
 
 // Rows of cubes from the surface down to `bottom` (all in the liquid's own
-// coordinates; `shift` is how far the liquid is lowered in the cup).
+// coordinates; `shift` is how far the liquid is lowered in the cup). Rows
+// alternate like bricks so the cubes sit in the gaps of the row above.
 const iceCubes = (surface, bottom, shift) => {
   const cubes = []
-  for (let y = surface + ICE_SIZE / 2, row = 0; y + ICE_SIZE / 2 <= bottom + 4; y += ICE_ROW, row++) {
-    const left = wallAt(y + shift) + ICE_SIZE / 2 + 2
+  for (let y = surface + ICE_SIZE / 2, row = 0; y + ICE_SIZE / 2 <= bottom + 6; y += ICE_ROW, row++) {
+    const left = wallAt(y + ICE_SIZE / 2 + shift) + ICE_SIZE / 2 + 3
     const right = 200 - left
-    const count = Math.max(1, Math.floor((right - left) / (ICE_SIZE + 2)) + 1)
-    const step = count > 1 ? (right - left) / (count - 1) : 0
-    const nudge = row % 2 ? step / 4 : -step / 4
+    const pitch = ICE_SIZE + ICE_GAP
+    const fit = Math.max(1, Math.floor((right - left) / pitch) + 1)
+    const count = row % 2 && fit > 1 ? fit - 1 : fit
+    const start = 100 - ((count - 1) * pitch) / 2
     for (let i = 0; i < count; i++) {
-      const x = count > 1 ? Math.min(right, Math.max(left, left + i * step + nudge)) : 100
-      cubes.push([x, y, TILTS[(row * 3 + i) % TILTS.length]])
+      cubes.push([start + i * pitch, y, TILTS[(row * 3 + i) % TILTS.length]])
     }
   }
   return cubes
 }
 
 // Gradient stops for the liquids: equal bands, each blending into the next
-// over a short faded stretch around the boundary. Offsets run top → bottom.
-const BLEND = 0.16
+// over a wide, soft stretch around the boundary. Offsets run top → bottom.
+const BLEND = 0.4
 const liquidStops = (colors) => {
   if (colors.length === 0) return [[0, 'transparent'], [1, 'transparent']]
   if (colors.length === 1) return [[0, colors[0]], [1, colors[0]]]
   const band = 1 / colors.length
-  const half = Math.min(BLEND, band * 0.6) / 2
+  const half = Math.min(BLEND, band * 0.9) / 2
   return colors.flatMap((c, i) => [
     [i === 0 ? 0 : i * band + half, c],
     [i === colors.length - 1 ? 1 : (i + 1) * band - half, c],
@@ -179,10 +181,10 @@ export const DrinkCup = forwardRef(function DrinkCup(
           {ice.map(([x, y, r], i) => {
             return (
               <g key={`${visual.ice.id}-${i}`} transform={`translate(${x} ${y}) rotate(${r})`}>
-                <g className="drink-cup__ice" style={{ animationDelay: `${i * 25}ms, ${(i % 5) * 400}ms` }}>
-                  <rect x="-12" y="-12" width="24" height="24" rx="6" fill="var(--color-surface)" opacity="0.38" />
-                  <rect x="-12" y="-12" width="24" height="24" rx="6" fill="none" stroke="var(--color-surface)" strokeWidth="1.5" opacity="0.85" />
-                  <rect x="-7" y="-8" width="6" height="3" rx="1.5" fill="var(--color-surface)" opacity="0.9" />
+                <g className="drink-cup__ice" style={{ animationDelay: `${i * 50}ms, ${(i % 4) * 400}ms` }}>
+                  <rect x="-15" y="-15" width="30" height="30" rx="8" fill="var(--color-surface)" opacity="0.4" />
+                  <rect x="-15" y="-15" width="30" height="30" rx="8" fill="none" stroke="var(--color-surface)" strokeWidth="1.75" opacity="0.85" />
+                  <rect x="-9" y="-10" width="8" height="3.5" rx="1.75" fill="var(--color-surface)" opacity="0.9" />
                 </g>
               </g>
             )
