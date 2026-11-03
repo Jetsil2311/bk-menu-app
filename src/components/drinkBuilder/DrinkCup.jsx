@@ -2,11 +2,13 @@ import PropTypes from 'prop-types'
 import { forwardRef, useEffect, useId, useImperativeHandle, useRef } from 'react'
 
 // Animated "Arma tu bebida" cup. Draws whatever deriveCupVisual() returns:
-//   liquids → the drink rises and tints (2+ liquids make an ombré:
+//   liquids → the drink rises almost to the brim and tints (2 flavors
+//             split the cup half and half with a soft blend between them:
 //             first choice on top, latest at the bottom)
 //   pearls  → drop in and bounce at the bottom
 //   foam    → a cloud that puffs onto the surface
-//   ice     → cubes bobbing near the top
+//   ice     → cubes packed from the surface down (Normal ¾ of the drink,
+//             Poco ⅓, Sin nothing)
 // Option colors come from the café's config; options without a color use
 // the menu's pastel tones.
 
@@ -18,7 +20,10 @@ const FALLBACK_TONES = [
 // Cup interior: rim at y=56, base at y=262 (viewBox 0 0 200 280).
 const CUP_PATH = 'M34 56 L52 247 Q53.5 262 68 262 L132 262 Q146.5 262 148 247 L166 56 Z'
 const CUP_TOP = 56
+const CUP_BASE = 262
 const CUP_DEPTH = 206
+// Cup wall at height y (it tapers from 34→52 on the left, mirrored on the right).
+const wallAt = (y) => 34 + ((y - CUP_TOP) * 18) / 191
 
 // Pearl spots: three rows hugging the tapered bottom.
 const PEARL_SPOTS = [
@@ -27,9 +32,45 @@ const PEARL_SPOTS = [
   ...[74, 87, 100, 113, 126].map((x) => [x, 225]),
 ]
 
-const ICE_SPOTS = [[72, 18, -12], [104, 10, 8], [128, 22, -4], [88, 34, 16]]
+// How much of the drink the ice takes up: amount 1 (Normal) → ¾,
+// 0.5 (Poco) → ⅓, 0 (Sin) → none, in between follows the same line.
+const iceShare = (amount) => (amount <= 0.5 ? (amount / 0.5) / 3 : 1 / 3 + ((amount - 0.5) / 0.5) * (3 / 4 - 1 / 3))
 
-const mix = (a, b) => `color-mix(in srgb, ${a} 50%, ${b})`
+const ICE_SIZE = 24
+const ICE_ROW = 20
+const TILTS = [-12, 8, -4, 16, -9, 5, 12, -15]
+
+// Rows of cubes from the surface down to `bottom` (all in the liquid's own
+// coordinates; `shift` is how far the liquid is lowered in the cup).
+const iceCubes = (surface, bottom, shift) => {
+  const cubes = []
+  for (let y = surface + ICE_SIZE / 2, row = 0; y + ICE_SIZE / 2 <= bottom + 4; y += ICE_ROW, row++) {
+    const left = wallAt(y + shift) + ICE_SIZE / 2 + 2
+    const right = 200 - left
+    const count = Math.max(1, Math.floor((right - left) / (ICE_SIZE + 2)) + 1)
+    const step = count > 1 ? (right - left) / (count - 1) : 0
+    const nudge = row % 2 ? step / 4 : -step / 4
+    for (let i = 0; i < count; i++) {
+      const x = count > 1 ? Math.min(right, Math.max(left, left + i * step + nudge)) : 100
+      cubes.push([x, y, TILTS[(row * 3 + i) % TILTS.length]])
+    }
+  }
+  return cubes
+}
+
+// Gradient stops for the liquids: equal bands, each blending into the next
+// over a short faded stretch around the boundary. Offsets run top → bottom.
+const BLEND = 0.16
+const liquidStops = (colors) => {
+  if (colors.length === 0) return [[0, 'transparent'], [1, 'transparent']]
+  if (colors.length === 1) return [[0, colors[0]], [1, colors[0]]]
+  const band = 1 / colors.length
+  const half = Math.min(BLEND, band * 0.6) / 2
+  return colors.flatMap((c, i) => [
+    [i === 0 ? 0 : i * band + half, c],
+    [i === colors.length - 1 ? 1 : (i + 1) * band - half, c],
+  ])
+}
 
 export const DrinkCup = forwardRef(function DrinkCup(
   { visual, label, size = 'lg', className = '' },
@@ -42,12 +83,16 @@ export const DrinkCup = forwardRef(function DrinkCup(
   const liquids = visual.liquids.map((l, i) => l.color || FALLBACK_TONES[i % FALLBACK_TONES.length])
   const hasLiquid = liquids.length > 0
   const top = liquids[0]
-  const bottom = liquids[liquids.length - 1]
-  const middle = liquids.length >= 3 ? liquids[1] : liquids.length === 2 ? mix(top, bottom) : top
+  // Always the same number of stops so the colors can fade from one to the next.
+  const stops = liquidStops(liquids)
 
-  // Fill level: empty until a liquid is chosen; a bit lower under foam.
-  const fill = hasLiquid ? (visual.foam ? 0.74 : 0.8) : 0
+  // Fill level: empty until a liquid is chosen, then almost to the brim
+  // (a little lower under foam so the cloud fits under the rim).
+  const fill = hasLiquid ? (visual.foam ? 0.86 : 0.95) : 0
   const liquidShift = CUP_DEPTH * (1 - fill) + (hasLiquid ? 0 : 14)
+  // Visible liquid, in the liquid group's own coordinates.
+  const surface = CUP_TOP + 6
+  const liquidBottom = CUP_BASE - liquidShift
 
   const pearls = visual.pearls.length
     ? PEARL_SPOTS.map(([x, y], i) => {
@@ -57,7 +102,10 @@ export const DrinkCup = forwardRef(function DrinkCup(
     : []
   const pearlKey = visual.pearls.map((p) => p.id).join('|')
 
-  const iceCount = visual.ice ? Math.round(visual.ice.amount * ICE_SPOTS.length) : 0
+  const iceShareOf = visual.ice && hasLiquid ? iceShare(visual.ice.amount) : 0
+  const ice = iceShareOf > 0
+    ? iceCubes(surface + 2, surface + (liquidBottom - surface) * iceShareOf, liquidShift)
+    : []
 
   // A little "squish" whenever the drink changes.
   const signature = [
@@ -94,10 +142,11 @@ export const DrinkCup = forwardRef(function DrinkCup(
         <clipPath id={`cup-${uid}`}>
           <path d={CUP_PATH} />
         </clipPath>
-        <linearGradient id={`liquid-${uid}`} x1="0" y1="1" x2="0" y2="0">
-          <stop offset="0" style={stopStyle(bottom ?? 'transparent')} />
-          <stop offset="0.5" style={stopStyle(middle ?? 'transparent')} />
-          <stop offset="1" style={stopStyle(top ?? 'transparent')} />
+        {/* Spans only the visible drink, so the bands split it evenly */}
+        <linearGradient id={`liquid-${uid}`} gradientUnits="userSpaceOnUse" x1="0" y1={surface} x2="0" y2={liquidBottom}>
+          {stops.map(([offset, color], i) => (
+            <stop key={`${liquids.length}-${i}`} offset={offset} style={stopStyle(color)} />
+          ))}
         </linearGradient>
       </defs>
 
@@ -127,12 +176,11 @@ export const DrinkCup = forwardRef(function DrinkCup(
           {/* Shine on the liquid */}
           <rect x="48" y={CUP_TOP + 24} width="9" height="150" rx="4.5" fill="var(--color-surface)" opacity={hasLiquid ? 0.22 : 0} />
 
-          {Array.from({ length: iceCount }, (_, i) => {
-            const [x, y, r] = ICE_SPOTS[i]
+          {ice.map(([x, y, r], i) => {
             return (
-              <g key={`${visual.ice.id}-${i}`} transform={`translate(${x} ${CUP_TOP + y}) rotate(${r})`}>
-                <g className="drink-cup__ice" style={{ animationDelay: `${i * 90}ms, ${i * 400}ms` }}>
-                  <rect x="-12" y="-12" width="24" height="24" rx="6" fill="var(--color-surface)" opacity="0.5" />
+              <g key={`${visual.ice.id}-${i}`} transform={`translate(${x} ${y}) rotate(${r})`}>
+                <g className="drink-cup__ice" style={{ animationDelay: `${i * 25}ms, ${(i % 5) * 400}ms` }}>
+                  <rect x="-12" y="-12" width="24" height="24" rx="6" fill="var(--color-surface)" opacity="0.38" />
                   <rect x="-12" y="-12" width="24" height="24" rx="6" fill="none" stroke="var(--color-surface)" strokeWidth="1.5" opacity="0.85" />
                   <rect x="-7" y="-8" width="6" height="3" rx="1.5" fill="var(--color-surface)" opacity="0.9" />
                 </g>

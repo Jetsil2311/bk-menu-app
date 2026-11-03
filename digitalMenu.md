@@ -647,6 +647,11 @@ What changed: Paid orders are no longer deleted. History in Pedidos, Finanzas an
 Files affected: src/views/Home.jsx, src/utils/orderCleanup.js (new), src/utils/orderCleanup.test.js (new), src/utils/orderStatus.js, src/context/WhatsAppOrdersContext.jsx, src/views/admin/KitchenBoard.jsx, src/views/admin/POS.jsx, src/views/admin/Orders.jsx, src/components/drinkBuilder/DrinkBuilder.jsx, firestore.rules
 Reason: Owner asked to fix the order history cap.
 
+### 2026-11-03 — "Arma tu bebida" cup and Landing publish bar polish
+What changed: In the drink builder cup, the flavors now color the drink on their own (the base no longer takes a band once flavors are picked), and two flavors split the cup half and half with a short soft blend in the middle. Every drink is filled almost to the brim (a bit less under foam so it fits). Ice now packs the drink from the top down: Normal fills ¾ of the drink, Poco hielo ⅓, Sin hielo nothing. In Admin → Landing, the sticky "Cambios sin publicar / Publicar" bar now sticks flush to the top instead of floating with a gap above it.
+Files affected: src/components/drinkBuilder/DrinkCup.jsx, src/utils/drinkBuilder.js, src/utils/drinkBuilder.test.js, src/views/admin/LandingEditor.jsx
+Reason: Owner feedback. The colors blended over the whole cup so it looked muddy, drinks looked half empty, and four ice cubes didn't read as a full iced drink. The bar's gap came from `sticky top-0` respecting the page's top padding (fixed with a matching negative top).
+
 ---
 
 ### 2026-10-26 — Web orders saved as real orders, pop-up alerts with sound, stock warnings, real earnings in Finanzas

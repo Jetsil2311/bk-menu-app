@@ -302,8 +302,8 @@ export const LandingEditor = () => {
     <div className="space-y-4">
       <ClosureCard live={live} hours={draft.hours} />
 
-      {/* Publish bar: sticks to the top while scrolling the page below */}
-      <div className="sticky top-0 z-30 -mx-4 border-b border-white/10 bg-main-950/95 px-4 py-3 backdrop-blur-md md:mx-0 md:rounded-2xl md:border md:bg-main-900/95">
+      {/* Publish bar: sticks flush to the top while scrolling (the negative top cancels the page padding, which sticky respects) */}
+      <div className="sticky -top-4 z-30 -mx-4 border-b border-white/10 bg-main-950/95 px-4 py-3 backdrop-blur-md md:-top-6 md:mx-0 md:rounded-2xl md:border md:bg-main-900/95">
         <div className="flex flex-wrap items-center gap-3">
           <p className="min-w-0 basis-full text-sm sm:basis-0 sm:flex-1" aria-live="polite">
             {dirty ? (

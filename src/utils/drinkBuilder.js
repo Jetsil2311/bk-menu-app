@@ -170,7 +170,9 @@ export const deriveCupVisual = (config, selections) => {
   for (const step of config.steps) {
     const chosen = selectedOptionsOf(step, selections)
     if (!chosen.length) continue
-    if (step.visual === 'liquid') visual.liquids.push(...chosen.map((o) => ({ id: o.id, color: o.color })))
+    // The latest liquid step wins: once flavors are picked they color the
+    // drink (the base is mixed into them), before that the base shows.
+    if (step.visual === 'liquid') visual.liquids = chosen.map((o) => ({ id: o.id, color: o.color }))
     if (step.visual === 'pearls') visual.pearls.push(...chosen.map((o) => ({ id: o.id, color: o.color })))
     if (step.visual === 'foam') visual.foam = { id: chosen[0].id, color: chosen[0].color }
     if (step.visual === 'ice') visual.ice = { id: chosen[0].id, amount: chosen[0].amount }

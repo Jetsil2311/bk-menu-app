@@ -84,7 +84,8 @@ describe('cup visual, random drink, names and cart item', () => {
 
   it('maps steps to cup layers', () => {
     const v = deriveCupVisual(c, s)
-    expect(v.liquids.map((l) => l.color)).toEqual(['#fff', '#f00'])
+    expect(v.liquids.map((l) => l.color)).toEqual(['#f00'])
+    expect(deriveCupVisual(c, { base: ['a'] }).liquids.map((l) => l.color)).toEqual(['#fff'])
     expect(v.pearls).toHaveLength(1)
     expect(v.foam).toBeNull()
   })
